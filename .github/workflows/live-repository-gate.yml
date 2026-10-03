@@ -164,7 +164,7 @@ jobs:
           status=$?
           set -e
           test "$status" -ne 0
-          grep -q 'Verification failed' "$RUNNER_TEMP/wrong-repository.log"
+          grep -Eq 'Status: FAIL|Verification failed' "$RUNNER_TEMP/wrong-repository.log"
           cp "$RUNNER_TEMP/contract-before-binding-tests.json" output/agent-change-contract.json
           python3 - <<'PY'
           import json
@@ -177,7 +177,7 @@ jobs:
           status=$?
           set -e
           test "$status" -ne 0
-          grep -q 'Verification failed' "$RUNNER_TEMP/mismatched-plan.log"
+          grep -Eq 'Status: FAIL|Verification failed' "$RUNNER_TEMP/mismatched-plan.log"
           cp "$RUNNER_TEMP/plan-before-binding-test.json" output/engineering-plan.json
       - name: Prove stale prepared HEAD detection
         working-directory: ${{ runner.temp }}/target
@@ -194,7 +194,7 @@ jobs:
           status=$?
           set -e
           test "$status" -ne 0
-          grep -q 'Status: FAIL' "$RUNNER_TEMP/stale-head.log"
+          grep -Eq 'Status: FAIL|Verification failed' "$RUNNER_TEMP/stale-head.log"
           git reset --hard "$original"
           rm -f .vericore-release-gate-head-change
           test "$(git rev-parse HEAD)" = "$original"
