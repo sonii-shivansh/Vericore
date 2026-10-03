@@ -201,13 +201,13 @@ The clean-environment workflows validate:
 - macOS x64
 - macOS ARM64
 - live repository mutation and immutability checks
-- deterministic 0.7.0 release audit
+- deterministic 0.8.0 release audit
 
 GitHub Actions is the authoritative automated execution environment for release verification.
 
 ## Current release line
 
-`v0.7.0` is the **current published Vericore release**. Earlier public releases were published under the former project name; `0.7.0` is the first release line whose canonical product identity is Vericore. Development after the published release continues from `main`.
+`v0.8.0` is the **release candidate being prepared from the current `main` line**. `v0.7.0` remains the latest published Vericore release until the 0.8.0 release workflow completes. Earlier public releases were published under the former project name.
 
 ## Current limitations
 

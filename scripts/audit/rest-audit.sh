@@ -16,9 +16,13 @@ status=$(curl -sS -o /tmp/vericore-invalid.json -w '%{http_code}' -X POST "http:
 if [[ "$status" =~ ^2|^3 ]]; then echo "REST security audit failed: remote repository URL accepted" >&2; exit 1; fi
 python3 - <<'PY'
 import json
-root=json.load(open('/tmp/vericore-root.json')) if open('/tmp/vericore-root.json').read().lstrip().startswith('{') else None
-health=json.load(open('/tmp/vericore-health.json'))
+from pathlib import Path
+root_text=Path('/tmp/vericore-root.json').read_text()
+root=json.loads(root_text) if root_text.lstrip().startswith('{') else None
+health=json.loads(Path('/tmp/vericore-health.json').read_text())
+version_source=Path('src/main/kotlin/com/vericore/core/Version.kt').read_text()
+expected=version_source.split('const val current: String = "', 1)[1].split('"', 1)[0]
 assert health.get('status') == 'healthy'
-assert health.get('version') == '0.7.0'
+assert health.get('version') == expected, (health.get('version'), expected)
 PY
 echo "REST audit: PASS"

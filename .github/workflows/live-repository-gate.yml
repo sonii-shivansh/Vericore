@@ -46,25 +46,21 @@ jobs:
       TARGET_REPOSITORY: ${{ inputs.repository || 'spring-projects/spring-petclinic' }}
       TARGET_REF: ${{ inputs.ref || 'main' }}
       HAS_GEMINI: ${{ secrets.GEMINI_API_KEY != '' && (inputs.run_gemini == true || inputs.run_gemini == '') }}
-
     steps:
       - name: Checkout Vericore
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
-
       - name: Set up JDK 21
         uses: actions/setup-java@v6
         with:
           java-version: 21
           distribution: temurin
           cache: gradle
-
       - name: Build and test Vericore
         run: |
           chmod +x ./gradlew
           ./gradlew --no-daemon clean test installDist
-
       - name: Clone live target repository
         run: |
           rm -rf "$RUNNER_TEMP/target"
@@ -73,7 +69,6 @@ jobs:
           test -d .git
           git status --short
           git rev-parse HEAD > "$RUNNER_TEMP/target-before.sha"
-
       - name: Run complete CLI surface
         working-directory: ${{ runner.temp }}/target
         run: |
@@ -82,7 +77,7 @@ jobs:
           "$CLI" doctor
           "$CLI" analyze .
           "$CLI" architecture . --json
-          SOURCE_FILE="$(find . -type f \( -name '*.java' -o -name '*.kt' \) | grep -v '/build/' | head -1)"
+          SOURCE_FILE="$(find . -type f \( -name '*.java' -o -name '*.kt' \) -not -path './build/*' -print -quit)"
           test -n "$SOURCE_FILE"
           "$CLI" impact . "$SOURCE_FILE" --json
           cp output/architecture.json output/architecture-baseline.json
@@ -107,7 +102,6 @@ jobs:
           PY
           "$CLI" evolution
           "$CLI" pr-intelligence . --base HEAD~1 --head HEAD --json
-
       - name: Grounded intelligence and preparation
         working-directory: ${{ runner.temp }}/target
         run: |
@@ -127,7 +121,6 @@ jobs:
           assert p['repository']
           assert p['preparedHead']
           PY
-
       - name: Prove contract tamper detection
         working-directory: ${{ runner.temp }}/target
         run: |
@@ -146,24 +139,23 @@ jobs:
           test "$status" -ne 0
           grep -q 'Status: FAIL' "$RUNNER_TEMP/contract-tamper.log"
           cp "$RUNNER_TEMP/contract-original.json" output/agent-change-contract.json
-
       - name: Prove unexpected source change detection
         working-directory: ${{ runner.temp }}/target
         run: |
           CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
-          TEST_FILE="src/vericore-live-gate-safety-check.txt"
-          printf '%s\n' 'intentional release-gate mutation' > "$TEST_FILE"
+          TEST_FILE="README.md"
+          cp "$TEST_FILE" "$RUNNER_TEMP/release-gate-readme.original"
+          printf '\nintentional release-gate mutation\n' >> "$TEST_FILE"
           set +e
           "$CLI" verify --output output/unexpected-change-verify.json > "$RUNNER_TEMP/unexpected-change.log" 2>&1
           status=$?
           set -e
           test "$status" -ne 0
           grep -q 'Status: FAIL' "$RUNNER_TEMP/unexpected-change.log"
-          rm -f "$TEST_FILE"
+          cp "$RUNNER_TEMP/release-gate-readme.original" "$TEST_FILE"
           test -z "$(git diff --name-only)"
           test -z "$(git diff --cached --name-only)"
-          test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/|\.vericore/)')"
-
+          test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/|\.vericore/)' || true)"
       - name: Verify prepared contract remains valid after mutation tests
         working-directory: ${{ runner.temp }}/target
         run: |
@@ -171,7 +163,6 @@ jobs:
           "$CLI" verify --output output/final-verify.json
           test -s output/final-verify.json
           grep -q '"valid": true' output/final-verify.json
-
       - name: MCP protocol and gateway smoke test
         working-directory: ${{ runner.temp }}/target
         run: |
@@ -202,7 +193,6 @@ jobs:
           assert contract.get('fingerprint') and len(contract['fingerprint']) == 64
           assert contract.get('repository')
           PY
-
       - name: REST API live repository smoke test
         working-directory: ${{ runner.temp }}/target
         run: |
@@ -221,7 +211,6 @@ jobs:
           test -s output/rest-architecture.json
           status=$(curl --silent --output /tmp/traversal.json --write-out '%{http_code}' -H 'Content-Type: application/json' -d '{"repoPath":"/tmp/../etc"}' http://127.0.0.1:18080/analyze)
           test "$status" = '400'
-
       - name: Live Gemini smoke test
         if: ${{ env.HAS_GEMINI == 'true' }}
         working-directory: ${{ runner.temp }}/target
@@ -240,7 +229,6 @@ jobs:
             test "$status" -eq 0
             ! grep -q 'AI features disabled' output/live-gemini.txt
           fi
-
       - name: Verify target repository was not modified
         working-directory: ${{ runner.temp }}/target
         run: |
@@ -249,8 +237,7 @@ jobs:
           test "$before" = "$after"
           test -z "$(git diff --name-only)"
           test -z "$(git diff --cached --name-only)"
-          test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/|\.vericore/)')"
-
+          test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/|\.vericore/)' || true)"
       - name: Upload release-gate evidence
         if: always()
         uses: actions/upload-artifact@v7

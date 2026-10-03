@@ -14,7 +14,7 @@ Vericore is a Kotlin/JVM CLI and local REST application that analyzes Java and K
 
 ## Current status
 
-Vericore `0.7.0` is the current stable release. The product identity, CLI, package namespace, configuration namespace, distribution name, reports, REST server, MCP tools, and documentation are canonical Vericore surfaces.
+Vericore `0.8.0` is the release candidate currently being prepared from the post-`0.7.0` main line. The product identity, CLI, package namespace, configuration namespace, distribution name, reports, REST server, MCP tools, and documentation are canonical Vericore surfaces.
 
 ## Capabilities
 

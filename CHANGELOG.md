@@ -6,7 +6,40 @@ All notable changes to Vericore are documented here. The format follows [Keep a 
 
 ## [Unreleased]
 
-Future changes after the published `0.7.0` release are documented here as they are implemented.
+Future changes after the published `0.8.0` release are documented here as they are implemented.
+
+## [0.8.0] — 2026-10-04
+
+### Added
+
+- Semantic evidence graph with repository/commit-bound evidence identity, deterministic relationships, provenance validation, and stable SHA-256 graph identity.
+- Cross-feature evidence resolution across architecture, hotspot, temporal, and repository-Q&A evidence.
+- Materialized `semantic-evidence-graph.json` artifacts and the `evidence-graph` CLI command.
+- Evidence-graph identity and cardinality binding into Engineering Reality.
+- Deterministic evidence-backed AI grounding with citation validation and grounding-confidence controls.
+- Repository-scoped engineering planning and Agent Change Contracts with persisted verification boundaries.
+- Expanded deterministic repository correctness, evolution-window, and release-gate regression coverage.
+
+### Changed
+
+- Engineering Reality now incorporates semantic evidence graph state into its deterministic identity.
+- Repository-QA retrieval preserves relevant architecture and hotspot evidence across feature-specific queries.
+- Engineering plans and contracts are explicitly bound to their target repository and prepared Git state.
+- Windows distributions use a compact `lib\\*` launcher classpath to avoid command-line length failures.
+- Release and cross-platform verification now exercise the complete evidence-grounded engineering workflow on clean environments and real repositories.
+
+### Fixed
+
+- Repository-scoped CLI failure semantics and truthful parse-failure propagation.
+- Evolution history-window sampling so selected commits remain inside the requested cutoff-to-HEAD interval.
+- Windows launcher failures caused by expanded dependency classpaths.
+- Evidence integrity edge cases including duplicate, dangling, self-referential, stale-commit, and cross-repository relationships.
+
+### Release engineering
+
+- Application and Gradle build version aligned to `0.8.0`.
+- Release packaging continues to cover Linux x64, Windows x64, macOS x64, and macOS ARM64 with bundled Java runtimes and SHA-256 checksums.
+- Release validation covers deterministic analysis, grounded intelligence, semantic evidence graph materialization, Engineering Reality, prepare/verify contracts, MCP, REST, and live-repository gates.
 
 ## [0.7.0] — 2026-10-03
 
@@ -109,7 +142,8 @@ Future changes after the published `0.7.0` release are documented here as they a
 - The server does not provide authentication, tenant isolation, or report retention.
 - AI analysis requires external provider access and explicit configuration.
 
-[Unreleased]: https://github.com/sonii-shivansh/Vericore/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/sonii-shivansh/Vericore/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/sonii-shivansh/Vericore/releases/tag/v0.8.0
 [0.7.0]: https://github.com/sonii-shivansh/Vericore/releases/tag/v0.7.0
 [0.6.0]: https://github.com/sonii-shivansh/Vericore/releases/tag/v0.6.0
 [0.5.0]: https://github.com/sonii-shivansh/Vericore/releases/tag/v0.5.0
