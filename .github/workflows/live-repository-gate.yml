@@ -92,8 +92,9 @@ jobs:
           "$CLI" evidence-graph . --json
           python3 - <<'PY'
           import json
+          import os
           from pathlib import Path
-          first=json.loads(Path('/tmp/evidence-graph-first.json').read_text())
+          first=json.loads((Path(os.environ['RUNNER_TEMP']) / 'evidence-graph-first.json').read_text())
           second=json.loads(Path('output/semantic-evidence-graph.json').read_text())
           assert first == second, 'semantic evidence graph is not deterministic across repeated runs'
           assert second['schemaVersion'] == '1.0'
