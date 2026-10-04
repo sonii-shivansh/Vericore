@@ -11,6 +11,7 @@ import com.vericore.core.intelligence.ArchitectureContractResult
 import com.vericore.core.intelligence.ArchitectureIntelligenceEngine
 import com.vericore.core.scanner.RepositoryScanner
 import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.core.ProgramResult
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
@@ -75,7 +76,8 @@ class ArchitectureContractCommand : CliktCommand(
             result.violations.take(30).forEach { violation ->
                 echo("   ${violation.ruleId}: ${violation.message}")
             }
-            throw IllegalStateException("Architecture contract failed")
+            echo("❌ Architecture contract failed")
+            throw ProgramResult(1)
         }
     }
 }
