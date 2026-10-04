@@ -35,6 +35,28 @@ class EngineeringPlannerTest {
     }
 
     @Test
+    fun `explicit planned paths do not expand into unrelated evidence files`() {
+        val evidence = GroundedEvidence(
+            citations = listOf(
+                EvidenceCitation("file.1", "file-graph-fact", "src/PaymentService.kt", "changed service"),
+                EvidenceCitation("file.2", "file-graph-fact", "src/PaymentController.kt", "dependent controller"),
+                EvidenceCitation("file.3", "file-graph-fact", "src/HealthController.kt", "unrelated file")
+            )
+        )
+
+        val plan = planner.plan(
+            EngineeringPlanRequest(
+                changeSummary = "Change payment validation",
+                changedPaths = listOf("src/PaymentService.kt"),
+                evidence = evidence
+            )
+        )
+
+        assertEquals(listOf("src/PaymentService.kt"), plan.affectedComponents)
+        assertTrue(plan.concerns.any { it.contains("supporting context", ignoreCase = true) })
+    }
+
+    @Test
     fun `plan records canonical repository and verification commands`() {
         val repo = Files.createTempDirectory("vericore-plan-test").toFile()
         try {
