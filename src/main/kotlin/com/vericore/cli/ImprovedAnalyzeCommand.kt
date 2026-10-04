@@ -43,7 +43,7 @@ class ImprovedAnalyzeCommand : CliktCommand(
         val time = measureTimeMillis {
             try {
                 if (clearCache) {
-                    CacheManager().clear()
+                    CacheManager.forRepository(rootDir.path).clear()
                     echo("🗑️  Cache cleared")
                 }
 
@@ -60,7 +60,7 @@ class ImprovedAnalyzeCommand : CliktCommand(
                 }
 
                 echo("🧠 Parsing code...")
-                val cacheManager = if (config.enableCache && !noCache) CacheManager() else null
+                val cacheManager = if (config.enableCache && !noCache) CacheManager.forRepository(rootDir.path) else null
                 val parser = CodeParallelParser(cacheManager)
                 val parsedFiles: List<ParsedFile> = try {
                     runBlocking { parser.parseFiles(files) }
