@@ -16,6 +16,7 @@
 | Reviewing PR/change risk | [PR Intelligence](PR_INTELLIGENCE.md) |
 | Reviewing privacy/data flow | [Data & Privacy](DATA_PRIVACY.md) |
 | Checking shipped capabilities | [Implementation Status](ENTERPRISE_ROADMAP.md) |
+| Reviewing the 0.8.0 release candidate | [Release Readiness](RELEASE_READINESS_0.8.0.md) |
 
 ## Recommended paths
 
@@ -68,6 +69,22 @@ MCP
       ↓
 Change Safety
 ```
+
+### 0.8.0 release certification
+
+```text
+Release Readiness
+      ↓
+Release Readiness Plan
+      ↓
+0.8.0 Release Audit
+      ↓
+Machine-readable readiness certificate
+      ↓
+Release workflow
+```
+
+The release-readiness documents are pre-release operational documents. They are updated before publication so the public 0.8.0 documentation does not depend on a post-release catch-up pass.
 
 ## Documentation conventions
 
