@@ -70,7 +70,7 @@ class CacheManager(private val cacheDir: File = defaultCacheDirectory()) {
          */
         fun forRepository(repoPath: String): CacheManager {
             val root = File(repoPath).canonicalFile
-            require(root.isDirectory) { "Repository path is not a directory: \$repoPath" }
+            require(root.isDirectory) { "Repository path is not a directory: $repoPath" }
             val scope = sha256(root.path).take(24)
             return CacheManager(File(defaultCacheDirectory(), scope))
         }
@@ -101,7 +101,7 @@ class CacheManager(private val cacheDir: File = defaultCacheDirectory()) {
             }
         }
         val contentHash = digest.digest().joinToString("") { "%02x".format(it) }
-        val metadata = "${file.canonicalPath}:\$contentHash"
+        val metadata = "${file.canonicalPath}:$contentHash"
         return MessageDigest.getInstance("SHA-256")
             .digest(metadata.toByteArray(StandardCharsets.UTF_8))
             .joinToString("") { "%02x".format(it) }
