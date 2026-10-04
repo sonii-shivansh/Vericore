@@ -25,6 +25,8 @@ command: /absolute/path/to/vericore
 args: ["mcp"]
 ```
 
+For the complete CLI command contract, see [CLI Reference](CLI.md).
+
 ## Tool catalog
 
 | Tool | What it does | Mutates source? |
@@ -108,8 +110,6 @@ output/agent-change-contract.json
 
 ## Change-safety workflow
 
-The safe agent loop is:
-
 ```text
 Engineering Reality
         ↓
@@ -160,6 +160,7 @@ Modern MCP lifecycle behavior is intentionally deferred until the server can imp
 
 ## Related documents
 
+- [CLI Reference](CLI.md) — complete command syntax
 - [Architecture](ARCHITECTURE.md) — system boundaries
 - [Engineering Reality](ENGINEERING_REALITY.md) — repository-state identity
 - [Change Safety](CHANGE_SAFETY.md) — persisted contract semantics
