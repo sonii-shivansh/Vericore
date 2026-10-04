@@ -54,7 +54,11 @@ data class FileSnapshot(
     val pageRank: Double,
     val dependents: Int,
     val dependencies: Int,
-    val description: String = ""
+    val description: String = "",
+    /** Repository-relative files that directly depend on this file. */
+    val dependentPaths: List<String> = emptyList(),
+    /** Repository-relative files that this file directly depends on. */
+    val dependencyPaths: List<String> = emptyList()
 )
 
 @Serializable
@@ -86,16 +90,31 @@ object AnalysisSnapshotBuilder {
         val packageNames = parsedFiles.map { it.packageName }.filter { it.isNotBlank() }.toSet()
         val fileByPath = parsedFiles.associateBy { it.file.absolutePath }
         val orderedFiles = parsedFiles.sortedBy { it.file.absolutePath }
+        val canonicalRoot = File(repositoryPath).canonicalFile
 
         // Bind the analysis to the exact repository state it observed. This lets the
         // Engineering Reality layer reject a stale analysis instead of combining it
         // with a newer working tree or commit.
         val repositoryState = runCatching {
-            EngineeringContextEngine.snapshot(File(repositoryPath).canonicalFile, RepositoryScanner())
+            EngineeringContextEngine.snapshot(canonicalRoot, RepositoryScanner())
         }.getOrNull()
+
+        fun relative(path: String): String = runCatching {
+            canonicalRoot.toPath().relativize(File(path).canonicalFile.toPath()).toString().replace('\\', '/')
+        }.getOrDefault(File(path).name)
 
         val files = orderedFiles.map { file ->
             val path = file.file.absolutePath
+            val dependentPaths = if (graph.containsVertex(path)) {
+                graph.incomingEdgesOf(path)
+                    .map { edge -> relative(graph.getEdgeSource(edge)) }
+                    .distinct().sorted()
+            } else emptyList()
+            val dependencyPaths = if (graph.containsVertex(path)) {
+                graph.outgoingEdgesOf(path)
+                    .map { edge -> relative(graph.getEdgeTarget(edge)) }
+                    .distinct().sorted()
+            } else emptyList()
             FileSnapshot(
                 path = path,
                 packageName = file.packageName,
@@ -103,9 +122,11 @@ object AnalysisSnapshotBuilder {
                 churn = file.gitMetadata.changeFrequency,
                 authors = file.gitMetadata.topAuthors,
                 pageRank = pageRankScores[path] ?: 0.0,
-                dependents = if (graph.containsVertex(path)) graph.inDegreeOf(path) else 0,
-                dependencies = if (graph.containsVertex(path)) graph.outDegreeOf(path) else 0,
-                description = file.description
+                dependents = dependentPaths.size,
+                dependencies = dependencyPaths.size,
+                description = file.description,
+                dependentPaths = dependentPaths,
+                dependencyPaths = dependencyPaths
             )
         }
 
