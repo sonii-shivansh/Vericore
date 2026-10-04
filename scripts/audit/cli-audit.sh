@@ -7,6 +7,14 @@ run(){ echo "==> $*"; "$@"; }
 run "$APP" --version
 run "$APP" --help
 for command in analyze impact architecture architecture-drift architecture-contract context-snapshot context-diff reality pr-intelligence repo-qa plan prepare verify ask evolution server mcp setup doctor; do run "$APP" "$command" --help >/dev/null; done
+set +e
+"$APP" setup --provider gemini </dev/null > /tmp/vericore-setup-noninteractive.stdout 2> /tmp/vericore-setup-noninteractive.stderr
+setup_status=$?
+set -e
+test "$setup_status" -ne 0
+test ! -s /tmp/vericore-setup-noninteractive.stdout
+grep -q "Non-interactive 'setup' requires" /tmp/vericore-setup-noninteractive.stderr
+! grep -Eq '^[[:space:]]+at ' /tmp/vericore-setup-noninteractive.stderr
 run "$APP" analyze "$REPO" >/dev/null
 run "$APP" reality "$REPO" --json >/dev/null
 run "$APP" architecture "$REPO" --json >/dev/null
