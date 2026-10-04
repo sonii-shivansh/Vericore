@@ -24,6 +24,14 @@ class ChangeSafetyAnalyzerTest {
     }
 
     @Test
+    fun `fails closed when source changes exist without planned paths`() {
+        val result = ChangeSafetyAnalyzer.verify(changeSet("README.md"), emptyList())
+        assertEquals(SafetyStatus.FAIL, result.status)
+        assertTrue("README.md" in result.unexpectedPaths)
+        assertTrue(result.reasons.any { it.contains("No explicit source paths") })
+    }
+
+    @Test
     fun `requires review for deleted files`() {
         val result = ChangeSafetyAnalyzer.verify(listOf(ChangedFile("src/App.kt", ChangeType.DELETED)), listOf("src/App.kt"))
         assertEquals(SafetyStatus.REVIEW_REQUIRED, result.status)
