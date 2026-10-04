@@ -36,8 +36,8 @@ class CodeParallelParser(private val cacheManager: CacheManager? = null) {
         val total = files.size
 
         val parsedFiles = files.map { file ->
-                async(dispatcher) {
-                    try {
+            async(dispatcher) {
+                try {
                         cacheManager?.getCachedParse(file)?.let { cached ->
                             cached.parseWarning?.let { warnings.incrementAndGet() }
                             val count = processed.incrementAndGet()
@@ -65,8 +65,8 @@ class CodeParallelParser(private val cacheManager: CacheManager? = null) {
                         null
                     }
                 }
-            }.awaitAll()
-        }.filterNotNull()
+            }
+        }.awaitAll().filterNotNull()
 
         lastWarningCount = warnings.get()
         if (lastWarningCount > 0) {
