@@ -14,6 +14,16 @@ curl -fsS "http://127.0.0.1:${PORT}/health/live" >/tmp/vericore-live.json
 curl -fsS "http://127.0.0.1:${PORT}/health/ready" >/tmp/vericore-ready.json
 status=$(curl -sS -o /tmp/vericore-invalid.json -w '%{http_code}' -X POST "http://127.0.0.1:${PORT}/analyze" -H 'Content-Type: application/json' -d '{"repoPath":"https://github.com/example/example.git"}')
 if [[ "$status" =~ ^2|^3 ]]; then echo "REST security audit failed: remote repository URL accepted" >&2; exit 1; fi
+
+status=$(curl -sS -o /tmp/vericore-malformed.json -w '%{http_code}' -X POST "http://127.0.0.1:${PORT}/analyze" -H 'Content-Type: application/json' -d '{"repoPath":')
+test "$status" = "400"
+python3 - <<'PY'
+import json
+from pathlib import Path
+payload=json.loads(Path('/tmp/vericore-malformed.json').read_text())
+assert 'error' in payload
+assert 'Malformed' in payload['error'] or 'unsupported' in payload['error']
+PY
 python3 - <<'PY'
 import json
 from pathlib import Path
