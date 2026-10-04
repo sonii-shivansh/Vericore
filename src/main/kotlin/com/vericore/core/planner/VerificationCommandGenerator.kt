@@ -12,7 +12,7 @@ data class VerificationCommandSet(
 object VerificationCommandGenerator {
     fun generate(root: File): VerificationCommandSet {
         val repository = root.canonicalFile
-        require(repository.isDirectory) { "Repository path is not a directory: \${repository.path}" }
+        require(repository.isDirectory) { "Repository path is not a directory: ${repository.path}" }
 
         val gradleWrapper = repository.resolve("gradlew").takeIf { it.isFile }
             ?: repository.resolve("gradlew.bat").takeIf { it.isFile }
@@ -26,8 +26,8 @@ object VerificationCommandGenerator {
                 val launcher = if (repository.resolve("gradlew").isFile) "./gradlew" else "gradlew.bat"
                 VerificationCommandSet(
                     commands = listOf(
-                        "cd \${shellQuote(repository.path)} && $launcher --no-daemon clean test",
-                        "cd \${shellQuote(repository.path)} && $launcher --no-daemon build installDist"
+                        "cd ${shellQuote(repository.path)} && $launcher --no-daemon clean test",
+                        "cd ${shellQuote(repository.path)} && $launcher --no-daemon build installDist"
                     ),
                     notes = if (mavenPom != null) {
                         listOf("Both Gradle and Maven project files were detected; the Gradle build was selected because a Gradle build/wrapper is present at repository root.")
@@ -42,8 +42,8 @@ object VerificationCommandGenerator {
                 val pomPath = repository.toPath().relativize(mavenPom.toPath()).toString().replace(File.separatorChar, '/')
                 VerificationCommandSet(
                     commands = listOf(
-                        "cd \${shellQuote(repository.path)} && $launcher -f \${shellQuote(pomPath)} clean test",
-                        "cd \${shellQuote(repository.path)} && $launcher -f \${shellQuote(pomPath)} -DskipTests package"
+                        "cd ${shellQuote(repository.path)} && $launcher -f ${shellQuote(pomPath)} clean test",
+                        "cd ${shellQuote(repository.path)} && $launcher -f ${shellQuote(pomPath)} -DskipTests package"
                     ),
                     notes = listOf("Maven verification commands were generated from $pomPath; no Gradle command is assumed."),
                     uncertainties = if (mavenWrapper == null) {
@@ -76,5 +76,5 @@ object VerificationCommandGenerator {
             .firstOrNull()
     }
 
-    private fun shellQuote(value: String): String = "'\${value.replace("'", "'\\''")}'"
+    private fun shellQuote(value: String): String = "'${value.replace("'", "'\\''")}'"
 }
