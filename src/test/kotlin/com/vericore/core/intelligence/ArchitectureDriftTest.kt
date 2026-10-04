@@ -15,7 +15,8 @@ class ArchitectureDriftTest : FunSpec({
         summary = ArchitectureSummary(3, 2, findings.size, cycles.size, 1, 0),
         findings = findings,
         cycles = cycles,
-        layers = layers
+        layers = layers,
+        dependencyEdges = dependencyEdges
     )
 
     test("detects added and removed findings deterministically") {
