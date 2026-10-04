@@ -8,7 +8,9 @@ data class ArchitectureDriftSummary(
     val removedFindings: Int,
     val newCycles: Int,
     val removedCycles: Int,
-    val changedLayers: Int
+    val changedLayers: Int,
+    /** Positive values indicate newly observed dependency edges; negative values indicate removals. */
+    val dependencyEdgesDelta: Int = 0
 )
 
 @Serializable
@@ -47,6 +49,7 @@ object ArchitectureDriftEngine {
 
         val layerNames = (baseline.layers.keys + current.layers.keys).toSortedSet()
         val changedLayers = layerNames.filter { baseline.layers[it] != current.layers[it] }
+        val dependencyEdgesDelta = current.summary.dependencyEdges - baseline.summary.dependencyEdges
 
         val changes = buildList {
             addedFindings.sorted().forEach { key ->
@@ -70,10 +73,20 @@ object ArchitectureDriftEngine {
                     )
                 )
             }
+            if (dependencyEdgesDelta != 0) {
+                val direction = if (dependencyEdgesDelta > 0) "added" else "removed"
+                add(
+                    ArchitectureDriftChange(
+                        "DEPENDENCY_EDGE_COUNT_CHANGED",
+                        "dependency-edges",
+                        "Dependency edge count changed from ${baseline.summary.dependencyEdges} to ${current.summary.dependencyEdges} ($direction ${kotlin.math.abs(dependencyEdgesDelta)})"
+                    )
+                )
+            }
         }
 
         return ArchitectureDriftResult(
-            schemaVersion = "1.0",
+            schemaVersion = "1.1",
             baselineSchemaVersion = baseline.schemaVersion,
             currentSchemaVersion = current.schemaVersion,
             summary = ArchitectureDriftSummary(
@@ -81,7 +94,8 @@ object ArchitectureDriftEngine {
                 removedFindings = removedFindings.size,
                 newCycles = newCycles.size,
                 removedCycles = removedCycles.size,
-                changedLayers = changedLayers.size
+                changedLayers = changedLayers.size,
+                dependencyEdgesDelta = dependencyEdgesDelta
             ),
             changes = changes
         )
