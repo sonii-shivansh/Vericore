@@ -12,8 +12,21 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.serialization.Serializable
 
-data class RepoResult(val name: String, val fileCount: Int, val hotspots: List<Pair<String, Double>>, val error: String? = null)
+@Serializable
+data class RepoHotspot(
+    val path: String,
+    val score: Double
+)
+
+@Serializable
+data class RepoResult(
+    val name: String,
+    val fileCount: Int,
+    val hotspots: List<RepoHotspot>,
+    val error: String? = null
+)
 
 class OrganizationAnalyzer(private val maxConcurrentRepositories: Int = 2) {
     suspend fun analyzeRepositories(repoPaths: List<String>, config: VericoreConfig? = null): List<RepoResult> = coroutineScope {
@@ -35,7 +48,11 @@ class OrganizationAnalyzer(private val maxConcurrentRepositories: Int = 2) {
             val graph = RobustDependencyGraph()
             graph.build(parsedFiles)
             graph.analyze()
-            RepoResult(file.name, parsedFiles.size, graph.getTopHotspots(5))
+            RepoResult(
+                file.name,
+                parsedFiles.size,
+                graph.getTopHotspots(5).map { RepoHotspot(it.first, it.second) }
+            )
         } catch (e: Exception) {
             RepoResult(File(path).name, 0, emptyList(), e.message ?: "Analysis failed")
         }
