@@ -37,6 +37,11 @@ object VerificationCommandGenerator {
                         listOf("Both Gradle and Maven project files were detected; the Gradle build was selected because a Gradle build/wrapper is present at repository root.")
                     } else {
                         emptyList()
+                    },
+                    uncertainties = if (gradleWrapper == null) {
+                        listOf("The repository has no Gradle wrapper; verification assumes 'gradle' is available in the execution environment.")
+                    } else {
+                        emptyList()
                     }
                 )
             }
