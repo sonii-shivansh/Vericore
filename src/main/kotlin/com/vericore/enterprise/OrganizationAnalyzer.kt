@@ -15,10 +15,16 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.Serializable
 
 @Serializable
+data class RepoHotspot(
+    val file: String,
+    val score: Double
+)
+
+@Serializable
 data class RepoResult(
     val name: String,
     val fileCount: Int,
-    val hotspots: List<Pair<String, Double>>,
+    val hotspots: List<RepoHotspot>,
     val error: String? = null
 )
 
@@ -42,7 +48,11 @@ class OrganizationAnalyzer(private val maxConcurrentRepositories: Int = 2) {
             val graph = RobustDependencyGraph()
             graph.build(parsedFiles)
             graph.analyze()
-            RepoResult(file.name, parsedFiles.size, graph.getTopHotspots(5))
+            RepoResult(
+                file.name,
+                parsedFiles.size,
+                graph.getTopHotspots(5).map { (filePath, score) -> RepoHotspot(File(filePath).name, score) }
+            )
         } catch (e: Exception) {
             RepoResult(File(path).name, 0, emptyList(), e.message ?: "Analysis failed")
         }

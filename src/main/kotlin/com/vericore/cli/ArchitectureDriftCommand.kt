@@ -57,7 +57,9 @@ class ArchitectureDriftCommand : CliktCommand(
         echo("├─ Removed findings: ${drift.summary.removedFindings}")
         echo("├─ New cycles: ${drift.summary.newCycles}")
         echo("├─ Removed cycles: ${drift.summary.removedCycles}")
-        echo("└─ Changed layers: ${drift.summary.changedLayers}")
+        echo("├─ Changed layers: ${drift.summary.changedLayers}")
+        echo("├─ Added edges: ${drift.summary.addedEdges}")
+        echo("└─ Removed edges: ${drift.summary.removedEdges}")
         drift.changes.take(20).forEach { change -> echo("   ${change.type}: ${change.key}") }
     }
 }

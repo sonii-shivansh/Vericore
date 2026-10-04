@@ -31,6 +31,9 @@ data class ArchitectureFinding(
 data class ArchitectureCycle(val members: List<String>)
 
 @Serializable
+data class ArchitectureDependencyEdge(val source: String, val target: String)
+
+@Serializable
 data class ArchitectureSummary(
     val filesAnalyzed: Int,
     val dependencyEdges: Int,
@@ -46,13 +49,31 @@ data class ArchitectureIntelligenceResult(
     val summary: ArchitectureSummary,
     val findings: List<ArchitectureFinding>,
     val cycles: List<ArchitectureCycle>,
-    val layers: Map<String, Int>
+    val layers: Map<String, Int>,
+    val dependencyEdges: List<ArchitectureDependencyEdge> = emptyList()
 )
 
 object ArchitectureIntelligenceEngine {
     fun analyze(graph: Graph<String, DefaultEdge>, repoRoot: File, ruleConfig: ArchitectureRuleConfig = ArchitectureRuleConfig()): ArchitectureIntelligenceResult {
+        val dependencyEdges = graph.edgeSet()
+            .map { edge ->
+                ArchitectureDependencyEdge(
+                    source = relativePath(graph.getEdgeSource(edge), repoRoot),
+                    target = relativePath(graph.getEdgeTarget(edge), repoRoot)
+                )
+            }
+            .distinct()
+            .sortedWith(compareBy<ArchitectureDependencyEdge> { it.source }.thenBy { it.target })
+
         if (!ruleConfig.enabled) {
-            return ArchitectureIntelligenceResult("1.0", ArchitectureSummary(graph.vertexSet().size, graph.edgeSet().size, 0, 0, 0, 0), emptyList(), emptyList(), emptyMap())
+            return ArchitectureIntelligenceResult(
+                "1.1",
+                ArchitectureSummary(graph.vertexSet().size, graph.edgeSet().size, 0, 0, 0, 0),
+                emptyList(),
+                emptyList(),
+                emptyMap(),
+                dependencyEdges
+            )
         }
         val layerByPath = graph.vertexSet().associateWith { path -> detectLayer(path, repoRoot, ruleConfig.layers) }
         val findings = mutableListOf<ArchitectureFinding>()
@@ -84,7 +105,7 @@ object ArchitectureIntelligenceEngine {
         val layerCounts = layerByPath.values.filterNotNull().groupingBy { it }.eachCount().toSortedMap()
         val sortedFindings = findings.distinctBy { listOf(it.ruleId, it.source, it.target, it.relationship, it.evidence) }
             .sortedWith(compareBy<ArchitectureFinding> { it.severityOrder() }.thenBy { it.ruleId }.thenBy { it.source }.thenBy { it.target.orEmpty() })
-        return ArchitectureIntelligenceResult("1.0", ArchitectureSummary(graph.vertexSet().size, graph.edgeSet().size, sortedFindings.size, cycles.size, crossLayerDependencies, highCouplingFiles.size), sortedFindings, cycles, layerCounts)
+        return ArchitectureIntelligenceResult("1.1", ArchitectureSummary(graph.vertexSet().size, graph.edgeSet().size, sortedFindings.size, cycles.size, crossLayerDependencies, highCouplingFiles.size), sortedFindings, cycles, layerCounts, dependencyEdges)
     }
 
     private fun detectLayer(path: String, repoRoot: File, layers: List<ArchitectureLayer>): String? {

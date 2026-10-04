@@ -1,5 +1,6 @@
 package com.vericore.cli
 
+import com.vericore.core.ai.DependencyPaths
 import com.vericore.core.ai.GroundedEvidenceBuilder
 import com.vericore.core.cache.CacheManager
 import com.vericore.core.graph.RobustDependencyGraph
@@ -55,7 +56,23 @@ class RepositoryQACommand : CliktCommand(name = "repo-qa", help = "Retrieve grou
             hasCycles = graph.hasCycles,
             parseFailures = parseFailures
         )
-        val grounded = GroundedEvidenceBuilder.fromSnapshot(snapshot)
+        val dependencyPaths = enriched.associate { parsed ->
+            val sourcePath = parsed.file.absolutePath
+            val dependents = if (graph.graph.containsVertex(sourcePath)) {
+                graph.graph.incomingEdgesOf(sourcePath)
+                    .map { graph.graph.getEdgeSource(it) }
+                    .map { repositoryRelativePath(root, it) }
+                    .sorted()
+            } else emptyList()
+            val dependencies = if (graph.graph.containsVertex(sourcePath)) {
+                graph.graph.outgoingEdgesOf(sourcePath)
+                    .map { graph.graph.getEdgeTarget(it) }
+                    .map { repositoryRelativePath(root, it) }
+                    .sorted()
+            } else emptyList()
+            sourcePath to DependencyPaths(dependents = dependents, dependencies = dependencies)
+        }
+        val grounded = GroundedEvidenceBuilder.fromSnapshot(snapshot, dependencyPaths = dependencyPaths)
         val parsedQuestion = RepositoryQuestionClassifier.classify(question)
         val result = RepositoryEvidenceRetriever().retrieve(parsedQuestion, grounded, maxResults)
 
@@ -67,4 +84,7 @@ class RepositoryQACommand : CliktCommand(name = "repo-qa", help = "Retrieve grou
         }
         echo(json.encodeToString(result))
     }
+
+    private fun repositoryRelativePath(root: File, file: String): String =
+        root.toPath().relativize(File(file).canonicalFile.toPath()).toString().replace(File.separatorChar, '/')
 }

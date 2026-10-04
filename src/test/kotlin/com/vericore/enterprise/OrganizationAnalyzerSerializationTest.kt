@@ -12,13 +12,14 @@ class OrganizationAnalyzerSerializationTest {
         val result = RepoResult(
             name = "payments",
             fileCount = 12,
-            hotspots = listOf("PaymentService.kt" to 0.42),
+            hotspots = listOf(RepoHotspot("PaymentService.kt", 0.42)),
         )
 
         val encoded = Json.encodeToString(result)
 
         assertTrue(encoded.contains("\"name\":\"payments\""))
         assertTrue(encoded.contains("\"fileCount\":12"))
+        assertTrue(encoded.contains("\"file\":\"PaymentService.kt\""))
         assertEquals(result, Json.decodeFromString<RepoResult>(encoded))
     }
 }
