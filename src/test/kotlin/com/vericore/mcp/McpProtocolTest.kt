@@ -101,7 +101,10 @@ class McpProtocolTest {
             })
             val result = get["result"]?.toString() ?: ""
             assertTrue(result.contains("fingerprint"))
-            assertTrue(result.contains(root.canonicalPath))
+            val resultJson = kotlinx.serialization.json.Json.parseToJsonElement(result).jsonObject
+            val contentText = resultJson["content"]?.jsonArray?.joinToString("") { it.jsonObject["text"]?.jsonPrimitive?.content ?: "" } ?: ""
+            val returnedContract = kotlinx.serialization.json.Json.parseToJsonElement(contentText).jsonObject
+            assertEquals(root.canonicalPath, returnedContract["repository"]?.jsonPrimitive?.content)
         } finally {
             root.deleteRecursively()
         }
