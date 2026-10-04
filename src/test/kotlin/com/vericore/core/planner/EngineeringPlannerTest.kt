@@ -58,6 +58,27 @@ class EngineeringPlannerTest {
     }
 
     @Test
+    fun `Gradle project without wrapper does not invent a wrapper command`() {
+        val repo = Files.createTempDirectory("vericore-plan-gradle-").toFile()
+        try {
+            repo.resolve("build.gradle.kts").writeText("plugins { java }")
+            val plan = planner.plan(
+                EngineeringPlanRequest(
+                    changeSummary = "Update service",
+                    changedPaths = listOf("src/Service.kt"),
+                    evidence = GroundedEvidence(citations = emptyList()),
+                    repositoryPath = repo.path
+                )
+            )
+            assertTrue(plan.verificationCommands.all { "gradle" in it })
+            assertTrue(plan.verificationCommands.none { "./gradlew" in it })
+            assertTrue(plan.uncertainties.any { it.contains("no Gradle wrapper") })
+        } finally {
+            repo.deleteRecursively()
+        }
+    }
+
+    @Test
     fun `nested Maven project generates Maven commands without Gradle assumptions`() {
         val repo = Files.createTempDirectory("vericore-plan-maven-").toFile()
         try {
