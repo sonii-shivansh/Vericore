@@ -127,6 +127,25 @@ printf '%s\n' 'class Unicode { int changed = 1; }' > "$unicode_fixture/src/Ünic
 "$APP" pr-intelligence "$unicode_fixture" --json >/dev/null
 test -s "$unicode_fixture/output/pr-intelligence.json"
 
+malformed_fixture="$(mktemp -d)"
+trap 'rm -rf "$doctor_fixture" "$contract_fixture" "$qa_fixture" "$drift_fixture" "$review_fixture" "$unicode_fixture" "$malformed_fixture"' EXIT
+printf '%s\n' 'class Broken {' > "$malformed_fixture/Broken.java"
+set +e
+"$APP" analyze "$malformed_fixture" > "$malformed_fixture/fail.log" 2>&1
+parse_status=$?
+set -e
+test "$parse_status" -ne 0
+grep -q "reported parser diagnostics" "$malformed_fixture/fail.log"
+"$APP" analyze "$malformed_fixture" --allow-parse-errors > "$malformed_fixture/allow.log" 2>&1
+test -s "$malformed_fixture/output/index.html"
+
+set +e
+"$APP" server --host vericore-invalid-host.invalid --port 18181 > /tmp/vericore-server-host.txt 2>&1
+host_status=$?
+set -e
+test "$host_status" -ne 0
+grep -q "Unable to resolve server host" /tmp/vericore-server-host.txt
+
 set +e
 "$APP" evolution . --months 0 > /tmp/vericore-evolution-invalid.txt 2>&1
 evolution_status=$?
