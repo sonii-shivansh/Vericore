@@ -4,6 +4,7 @@ import com.vericore.core.planner.EngineeringPlan
 import com.vericore.core.workflow.AgentChangeContract
 import com.vericore.core.workflow.EngineeringVerification
 import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.core.ProgramResult
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import java.io.File
@@ -38,7 +39,8 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
         }
         echo("Status: ${result.status}")
         if (result.status == com.vericore.core.workflow.SafetyStatus.FAIL) {
-            throw IllegalStateException("Change verification failed: the prepared contract or change scope is invalid")
+            echo("❌ Change verification failed: the prepared contract or change scope is invalid")
+            throw ProgramResult(1)
         }
     }
 }
