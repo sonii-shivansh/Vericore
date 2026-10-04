@@ -1,17 +1,23 @@
-# Vericore 0.8.0 Release Readiness
+# Vericore 0.8.0 Release Readiness & Release Record
 
-This document is the pre-release operational contract for the **0.8.0 candidate on `main`**. It is maintained before publication so the release does not require a post-release documentation catch-up pass.
+> **Status: Released** — Vericore `v0.8.0` was published on 2026-10-04.
+>
+> This document preserves the pre-release certification contract and records the final published release state. The checklist and workflow descriptions below are historical release evidence for `v0.8.0`; future releases should use the same release workflow and certification model with their target version.
 
-## Current release state
+## Published release state
 
-- Release target: `0.8.0`
-- Latest published release: `v0.7.0`
+- Release: `v0.8.0`
+- Published: 2026-10-04
+- Published release: `v0.8.0`
 - 0.8.0 preparation PR: **#131 — merged**
-- Current candidate ref: `main`
-- Exact release candidate SHA: the SHA recorded by the final machine-readable readiness certificate produced by `release-audit.yml`
+- 0.8.0 release hardening PR: **#132 — merged**
+- Certified release ref: `main`
+- Certified and released SHA: `ccf15df7ec4cfd378465862fab9d926c1ac756c1`
+- Git tag: `v0.8.0`
+- Release publication: completed by `release.yml` after release certification passed
 - Local end-to-end execution: not required for release certification; GitHub Actions is the authoritative clean-environment execution path
 
-Documentation cleanup after PR #131 is intentionally treated as part of the 0.8.0 candidate. The complete release certification must therefore run again against the final documentation state before publication.
+The final candidate was certified before publication. The published tag points to the certified `main` commit above. Post-release documentation is maintained separately from the immutable release commit.
 
 ## Workflow responsibility matrix
 
@@ -48,9 +54,9 @@ Documentation cleanup after PR #131 is intentionally treated as part of the 0.8.
 
 The reusable workflows own their execution logic. `release-audit.yml` composes them rather than duplicating their tests. DCO remains independent because repository governance is separate from product certification.
 
-## Certification contract
+## Certification contract used for 0.8.0
 
-`release-audit.yml` must certify, at minimum:
+`release-audit.yml` certified, at minimum:
 
 1. deterministic build/test/distribution behavior;
 2. Windows CI;
@@ -64,7 +70,7 @@ The reusable workflows own their execution logic. `release-audit.yml` composes t
 10. Spring Petclinic output quality;
 11. RuneLite output quality.
 
-Only after every required dependency succeeds may the readiness-certificate job produce `overallReady: true`.
+Only after every required dependency succeeded could the readiness-certificate job produce `overallReady: true`.
 
 ## Machine-readable readiness certificate
 
@@ -82,9 +88,11 @@ The certificate binds:
 
 It fails closed: a failed, cancelled, skipped, neutral, or missing required certification cannot produce a ready certificate.
 
-## Publication gate
+For 0.8.0, the final readiness evidence certified the release candidate before publication.
 
-`release.yml` invokes the release audit before version resolution, packaging, or publication.
+## Publication gate used for 0.8.0
+
+`release.yml` invoked the release audit before version resolution, packaging, or publication.
 
 ```text
 main candidate
@@ -102,27 +110,27 @@ platform artifacts + checksums
 GitHub Release
 ```
 
-If certification fails or is missing, release publication must not proceed.
+Certification initially encountered a live AI output-quality failure. The release was not published until the failed certification was rerun successfully. This preserved the fail-closed release boundary rather than weakening the gate.
 
-## Documentation policy
+## Documentation policy used for 0.8.0
 
-The 0.8.0 documentation freeze occurs **before** publication. The final certification candidate must include:
+The 0.8.0 documentation freeze occurred **before** publication. The final certification candidate included:
 
 - the complete CLI reference;
 - current architecture and safety contracts;
 - current REST and MCP contracts;
 - current implementation-status documentation;
 - current release-readiness information;
-- no duplicate or superseded internal release-planning documents that are presented as public product documentation.
+- no duplicate or superseded internal release-planning documents presented as public product documentation.
 
-## Final release gate
+The documentation changes in the separate post-release documentation branch update release-state language without modifying the published `v0.8.0` commit.
 
-Before publishing `v0.8.0`:
+## Final release gate — completed
 
-- [ ] all required GitHub Actions checks are green on the exact final candidate;
-- [ ] the readiness certificate identifies that exact candidate SHA, ref, and version;
-- [ ] real-repository gates prove expected behavior and repository immutability;
-- [ ] platform, onboarding, Windows, Linux, regression, and live-repository evidence are included;
-- [ ] CLI documentation matches the implemented command surface;
-- [ ] no post-release documentation update is required to describe the release;
-- [ ] `release.yml` can publish only after successful certification.
+- [x] all required GitHub Actions checks were green on the exact final candidate;
+- [x] the readiness certificate identified the exact candidate SHA, ref, and version;
+- [x] real-repository gates proved expected behavior and repository immutability;
+- [x] platform, onboarding, Windows, Linux, regression, and live-repository evidence were included;
+- [x] CLI documentation matched the implemented command surface;
+- [x] `release.yml` published only after successful certification;
+- [x] `v0.8.0` was published successfully from the certified candidate.
