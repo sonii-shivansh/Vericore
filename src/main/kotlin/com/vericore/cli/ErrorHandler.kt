@@ -17,9 +17,13 @@ object ErrorHandler {
                 System.err.println("❌ ${e.message}")
             }
             else -> {
-                logger.error(e) { "Unexpected error occurred" }
-                System.err.println("❌ An unexpected error occurred: ${e.message}")
-                System.err.println("   Check the logs for more details.")
+                logger.error { "Unexpected error occurred: ${e::class.simpleName}: ${e.message}" }
+                System.err.println("❌ An unexpected error occurred: ${e.message ?: e::class.simpleName}")
+                if (System.getenv("VERICORE_DEBUG") == "1") {
+                    e.printStackTrace(System.err)
+                } else {
+                    System.err.println("   Re-run with VERICORE_DEBUG=1 for a stack trace.")
+                }
             }
         }
     }
