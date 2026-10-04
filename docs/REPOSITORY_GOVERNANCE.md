@@ -20,7 +20,7 @@ The website favicon SVG is the canonical project icon. Do not create a second lo
 These controls live in Git and should be reviewed like code:
 
 - DCO verification runs independently on pull requests targeting `main`.
-- The `0.8.0 Release Audit` is the authoritative PR release-certification workflow for `main` and composes the reusable CI, verification, platform, onboarding, regression, and live-repository workflows.
+- The `Release Audit` is the authoritative PR release-certification workflow for `main` and composes the reusable CI, verification, platform, onboarding, regression, and live-repository workflows.
 - `ci.yml`, `verification.yml`, `platform.yml`, `onboarding-e2e.yml`, `phase1-regression.yml`, `phase4-regression.yml`, `live-repository-gate.yml`, and `live-output-quality.yml` are reusable workflows and are not independent PR-triggered merge gates.
 - Dependabot configuration covers Gradle and GitHub Actions.
 - Security vulnerability reporting remains governed by `SECURITY.md`; vulnerabilities should not be disclosed through public issues.
@@ -68,7 +68,7 @@ Create or update a ruleset for `main` with these requirements:
 
 The current workflow architecture has one authoritative product/release certification check plus independent DCO governance:
 
-1. **0.8.0 Release Audit** — authoritative candidate certification on pull requests targeting `main`;
+1. **Release Audit** — authoritative candidate certification on pull requests targeting `main`;
 2. **Check commit sign-offs** — independent DCO governance check.
 
 The reusable workflows called by the release audit should not be added individually as required status checks, because that would duplicate the certification graph at the branch-ruleset layer.

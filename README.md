@@ -200,7 +200,7 @@ See [Contributing](CONTRIBUTING.md) and [Development](docs/DEVELOPMENT.md).
 | PR Intelligence | [PR Intelligence](docs/PR_INTELLIGENCE.md) |
 | Data & Privacy | [Data & Privacy](docs/DATA_PRIVACY.md) |
 | Development | [Development](docs/DEVELOPMENT.md) |
-| Implementation status | [Implementation Status](docs/ENTERPRISE_ROADMAP.md) |
+| Implementation status | [Implementation Status](docs/IMPLEMENTATION_STATUS.md) |
 | Contributing | [Contributing](CONTRIBUTING.md) |
 | Security | [Security](SECURITY.md) |
 

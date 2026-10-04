@@ -201,7 +201,7 @@ The clean-environment workflows validate:
 - macOS x64
 - macOS ARM64
 - live repository mutation and immutability checks
-- deterministic 0.8.0 release audit
+- deterministic release audit
 
 GitHub Actions is the authoritative automated execution environment for release verification.
 
