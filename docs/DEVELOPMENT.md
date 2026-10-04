@@ -4,7 +4,9 @@
 
 ## Before you start
 
-Read [Getting Started](GETTING_STARTED.md) if you have not built Vericore before.
+Read [Getting Started](GETTING_STARTED.md) for installation and first use.
+
+For the complete command contract, use [CLI Reference](CLI.md). It is the single source for command syntax, options, defaults, output artifacts, and command-level failure behavior.
 
 ### Prerequisites
 
@@ -13,9 +15,7 @@ Read [Getting Started](GETTING_STARTED.md) if you have not built Vericore before
 - Kotlin-capable editor
 - Bash, PowerShell, or another shell supported by the Gradle wrapper
 
-## The development loop
-
-Use a small, evidence-driven loop:
+## Development loop
 
 ```text
 understand
@@ -33,7 +33,7 @@ CI
 review
 ```
 
-For significant behavior changes, document the intended behavior before implementation. Keep one pull request focused on one coherent change.
+For significant behavior changes, define the intended contract before implementation. Keep one pull request focused on one coherent change.
 
 ## Build and test
 
@@ -49,22 +49,25 @@ The installed CLI is:
 ./build/install/vericore/bin/vericore --version
 ```
 
-GitHub Actions is the authoritative clean-environment validation path. When local hardware is unavailable, use CI to validate the application and inspect the complete workflow logs and artifacts.
+GitHub Actions is the authoritative clean-environment validation path. When local hardware is unavailable, use CI logs and artifacts as the execution evidence rather than inferring success from source inspection.
 
 ## CLI smoke test
 
 ```bash
 ./build/install/vericore/bin/vericore --help
 ./build/install/vericore/bin/vericore --version
+./build/install/vericore/bin/vericore doctor
 ./build/install/vericore/bin/vericore analyze .
+./build/install/vericore/bin/vericore evidence-graph . --json
 ./build/install/vericore/bin/vericore reality . --json
 ./build/install/vericore/bin/vericore repo-qa "why is this component risky?" --path . --evidence-output output/grounded-evidence.json
 ./build/install/vericore/bin/vericore plan "change the component" --evidence output/grounded-evidence.json --output output/engineering-plan.json
 ./build/install/vericore/bin/vericore prepare "change the component"
-./build/install/vericore/bin/vericore verify --plan output/engineering-plan.json --contract output/agent-change-contract.json
+# make the change
+./build/install/vericore/bin/vericore verify
 ```
 
-A successful `prepare` produces repository-scoped context, plan, and Agent Change Contract artifacts. Do not replace the persisted contract before `verify`.
+See [CLI Reference](CLI.md) for the complete command surface.
 
 ## Local server
 
@@ -73,7 +76,7 @@ A successful `prepare` produces repository-scoped context, plan, and Agent Chang
 curl --fail http://127.0.0.1:8080/health
 ```
 
-Keep the server bound to loopback for local development. Do not expose it publicly without an appropriate deployment boundary providing authentication, authorization, TLS, trusted-origin controls, quotas, and report-retention controls.
+Keep the server bound to loopback for local development. A deployment boundary must provide authentication, authorization, TLS, trusted-origin controls, quotas, and appropriate report access before exposing Vericore beyond a trusted local/internal environment.
 
 See [API](API.md).
 
@@ -116,8 +119,8 @@ src/main/kotlin/com/vericore/
 └── server/                   # Ktor API boundary
 
 src/test/kotlin/              # unit, property, security, CLI, server, and E2E tests
-docs/                         # architecture, contracts, integration, and contributor docs
-.github/workflows/            # authoritative CI and release verification
+docs/                         # architecture, contracts, integrations, and contributor docs
+.github/workflows/            # CI and release verification
 ```
 
 ## Engineering boundaries
@@ -141,7 +144,7 @@ For the architectural model, see [Architecture](ARCHITECTURE.md).
 4. Add unit/property tests, including edge cases.
 5. Convert important facts to grounded evidence where applicable.
 6. Add CLI/REST/MCP adapters only after the core contract is stable.
-7. Update the relevant API, architecture, MCP, and implementation-status documentation.
+7. Update [CLI](CLI.md), [API](API.md), [MCP](MCP.md), architecture, and implementation-status documentation as applicable.
 
 ## Adding a parser
 
@@ -190,7 +193,7 @@ Before opening or updating a pull request:
 ./gradlew --no-daemon build installDist
 ```
 
-Then inspect the complete diff and let the full GitHub Actions matrix run. Do not treat one green local command as release evidence.
+Then inspect the complete diff and let the GitHub Actions matrix run. Do not treat one green local command as release evidence.
 
 A pull request should explain:
 
@@ -207,10 +210,10 @@ For AI-assisted features, also document evidence sources, provider boundaries, d
 
 1. Confirm the application version and `build.gradle.kts` agree.
 2. Update `CHANGELOG.md` and implementation-status documentation.
-3. Freeze root and `docs/` Markdown before publication; do not defer documentation updates until after the release.
-4. Run the complete `0.8.0 Release Audit`, including Windows, Linux, cross-platform, onboarding, regression, and real-repository E2E/output-quality checks.
+3. Freeze root and `docs/` Markdown before publication; do not defer documentation updates until after release.
+4. Run the complete 0.8.0 release certification, including Windows, Linux, cross-platform, onboarding, regression, live-repository, and output-quality checks.
 5. Confirm the machine-readable readiness certificate identifies the exact candidate SHA, ref, version, and successful required checks.
-6. Confirm the release workflow invokes the release audit before version resolution, packaging, or publication.
+6. Confirm the release workflow invokes release certification before version resolution, packaging, or publication.
 7. Review generated artifacts, checksums, and dependency changes.
 8. Review security and data-handling implications.
 9. Confirm Agent Change Contract mutation tests pass.
@@ -218,4 +221,4 @@ For AI-assisted features, also document evidence sources, provider boundaries, d
 
 ## Documentation ownership
 
-When behavior or a public contract changes, update the relevant documentation in the same pull request. Prefer linking to one authoritative contract over copying the same rules into several files.
+When behavior or a public contract changes, update the relevant documentation in the same change. The CLI contract belongs in [CLI Reference](CLI.md); REST contracts belong in [API](API.md); MCP contracts belong in [MCP](MCP.md). Prefer links to authoritative contracts over duplicated rules.
