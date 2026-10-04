@@ -94,6 +94,60 @@ grep -q "Removed edges: 1" "$drift_fixture/drift.log"
 grep -q "EDGE_ADDED: A.kt|C.kt" "$drift_fixture/drift.log"
 grep -q "EDGE_REMOVED: A.kt|B.kt" "$drift_fixture/drift.log"
 
-echo "Historical 0.8.1 regression audit: PASS"
+# Release-blocker regressions.
+review_fixture="$(mktemp -d)"
+unicode_fixture="$(mktemp -d)"
+trap 'rm -rf "$doctor_fixture" "$contract_fixture" "$qa_fixture" "$drift_fixture" "$review_fixture" "$unicode_fixture"' EXIT
+
+mkdir -p "$review_fixture/src"
+printf '%s\n' 'class Related {}' > "$review_fixture/src/Related.java"
+git -C "$review_fixture" init -q
+git -C "$review_fixture" config user.name "Vericore Audit"
+git -C "$review_fixture" config user.email "audit@example.com"
+git -C "$review_fixture" add .
+git -C "$review_fixture" commit -qm "baseline"
+printf '%s\n' 'class Related { int value = 1; }' > "$review_fixture/src/Related.java"
+cat > "$review_fixture/output/engineering-plan.json" <<'JSON'
+{"schemaVersion":"1.1","changeSummary":"test scope","repository":"","affectedComponents":["src/Related.java"],"plannedPaths":[],"concerns":[],"riskLevel":"LOW","steps":[],"verificationCommands":[],"evidenceIds":[],"uncertainties":[],"contractFingerprint":""}
+JSON
+python3 - "$review_fixture/output/engineering-plan.json" "$review_fixture" <<'PY'
+import json, pathlib, sys
+p=pathlib.Path(sys.argv[1]); d=json.loads(p.read_text()); d["repository"]=str(pathlib.Path(sys.argv[2]).resolve()); p.write_text(json.dumps(d))
+PY
+printf '%s\n' '{"schemaVersion":"2.0","repository":"","changeSummary":"test scope","preparedHead":"","plannedPaths":[],"expectedChangeTypes":{},"expectedComponents":["src/Related.java"],"verificationCommands":[],"evidenceIds":[],"architectureExpectations":[],"fingerprint":"invalid"}' > "$review_fixture/output/agent-change-contract.json"
+set +e
+"$APP" verify --path "$review_fixture" --plan "$review_fixture/output/engineering-plan.json" --contract "$review_fixture/output/agent-change-contract.json" > "$review_fixture/review.log" 2>&1
+review_status=$?
+set -e
+test "$review_status" -ne 0
+grep -q "did not pass" "$review_fixture/review.log"
+
+mkdir -p "$unicode_fixture/src"
+printf '%s\n' 'class Unicode {}' > "$unicode_fixture/src/Ünicode.java"
+git -C "$unicode_fixture" init -q
+git -C "$unicode_fixture" config user.name "Vericore Audit"
+git -C "$unicode_fixture" config user.email "audit@example.com"
+git -C "$unicode_fixture" add .
+git -C "$unicode_fixture" commit -qm "baseline"
+printf '%s\n' 'class Unicode { int changed = 1; }' > "$unicode_fixture/src/Ünicode.java"
+"$APP" pr-intelligence "$unicode_fixture" --json >/dev/null
+test -s "$unicode_fixture/output/pr-intelligence.json"
+
+set +e
+"$APP" evolution . --months 0 > /tmp/vericore-evolution-invalid.txt 2>&1
+evolution_status=$?
+set -e
+test "$evolution_status" -ne 0
+grep -q -- "--months must be greater than 0" /tmp/vericore-evolution-invalid.txt
+
+set +e
+"$APP" ask "noninteractive setup probe" </dev/null > /tmp/vericore-ask-noninteractive.txt 2>&1
+ask_status=$?
+set -e
+if [[ "$ask_status" -eq 0 ]]; then
+  echo "ask unexpectedly succeeded without AI configuration" >&2
+  exit 1
+fi
+grep -q "Non-interactive 'ask' cannot prompt" /tmp/vericore-ask-noninteractive.txt\n\necho "Historical 0.8.1 regression audit: PASS"
 
 echo "CLI audit: PASS"
