@@ -76,7 +76,7 @@ object GroundedEvidenceBuilder {
                             "dependencies" to hotspot.dependencies.toString(),
                             "churn" to hotspot.churn.toString()
                         ),
-                        relatedPaths = dependencyPaths[hotspot.path]?.dependents.orEmpty()
+                        relatedPaths = dependencyPaths[hotspot.path]?.dependents.orEmpty().sorted()
                     )
                 )
             }
@@ -100,7 +100,7 @@ object GroundedEvidenceBuilder {
                                 "churn" to file.churn.toString(),
                                 "pageRank" to file.pageRank.toString()
                             ),
-                            relatedPaths = dependencyPaths[file.path]?.dependents.orEmpty()
+                            relatedPaths = dependencyPaths[file.path]?.dependents.orEmpty().sorted()
                         )
                     )
                 }
