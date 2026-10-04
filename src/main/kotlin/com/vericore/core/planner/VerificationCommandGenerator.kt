@@ -23,7 +23,11 @@ object VerificationCommandGenerator {
 
         return when {
             gradleWrapper != null || hasGradleBuild -> {
-                val launcher = if (repository.resolve("gradlew").isFile) "./gradlew" else "gradlew.bat"
+                val launcher = when {
+                    repository.resolve("gradlew").isFile -> "./gradlew"
+                    repository.resolve("gradlew.bat").isFile -> "gradlew.bat"
+                    else -> "gradle"
+                }
                 VerificationCommandSet(
                     commands = listOf(
                         "cd ${shellQuote(repository.path)} && $launcher --no-daemon clean test",
