@@ -27,6 +27,10 @@ class ImprovedAnalyzeCommand : CliktCommand(
     private val noCache by option("--no-cache").flag()
     private val clearCache by option("--clear-cache").flag()
     private val noSnapshot by option("--no-snapshot").flag()
+    private val allowParseErrors by option(
+        "--allow-parse-errors",
+        help = "Continue analysis even when source parsers report diagnostics"
+    ).flag()
     private val verbose by option("--verbose", "-v").flag()
 
     override fun run() {
@@ -66,7 +70,15 @@ class ImprovedAnalyzeCommand : CliktCommand(
                 }
                 echo("   Parsed ${parsedFiles.size} files")
                 val failedCount = parser.lastWarningCount
-                if (failedCount > 0) echo("   ⚠️  $failedCount files reported parser diagnostics")
+                if (failedCount > 0) {
+                    echo("   ⚠️  $failedCount files reported parser diagnostics")
+                    if (!allowParseErrors) {
+                        throw IllegalStateException(
+                            "Analysis aborted: $failedCount source file(s) reported parser diagnostics. " +
+                                "Re-run with --allow-parse-errors only when degraded analysis is intentional."
+                        )
+                    }
+                }
 
                 echo("📜 Analyzing Git history...")
                 val enrichedFiles = try {
