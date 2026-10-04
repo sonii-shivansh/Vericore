@@ -4,6 +4,8 @@ PR Intelligence converts a local Git change set into a deterministic engineering
 
 ## CLI
 
+The complete command syntax is maintained in [CLI Reference](CLI.md). The PR Intelligence-specific forms are:
+
 ```bash
 vericore pr-intelligence /path/to/repository --json
 
@@ -14,6 +16,8 @@ vericore pr-intelligence /path/to/repository \
 ```
 
 The JSON report is written to `output/pr-intelligence.json` when JSON output is requested.
+
+`--base` and `--head` must be supplied together. If neither is supplied, the current working tree is analyzed.
 
 ## REST
 
