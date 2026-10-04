@@ -35,6 +35,31 @@ class EngineeringContextGatewayTest {
     }
 
     @Test
+    fun `change safety never widens empty planned scope to affected components`() {
+        val root = Files.createTempDirectory("gateway-safety-scope").toFile()
+        try {
+            root.resolve("src/App.kt").apply { parentFile.mkdirs(); writeText("class App") }
+            val plan = Json { encodeDefaults = true }.encodeToJsonElement(
+                com.vericore.core.planner.EngineeringPlan.serializer(),
+                com.vericore.core.planner.EngineeringPlan(
+                    changeSummary = "test scope",
+                    repository = root.canonicalPath,
+                    affectedComponents = listOf("src/Related.kt"),
+                    plannedPaths = emptyList(),
+                    concerns = emptyList(),
+                    riskLevel = com.vericore.core.planner.RiskLevel.LOW,
+                    steps = emptyList(),
+                    verificationCommands = emptyList(),
+                    evidenceIds = emptyList()
+                )
+            ).jsonObject
+            val result = EngineeringContextGateway.changeSafety(root.path, plan)
+            val status = result["status"]?.toString()?.trim('"')
+            assertEquals("REVIEW_REQUIRED", status)
+        } finally { root.deleteRecursively() }
+    }
+
+    @Test
     fun `change contract gateway returns persisted artifact without regeneration`() {
         val root = Files.createTempDirectory("gateway-contract").toFile()
         try {
