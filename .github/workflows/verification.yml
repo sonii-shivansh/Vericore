@@ -2,10 +2,7 @@ name: Verification
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_call:
 
 permissions:
   contents: read
@@ -244,10 +241,10 @@ jobs:
         run: |
           grep -F "Vericore API is running" response.txt
           health="$(curl --fail --silent http://127.0.0.1:18080/health)"
-          echo "$health" | grep -F '"status":"healthy"'
-          echo "$health" | grep -F '"version":"${{ steps.version.outputs.version }}"'
-          curl --fail --silent http://127.0.0.1:18080/health/live | grep -F '"status":"live"'
-          curl --fail --silent http://127.0.0.1:18080/health/ready | grep -F '"status":"ready"'
+          echo "$health" | grep -F '\"status\":\"healthy\"'
+          echo "$health" | grep -F '\"version\":\"${{ steps.version.outputs.version }}\"'
+          curl --fail --silent http://127.0.0.1:18080/health/live | grep -F '\"status\":\"live\"'
+          curl --fail --silent http://127.0.0.1:18080/health/ready | grep -F '\"status\":\"ready\"'
 
       - name: Verify API input security boundaries
         run: |
