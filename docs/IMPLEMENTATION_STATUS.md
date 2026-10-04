@@ -207,7 +207,7 @@ GitHub Actions is the authoritative automated execution environment for release 
 
 ## Current release line
 
-`v0.8.0` is the **release candidate being prepared from the current `main` line**. `v0.7.0` remains the latest published Vericore release until the 0.8.0 release workflow completes. Earlier public releases were published under the former project name.
+`v0.8.0` is the **latest published Vericore release** on the current `main` line. It was published on 2026-10-04 after the release certification and publication workflow completed successfully. Earlier public releases were published under the former project name.
 
 ## Current limitations
 

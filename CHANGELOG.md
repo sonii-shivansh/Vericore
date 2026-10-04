@@ -6,9 +6,9 @@ All notable changes to Vericore are documented here. The format follows [Keep a 
 
 ## [Unreleased]
 
-Post-0.8.0 changes only. Keep this section for work that is intentionally outside the 0.8.0 release candidate.
+Changes after `0.8.0` only. Keep this section for work that is intentionally outside the published 0.8.0 release.
 
-## [0.8.0] — Unpublished release candidate
+## [0.8.0] — 2026-10-04
 
 ### Added
 
@@ -41,9 +41,10 @@ Post-0.8.0 changes only. Keep this section for work that is intentionally outsid
 ### Release engineering
 
 - Application and Gradle build version aligned to `0.8.0`.
-- Release packaging continues to cover Linux x64, Windows x64, macOS x64, and macOS ARM64 with bundled Java runtimes and SHA-256 checksums.
+- Release packaging covers Linux x64, Windows x64, macOS x64, and macOS ARM64 with bundled Java runtimes and SHA-256 checksums.
 - Release validation covers deterministic analysis, grounded intelligence, semantic evidence graph materialization, Engineering Reality, prepare/verify contracts, MCP, REST, and live-repository gates.
-- Pre-release certification is performed through GitHub Actions before publication; the release workflow is blocked until the candidate passes the release audit.
+- Pre-release certification was performed through GitHub Actions before publication; the release workflow was blocked until the candidate passed the release audit.
+- `v0.8.0` was published successfully on 2026-10-04 with platform archives and SHA-256 checksums.
 
 ## [0.7.0] — 2026-10-03
 
