@@ -94,7 +94,15 @@ jobs:
           class Broken {
           JAVA
 
-          "$CLI" analyze "$fixture" --no-cache
+          set +e
+          "$CLI" analyze "$fixture" --no-cache > /tmp/phase1-parse-failure.txt 2>&1
+          status=$?
+          set -e
+          cat /tmp/phase1-parse-failure.txt
+          test "$status" -ne 0
+          grep -F "reported parser diagnostics" /tmp/phase1-parse-failure.txt
+
+          "$CLI" analyze "$fixture" --no-cache --allow-parse-errors
           test -s "$fixture/output/analysis-snapshot.json"
           python3 - "$fixture/output/analysis-snapshot.json" <<'PY'
           import json
