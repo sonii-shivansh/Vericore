@@ -52,15 +52,29 @@ class EngineeringPlanner {
         val repository = root.path
 
         val citations = request.evidence.citations.sortedBy { it.id }
-        val plannedPaths = request.changedPaths.map(::normalizePath).filter { it.isNotEmpty() && !it.startsWith("<outside-") && !isGeneratedPath(it) }.distinct().sorted().take(100)
+        val plannedPaths = request.changedPaths
+            .map(::normalizePath)
+            .filter { it.isNotEmpty() && !it.startsWith("<outside-") && !isGeneratedPath(it) }
+            .distinct().sorted().take(100)
         require(plannedPaths.all(::isRepositoryRelative)) { "changedPaths must be repository-relative paths without '..' traversal" }
 
-        val affected = (plannedPaths + citations.mapNotNull { it.path }).map(::normalizePath).filter { it.isNotEmpty() && !it.startsWith("<outside-") && !isGeneratedPath(it) }.distinct().sorted().take(100)
+        // Explicitly planned paths are the agent's authoritative change scope. Evidence is
+        // supporting context, not permission to expand the mutation boundary to every cited file.
+        // When no paths are supplied, evidence paths remain the best deterministic scope signal.
+        val evidencePaths = citations.mapNotNull { it.path }
+            .map(::normalizePath)
+            .filter { it.isNotEmpty() && !it.startsWith("<outside-") && !isGeneratedPath(it) }
+            .distinct().sorted()
+        val affected = (if (plannedPaths.isNotEmpty()) plannedPaths else evidencePaths).take(100)
+
         val architecture = citations.filter { it.type.contains("architecture") }
         val hotspots = citations.filter { it.type.contains("hotspot") }
         val concerns = buildList {
             if (architecture.isNotEmpty()) add("Review architecture evidence before implementation.")
             if (hotspots.isNotEmpty()) add("Changed or related components include dependency-centrality hotspots.")
+            if (plannedPaths.isNotEmpty() && evidencePaths.any { it !in plannedPaths }) {
+                add("Repository evidence references additional files; treat them as context, not planned mutation scope.")
+            }
         }
         val risk = when {
             citations.any { it.type.contains("critical") } -> RiskLevel.HIGH
