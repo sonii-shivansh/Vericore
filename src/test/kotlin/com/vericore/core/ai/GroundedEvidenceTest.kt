@@ -38,11 +38,11 @@ class GroundedEvidenceTest : FunSpec({
                 "/repo/A.kt" to DependencyPaths(dependents = listOf("UsesA.kt", "OtherUsesA.kt"))
             )
         )
-        val hotspot = evidence.citations.first { it.id == "hotspot.1" }
+        val dependencyCitation = evidence.citations.first { it.relatedPaths.isNotEmpty() }
 
-        hotspot.relatedPaths shouldBe listOf("OtherUsesA.kt", "UsesA.kt")
-        hotspot.detail shouldContain "OtherUsesA.kt"
-        hotspot.detail shouldContain "UsesA.kt"
+        dependencyCitation.relatedPaths shouldBe listOf("OtherUsesA.kt", "UsesA.kt")
+        dependencyCitation.detail shouldContain "OtherUsesA.kt"
+        dependencyCitation.detail shouldContain "UsesA.kt"
     }
 
     test("exposes repository-relative paths instead of absolute filesystem paths") {
