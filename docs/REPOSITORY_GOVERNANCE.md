@@ -11,6 +11,7 @@ This document is the version-controlled source of truth for the GitHub repositor
 - **Homepage:** `https://sonii-shivansh.github.io/Vericore-Website/`
 - **Canonical icon:** `docs/images/vericore-icon.svg`
 - **Current published release:** `v0.8.0`
+- **Current release candidate:** `v0.8.1`
 
 The website favicon SVG is the canonical project icon. Do not create a second logo variant in the repository unless the website branding is intentionally changed first.
 
@@ -76,8 +77,9 @@ Do **not** require CodeQL yet. CodeQL is currently managed by GitHub's dynamic c
 
 ### Releases
 
-- Do not rewrite the published `v0.7.0` tag or its artifacts.
-- `v0.8.0` is now the current published release and was created by the repository's release workflow after all verification gates passed.
+- Do not rewrite the published `v0.7.0` or `v0.8.0` tags or their artifacts.
+- `v0.8.0` remains the current published release until `v0.8.1` completes the full release workflow.
+- `v0.8.1` is the current release candidate and must originate from the exact candidate certified by the final release audit.
 - Future releases should originate from the repository's release workflow after the normal verification gates pass.
 - Release artifacts must remain reproducible and accompanied by checksums where the release workflow provides them.
 

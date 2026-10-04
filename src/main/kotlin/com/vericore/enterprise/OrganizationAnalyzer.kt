@@ -12,8 +12,15 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
+import kotlinx.serialization.Serializable
 
-data class RepoResult(val name: String, val fileCount: Int, val hotspots: List<Pair<String, Double>>, val error: String? = null)
+@Serializable
+data class RepoResult(
+    val name: String,
+    val fileCount: Int,
+    val hotspots: List<Pair<String, Double>>,
+    val error: String? = null
+)
 
 class OrganizationAnalyzer(private val maxConcurrentRepositories: Int = 2) {
     suspend fun analyzeRepositories(repoPaths: List<String>, config: VericoreConfig? = null): List<RepoResult> = coroutineScope {
