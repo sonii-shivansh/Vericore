@@ -9,6 +9,7 @@ import com.vericore.core.intelligence.RepositorySnapshot
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldContain
 
 class GroundedEvidenceTest : FunSpec({
     test("builds deterministic evidence with stable citation ids") {
@@ -38,6 +39,15 @@ class GroundedEvidenceTest : FunSpec({
         paths shouldContain "B.kt"
         paths.none { it.startsWith("/") || it.contains(":\\") } shouldBe true
     }
+
+    test("exposes concrete direct dependency paths in file evidence") {
+        val evidence = GroundedEvidenceBuilder.fromSnapshot(snapshot())
+        val file = evidence.citations.first { it.type == "file-graph-fact" && it.path == "A.kt" }
+
+        file.detail shouldContain "B.kt"
+        file.detail shouldContain "C.kt"
+        file.metrics["dependentPaths"] shouldBe "B.kt|C.kt"
+    }
 })
 
 private fun snapshot() = AnalysisSnapshot(
@@ -45,7 +55,7 @@ private fun snapshot() = AnalysisSnapshot(
     repository = RepositorySnapshot("/repo", 1L, listOf("Kotlin")),
     metrics = AnalysisMetrics(3, 3, 2, false, 0),
     files = listOf(
-        FileSnapshot("/repo/A.kt", "a", 1, 2, listOf("dev"), 0.8, 3, 1),
+        FileSnapshot("/repo/A.kt", "a", 1, 2, listOf("dev"), 0.8, 3, 1, dependentPaths = listOf("B.kt", "C.kt")),
         FileSnapshot("/repo/B.kt", "b", 2, 1, listOf("dev"), 0.2, 1, 1),
         FileSnapshot("/repo/C.kt", "c", 1, 0, emptyList(), 0.1, 0, 0)
     ),
