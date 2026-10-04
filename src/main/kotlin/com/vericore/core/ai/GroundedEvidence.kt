@@ -71,15 +71,25 @@ object GroundedEvidenceBuilder {
                 .sortedWith(compareByDescending<FileSnapshot> { it.dependents }.thenBy { it.path })
                 .take(10)
                 .forEachIndexed { index, file ->
+                    val relativeDependents = file.dependentPaths
+                        .map { normalizeRepositoryPath(snapshot.repository.path, it) }
+                        .filter { it != "<outside-repository>" }
+                    val relativeDependencies = file.dependencyPaths
+                        .map { normalizeRepositoryPath(snapshot.repository.path, it) }
+                        .filter { it != "<outside-repository>" }
+                    val dependentText = if (relativeDependents.isEmpty()) "none" else relativeDependents.joinToString(", ")
+                    val dependencyText = if (relativeDependencies.isEmpty()) "none" else relativeDependencies.joinToString(", ")
                     add(
                         EvidenceCitation(
                             id = "file.${index + 1}",
                             type = "file-graph-fact",
                             path = repositoryRelativePath(snapshot.repository.path, file.path),
-                            detail = "File participates in the analyzed dependency graph.",
+                            detail = "File participates in the analyzed dependency graph. Direct dependents: $dependentText. Direct dependencies: $dependencyText.",
                             metrics = mapOf(
                                 "dependents" to file.dependents.toString(),
                                 "dependencies" to file.dependencies.toString(),
+                                "dependentPaths" to relativeDependents.joinToString("|"),
+                                "dependencyPaths" to relativeDependencies.joinToString("|"),
                                 "churn" to file.churn.toString(),
                                 "pageRank" to file.pageRank.toString()
                             )
@@ -112,5 +122,9 @@ object GroundedEvidenceBuilder {
         } else {
             "<outside-repository>"
         }
+    }
+
+    private fun normalizeRepositoryPath(repository: String, path: String): String {
+        return if (path.startsWith("/") || path.contains(":/")) repositoryRelativePath(repository, path) else path.replace('\\', '/').removePrefix("./")
     }
 }
