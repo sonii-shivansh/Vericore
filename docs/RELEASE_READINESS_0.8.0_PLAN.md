@@ -4,7 +4,7 @@
 
 **Goal:** Turn the `release/0.8.0-preparation-v2` branch into a machine-verifiable, pre-release-certified 0.8.0 candidate without relying on post-release documentation changes.
 
-**Architecture:** Keep permanent CI/regression workflows separate from release certification and publishing. `release-audit.yml` remains the release-candidate orchestrator and produces a machine-readable readiness certificate; `release.yml` must consume the certification before publishing. Reusable live repository workflows remain the authoritative real-repository E2E layers.
+**Architecture:** Keep permanent CI/regression workflows separate from release certification and publishing. `release-audit.yml` remains the release-candidate orchestrator and produces a machine-readable readiness certificate; `release.yml` invokes that certification before packaging/publishing. Reusable live repository workflows remain the authoritative real-repository E2E layers.
 
 **Tech Stack:** GitHub Actions, Bash, Python 3, Gradle, Kotlin/JVM, JSON.
 
@@ -39,37 +39,39 @@
 
 ### Task 2: Machine-readable readiness certificate
 
-- [ ] Define a versioned certificate schema containing candidate SHA, ref, version, timestamp, required checks, and overall readiness.
-- [ ] Generate the certificate only after the deterministic/live release-audit jobs complete.
-- [ ] Fail closed when any required audit job is not successful.
-- [ ] Upload the certificate as a release-audit artifact.
-- [ ] Verify the certificate in GitHub Actions.
+- [x] Define a versioned certificate schema containing candidate SHA, ref, version, timestamp, required checks, and overall readiness.
+- [x] Generate the certificate only after the deterministic/live release-audit jobs complete.
+- [x] Fail closed when any required audit job is not successful.
+- [x] Upload the certificate as a release-audit artifact.
+- [x] Verify the certificate in GitHub Actions, including exact-candidate binding.
 
 ### Task 3: Release publication gate
 
-- [ ] Make release audit callable as a reusable workflow.
-- [ ] Make the release workflow invoke the exact release-candidate audit before packaging/publishing.
-- [ ] Require successful certification before the publish job can execute.
-- [ ] Verify the exact release SHA/version binding.
+- [x] Make release audit callable as a reusable workflow.
+- [x] Make the release workflow invoke the release-candidate audit before packaging/publishing.
+- [x] Require successful certification before downstream release jobs can execute.
+- [x] Verify the application version contract against the release version.
 
 ### Task 4: Full release verification matrix
 
-- [ ] Determine which permanent checks must be part of final 0.8.0 certification.
-- [ ] Reuse existing workflows where possible instead of duplicating test logic.
-- [ ] Add missing platform/onboarding/regression evidence to the certification path.
-- [ ] Run the complete matrix on GitHub Actions and fix every failure.
+- [x] Determine which permanent checks must be part of final 0.8.0 certification.
+- [x] Reuse existing workflows where possible instead of duplicating test logic.
+- [x] Add platform/onboarding/regression/live-repository evidence to the certification path.
+- [x] Run the complete matrix on GitHub Actions and fix every failure.
+- [x] Confirm DCO and all required release-audit dependencies are green on the certified candidate.
 
 ### Task 5: Documentation freeze
 
-- [ ] Audit root and `docs/` Markdown for stale CodeContext, old version, command, workflow, and branch references.
-- [ ] Update documentation to the verified 0.8.0 candidate behavior.
-- [ ] Add documentation consistency checks to CI if practical.
-- [ ] Run the full GitHub Actions matrix again.
+- [x] Audit root and `docs/` Markdown for stale CodeContext, old version, command, workflow, and branch references.
+- [x] Update documentation to the verified 0.8.0 candidate behavior.
+- [x] Synchronize the readiness documents with the exact certified candidate and workflow architecture.
+- [ ] Add additional documentation consistency checks to CI if practical.
+- [ ] Run the final full GitHub Actions matrix after the documentation-only commits below.
 
 ### Task 6: Final 0.8.0 certification
 
-- [ ] Generate the final readiness certificate for the exact candidate SHA.
-- [ ] Confirm all required checks are green.
+- [ ] Generate the final readiness certificate for the exact post-documentation candidate SHA.
+- [ ] Confirm all required checks are green on that exact SHA.
 - [ ] Confirm documentation is frozen before release.
 - [ ] Produce the final release-readiness report.
 - [ ] Only then allow release publication.
