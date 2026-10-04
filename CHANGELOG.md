@@ -27,6 +27,8 @@ Post-0.8.0 changes only. Keep this section for work that is intentionally outsid
 - Engineering plans and contracts are explicitly bound to their target repository and prepared Git state.
 - Windows distributions use a compact `lib\\*` launcher classpath to avoid command-line length failures.
 - Release and cross-platform verification now exercise the complete evidence-grounded engineering workflow on clean environments and real repositories.
+- Documentation now has one complete CLI reference covering every user-facing command, syntax, options, defaults, outputs, and important failure semantics.
+- Redundant release-planning and duplicate semantic-evidence notes were removed from the public documentation tree.
 
 ### Fixed
 
@@ -34,6 +36,7 @@ Post-0.8.0 changes only. Keep this section for work that is intentionally outsid
 - Evolution history-window sampling so selected commits remain inside the requested cutoff-to-HEAD interval.
 - Windows launcher failures caused by expanded dependency classpaths.
 - Evidence integrity edge cases including duplicate, dangling, self-referential, stale-commit, and cross-repository relationships.
+- Documentation drift between the implemented CLI surface, release workflow, architecture/evidence contracts, and public guides.
 
 ### Release engineering
 
