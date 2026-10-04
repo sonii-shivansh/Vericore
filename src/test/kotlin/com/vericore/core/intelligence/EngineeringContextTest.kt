@@ -30,6 +30,21 @@ class EngineeringContextTest : StringSpec({
         diff.changes.map { it.type } shouldBe listOf("MODIFIED", "REMOVED", "ADDED")
     }
 
+    "encoded snapshot round-trips into context-diff input" {
+        val snapshot = EngineeringContextSnapshot(
+            ENGINEERING_CONTEXT_SCHEMA_VERSION, "abc", listOf(
+                ContextFile("src/App.kt", "111", 10)
+            ), 1, 10, listOf("Kotlin"), false, emptyList(), "digest"
+        )
+        val encoded = EngineeringContextEngine.encode(snapshot)
+        val json = kotlinx.serialization.json.Json { ignoreUnknownKeys = false }
+        val decoded = json.decodeFromString(EngineeringContextSnapshot.serializer(), encoded)
+
+        decoded shouldBe snapshot
+        val diff = EngineeringContextEngine.diff(snapshot, decoded)
+        diff.summary shouldBe ContextDiffSummary(0, 0, 0, 1)
+    }
+
     "identical snapshots produce no changes" {
         val snapshot = EngineeringContextSnapshot(
             ENGINEERING_CONTEXT_SCHEMA_VERSION, "a", listOf(ContextFile("a.java", "111", 1)),
