@@ -5,7 +5,7 @@ This document is the pre-release operational contract for the `release/0.8.0-pre
 ## Current candidate
 
 - Preparation branch: `release/0.8.0-preparation-v2`
-- Current candidate: `518115d27b38c1ba7cf929aa21d681bb86891310`
+- Current candidate: `12f40f19b05113b61134c650f0f4609d03c5f1eb`
 - Release target: `0.8.0`
 - Local end-to-end execution assumption: unavailable; GitHub Actions is the authoritative execution environment.
 
@@ -13,68 +13,82 @@ This document is the pre-release operational contract for the `release/0.8.0-pre
 
 | Workflow | Class | Responsibility | Unique value | Release-certification role |
 |---|---|---|---|---|
-| `ci.yml` | Permanent CI | Windows build, test, and Windows distribution smoke | Full Windows CI environment | Supporting evidence |
 | `dco.yml` | Governance | Commit sign-off enforcement | DCO compliance | Required repository governance |
-| `verification.yml` | Permanent verification | Linux build, tests, CLI, analysis, engineering intelligence, REST, security boundaries | Broad product verification | Supporting evidence; candidate gate to be formalized |
-| `platform.yml` | Platform verification | Linux, Windows, macOS Intel, macOS ARM distribution smoke | Cross-platform packaging | Supporting evidence; candidate gate to be formalized |
-| `onboarding-e2e.yml` | Product E2E | Fresh-user setup/doctor and clean Git fixture | Zero-setup user experience | Supporting evidence; candidate gate to be formalized |
-| `phase1-regression.yml` | Regression | Repository-scoped configuration/output/failure semantics | Prevents known Phase 1 regressions | Supporting evidence |
-| `phase4-regression.yml` | Regression/security | Repository scope, path traversal, evidence containment | Prevents known engineering-workflow regressions | Supporting evidence |
+| `ci.yml` | Reusable permanent CI | Full Windows build, test, and distribution verification | Windows CI environment | Called by release certification |
+| `verification.yml` | Reusable product verification | Linux build, tests, CLI, analysis, engineering intelligence, REST, security boundaries | Broad product verification | Called by release certification |
+| `platform.yml` | Reusable platform verification | Linux, Windows, macOS Intel, macOS ARM distribution smoke | Cross-platform packaging | Called by release certification |
+| `onboarding-e2e.yml` | Reusable product E2E | Fresh-user setup/doctor and clean Git fixture | Zero-setup user experience | Called by release certification |
+| `phase1-regression.yml` | Reusable regression | Repository-scoped configuration/output/failure semantics | Prevents known Phase 1 regressions | Called by release certification |
+| `phase4-regression.yml` | Reusable regression/security | Repository scope, path traversal, evidence containment | Prevents known engineering-workflow regressions | Called by release certification |
 | `live-output-quality.yml` | Reusable release E2E | Real-repository CLI output quality and command-surface checks | Tests user-visible outputs against real repositories | Direct release certification dependency |
 | `live-repository-gate.yml` | Reusable release E2E/security | Real-repository contract binding, stale state, mutation detection, MCP/REST and immutability | Deep adversarial safety validation | Direct release certification dependency |
-| `release-audit.yml` | Release certification | Deterministic CLI/MCP/REST audit plus Petclinic/RuneLite live gates and output quality | Candidate-level certification orchestrator | Authoritative certification workflow |
+| `release-audit.yml` | Release certification | Central deterministic, product, platform, regression, onboarding, live-repository, output-quality, and readiness-certificate orchestration | One authoritative candidate decision | **Authoritative certification workflow** |
 | `release.yml` | Publishing | Version verification, cross-platform packaging, checksums, GitHub Release publication | Actual release publication | Blocked until release audit succeeds |
 
 ## Why the workflows are not duplicates
 
-The workflows operate at different assurance layers:
+The workflow tree now has an explicit hierarchy instead of many independent copies of the same CI trigger:
 
 ```text
-unit/property correctness
-        ↓
-repository-scoped regression safety
-        ↓
-CLI/product verification
-        ↓
-platform packaging
-        ↓
-real repository execution
-        ↓
-adversarial contract/integrity validation
-        ↓
-release candidate certification
-        ↓
-release packaging and publication
+                    release-audit
+                          │
+       ┌──────────────────┼──────────────────┐
+       │                  │                  │
+  product/platform   regressions        live E2E
+  onboarding/Windows                       │
+       │                              Petclinic/RuneLite
+       └──────────────────┬──────────────────┘
+                          │
+                 readiness certificate
+                          │
+                     release.yml
 ```
 
-A workflow may repeat a build because it must establish its own execution boundary, but repeated setup is not itself duplicate coverage. A workflow should only be removed when its behavioral contract is already represented elsewhere and the evidence remains equivalent.
+The reusable workflows still contain their own execution logic. `release-audit.yml` composes them rather than copying their tests. `dco.yml` remains independent because governance is not product verification.
 
 ## Release certification principle
 
-`release-audit.yml` is the authoritative release-candidate orchestrator. It certifies:
+`release-audit.yml` is the authoritative release-candidate orchestrator. It now certifies:
 
 1. deterministic build/test/distribution behavior;
-2. CLI audit;
-3. MCP audit;
-4. REST audit;
-5. adversarial contract behavior;
-6. Spring Petclinic live repository integrity;
-7. RuneLite live repository integrity;
-8. Spring Petclinic output quality;
-9. RuneLite output quality.
+2. Windows CI;
+3. broad Linux product verification;
+4. Linux/Windows/macOS cross-platform packaging smoke;
+5. zero-setup onboarding E2E;
+6. Phase 1 repository correctness regressions;
+7. Phase 4 engineering-workflow safety regressions;
+8. Spring Petclinic live repository integrity;
+9. RuneLite live repository integrity;
+10. Spring Petclinic output quality;
+11. RuneLite output quality.
 
-The workflow now also produces a versioned machine-readable readiness certificate named `release-readiness-<version>.json`, defined by `docs/release-readiness.schema.json` and generated by `scripts/audit/release-readiness.py`.
+Only after every required dependency completes successfully does the readiness-certificate job produce `overallReady: true`.
 
-The certificate records the exact candidate SHA/ref, every required release-audit job result, and `overallReady`. It fails closed: a missing/failed/cancelled/skipped required job cannot produce `overallReady: true`.
+## Machine-readable readiness certificate
+
+The release-audit workflow produces `release-readiness-<version>.json`, defined by `docs/release-readiness.schema.json` and generated by `scripts/audit/release-readiness.py`.
+
+The certificate records:
+
+- exact candidate SHA and ref;
+- release version;
+- every required certification job result;
+- certificate schema version;
+- generation timestamp;
+- final `overallReady` decision.
+
+It fails closed: a failed, cancelled, skipped, neutral, or missing required job cannot produce a ready certificate.
 
 ## Release publication gate
 
-`release.yml` now invokes `release-audit.yml` as a reusable workflow before version resolution, packaging, or publication. The publish path therefore has this dependency:
+`release.yml` invokes `release-audit.yml` as a reusable workflow before version resolution, packaging, or publication. The release path is therefore:
 
 ```text
 release candidate
       ↓
 release-audit
+      ↓
+all product/platform/regression/live checks
       ↓
 readiness certificate
       ↓
@@ -89,7 +103,7 @@ If the release audit fails, the packaging and publish jobs cannot proceed.
 
 ## Verification status
 
-The certificate generator and publication dependency are implemented on the current candidate. GitHub Actions verification is still required before these changes are considered complete.
+The centralized release-certification architecture, machine-readable certificate, and publication dependency are implemented on the current candidate. GitHub Actions verification is still required before these changes are considered complete.
 
 ## Required final state
 
@@ -99,6 +113,6 @@ Before publishing 0.8.0:
 - the readiness certificate identifies the exact candidate SHA and version;
 - release publication is blocked when certification fails or is missing;
 - real-repository gates remain green and prove repository immutability;
-- platform/onboarding/regression evidence is included in the final certification decision;
+- platform, onboarding, Windows, Linux, regression, and live-repository evidence are included in the final certification decision;
 - Markdown documentation is synchronized with the verified 0.8.0 behavior;
 - no post-release documentation update is required to describe the 0.8.0 candidate.
