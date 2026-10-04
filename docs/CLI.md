@@ -56,6 +56,7 @@ vericore analyze . --verbose
 | `--no-cache` | Disable the analysis cache for this run. |
 | `--clear-cache` | Clear the cache before analysis. |
 | `--no-snapshot` | Do not persist the analysis snapshot/risk artifacts. |
+| `--allow-parse-errors` | Continue with degraded analysis when source parsers report diagnostics. Default: fail the analysis. |
 | `--verbose`, `-v` | Include verbose diagnostics when failures occur. |
 
 ### Outputs
@@ -68,7 +69,7 @@ output/analysis-snapshot.json
 output/engineering-risks.json
 ```
 
-`--no-snapshot` suppresses the snapshot and risk artifacts. If AI is enabled and configured, an additional `output/ai-insights.md` may be generated.
+`--no-snapshot` suppresses the snapshot and risk artifacts. If AI is enabled and configured, an additional `output/ai-insights.md` may be generated. Parser diagnostics make `analyze` fail with a non-zero exit code by default; use `--allow-parse-errors` only when a degraded result is intentional. The parse cache is stored outside the analyzed repository by default; set `VERICORE_CACHE_DIR` to choose a different cache root.
 
 ### Important behavior
 
@@ -411,7 +412,7 @@ vericore plan "add payment validation" --evidence output/grounded-evidence.json 
 | `--evidence <file>` | `output/grounded-evidence.json` | Grounded evidence artifact. |
 | `--output <file>` | stdout | Write the plan JSON to a repository-local path. |
 
-The plan is read-only and cannot modify source code.
+The plan is read-only and cannot modify source code. Verification commands are generated from repository build evidence: Maven projects use Maven commands, Gradle projects use Gradle commands, and Vericore does not invent a build command when no supported build entry point is detected.
 
 ---
 
@@ -471,7 +472,7 @@ vericore verify --path . --plan output/engineering-plan.json --contract output/a
 | `--contract <file>` | `output/agent-change-contract.json` | Original immutable Agent Change Contract. Required to exist. |
 | `--output <file>` | stdout | Optional verification artifact. |
 
-Verification fails when the contract is missing, tampered, stale, cross-repository, inconsistent with the plan, or when changes fall outside the prepared boundary. `PASS` and `REVIEW_REQUIRED` are not substitutes for tests or human review.
+Verification fails when the contract is missing, tampered, stale, cross-repository, inconsistent with the plan, or when changes fall outside the prepared boundary. Only `PASS` returns success; `REVIEW_REQUIRED` and `FAIL` now return a non-zero exit code. `PASS` is not a substitute for tests or human review.
 
 ---
 
@@ -491,7 +492,7 @@ vericore ask <question>
 vericore ask "What are the main architectural hotspots in this repository?"
 ```
 
-AI must be configured before use. The normal setup path is:
+AI must be configured before use. In non-interactive environments, `ask` never waits for credential input; configure `VERICORE_GEMINI_API_KEY` or run `vericore setup` interactively first. The normal setup path is:
 
 ```bash
 vericore setup
