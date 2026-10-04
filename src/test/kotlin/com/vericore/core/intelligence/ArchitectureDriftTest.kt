@@ -8,10 +8,11 @@ class ArchitectureDriftTest : FunSpec({
     fun result(
         findings: List<ArchitectureFinding> = emptyList(),
         cycles: List<ArchitectureCycle> = emptyList(),
-        layers: Map<String, Int> = emptyMap()
+        layers: Map<String, Int> = emptyMap(),
+        dependencyEdges: Int = 2
     ) = ArchitectureIntelligenceResult(
         schemaVersion = "1.0",
-        summary = ArchitectureSummary(3, 2, findings.size, cycles.size, 1, 0),
+        summary = ArchitectureSummary(3, dependencyEdges, findings.size, cycles.size, 1, 0),
         findings = findings,
         cycles = cycles,
         layers = layers
@@ -53,6 +54,17 @@ class ArchitectureDriftTest : FunSpec({
         drift.changes.map { it.key } shouldContainExactly listOf("api", "repository")
     }
 
+    test("detects dependency edge count changes") {
+        val drift = ArchitectureDriftEngine.compare(
+            result(dependencyEdges = 3),
+            result(dependencyEdges = 4)
+        )
+
+        drift.summary.dependencyEdgesDelta shouldBe 1
+        drift.changes.map { it.type } shouldContainExactly listOf("DEPENDENCY_EDGE_COUNT_CHANGED")
+        drift.changes.single().detail shouldBe "Dependency edge count changed from 3 to 4 (added 1)"
+    }
+
     test("identical results produce no drift") {
         val snapshot = result(
             findings = listOf(ArchitectureFinding("ARCH-A", "HIGH", "a.kt", relationship = "coupling", evidence = "same")),
@@ -62,7 +74,7 @@ class ArchitectureDriftTest : FunSpec({
 
         val drift = ArchitectureDriftEngine.compare(snapshot, snapshot)
 
-        drift.summary shouldBe ArchitectureDriftSummary(0, 0, 0, 0, 0)
+        drift.summary shouldBe ArchitectureDriftSummary(0, 0, 0, 0, 0, 0)
         drift.changes shouldBe emptyList()
     }
 })
