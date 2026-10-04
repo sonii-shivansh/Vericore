@@ -106,20 +106,14 @@ git -C "$review_fixture" config user.name "Vericore Audit"
 git -C "$review_fixture" config user.email "audit@example.com"
 git -C "$review_fixture" add .
 git -C "$review_fixture" commit -qm "baseline"
+"$APP" prepare "scope probe" --path "$review_fixture" >/dev/null
 printf '%s\n' 'class Related { int value = 1; }' > "$review_fixture/src/Related.java"
-cat > "$review_fixture/output/engineering-plan.json" <<'JSON'
-{"schemaVersion":"1.1","changeSummary":"test scope","repository":"","affectedComponents":["src/Related.java"],"plannedPaths":[],"concerns":[],"riskLevel":"LOW","steps":[],"verificationCommands":[],"evidenceIds":[],"uncertainties":[],"contractFingerprint":""}
-JSON
-python3 - "$review_fixture/output/engineering-plan.json" "$review_fixture" <<'PY'
-import json, pathlib, sys
-p=pathlib.Path(sys.argv[1]); d=json.loads(p.read_text()); d["repository"]=str(pathlib.Path(sys.argv[2]).resolve()); p.write_text(json.dumps(d))
-PY
-printf '%s\n' '{"schemaVersion":"2.0","repository":"","changeSummary":"test scope","preparedHead":"","plannedPaths":[],"expectedChangeTypes":{},"expectedComponents":["src/Related.java"],"verificationCommands":[],"evidenceIds":[],"architectureExpectations":[],"fingerprint":"invalid"}' > "$review_fixture/output/agent-change-contract.json"
 set +e
-"$APP" verify --path "$review_fixture" --plan "$review_fixture/output/engineering-plan.json" --contract "$review_fixture/output/agent-change-contract.json" > "$review_fixture/review.log" 2>&1
+"$APP" verify --path "$review_fixture" > "$review_fixture/review.log" 2>&1
 review_status=$?
 set -e
 test "$review_status" -ne 0
+grep -q "REVIEW_REQUIRED" "$review_fixture/review.log"
 grep -q "did not pass" "$review_fixture/review.log"
 
 mkdir -p "$unicode_fixture/src"
