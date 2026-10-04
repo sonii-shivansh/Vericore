@@ -2,7 +2,7 @@
 
 Thank you for contributing to Vericore. Contributions should improve analysis accuracy, developer experience, reliability, or security without weakening the project's local-first safety model.
 
-Vericore is intentionally open to community contributions. The source is released under the MIT License, and community contributors retain ownership of their contributions while licensing them under the project's terms. See [DCO.md](DCO.md) for the contribution provenance policy.
+Vericore is open to community contributions under the MIT License. See [DCO.md](DCO.md) for contribution provenance requirements.
 
 ## Before you start
 
@@ -15,7 +15,7 @@ Vericore is intentionally open to community contributions. The source is release
 
 Requirements:
 
-- JDK 21 or newer
+- JDK 21+
 - Git
 - Kotlin-capable editor
 
@@ -23,26 +23,29 @@ Requirements:
 git clone https://github.com/sonii-shivansh/Vericore.git
 cd Vericore
 ./gradlew --no-daemon clean test
+./gradlew --no-daemon installDist
 ```
 
-The project is published and maintained as Vericore. Use the canonical repository URL above for new checkouts.
+For exact Vericore command syntax and output contracts, use [docs/CLI.md](docs/CLI.md).
 
-## Workflow
+## Development workflow
 
 1. Create a focused branch from `main`.
-2. Implement the smallest coherent change.
-3. Add or update tests, especially for public APIs and security boundaries.
-4. Update documentation when behavior, configuration, or output changes.
-5. Sign every contribution commit off with `git commit -s`.
-6. Run the local validation commands.
-7. Push the branch and open a pull request.
+2. Understand the existing contract before changing behavior.
+3. Implement the smallest coherent change.
+4. Add or update tests, especially for public APIs and security boundaries.
+5. Update the relevant documentation in the same change.
+6. Sign every contribution commit with `git commit -s`.
+7. Run local validation where available.
+8. Push the branch and open a pull request.
+9. Inspect the complete GitHub Actions matrix before merge.
 
 ```bash
 ./gradlew --no-daemon clean test
 ./gradlew --no-daemon build installDist
 ```
 
-The Verification and DCO workflows must pass before merging.
+For release-candidate work, the authoritative product certification is the `0.8.0 Release Audit`; reusable CI workflows are composed by that audit rather than being treated as independent release decisions.
 
 ## Developer Certificate of Origin
 
@@ -73,12 +76,7 @@ See [DCO.md](DCO.md) for details.
 
 ## Tests
 
-Tests are grouped under `src/test/kotlin/com/vericore`:
-
-- `core/`: parser, graph, cache, property, edge-case, and stress tests;
-- `server/`: path-security and rate-limit tests;
-- `verification/`: backend verification coverage;
-- `E2ETest.kt`: end-to-end behavior.
+Tests are grouped under `src/test/kotlin/com/vericore` and include core analysis, server/security, verification, property/edge-case coverage, and end-to-end behavior.
 
 Security-sensitive changes should include tests for traversal, sibling-prefix paths, symlinks where applicable, malformed input, and error sanitization.
 
@@ -89,12 +87,12 @@ Security-sensitive changes should include tests for traversal, sibling-prefix pa
 - [ ] Every contribution commit has a `Signed-off-by:` trailer.
 - [ ] `./gradlew --no-daemon clean test` passes.
 - [ ] `./gradlew --no-daemon build installDist` passes.
-- [ ] The Verification workflow passes.
-- [ ] The DCO workflow passes.
+- [ ] Required GitHub Actions checks pass.
+- [ ] DCO passes.
 - [ ] No secrets or generated files are included.
-- [ ] API, architecture, changelog, and security documentation are updated when applicable.
+- [ ] CLI/API/architecture/security documentation is updated when applicable.
 - [ ] The complete diff against `main` has been reviewed.
 
 ## Reporting bugs and requesting features
 
-Use the GitHub issue templates where available. Include the Vericore version, JDK version, operating system, command, sanitized logs, and a minimal reproduction. Do not publish sensitive source code or security vulnerabilities in a public issue.
+Use the GitHub issue templates where available. Include the Vericore version, JDK version, operating system, exact command, sanitized logs, and a minimal reproduction. Do not publish sensitive source code or security vulnerabilities in a public issue.
