@@ -6,6 +6,7 @@ import com.vericore.core.ai.AISetupResult
 import com.vericore.core.config.ConfigLoader
 import com.vericore.core.config.UserConfigStore
 import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.core.ProgramResult
 import java.io.File
 
 class DoctorCommand : CliktCommand(
@@ -92,6 +93,7 @@ class DoctorCommand : CliktCommand(
             failures > 0 -> {
                 echo("❌ Vericore needs attention: $failures error(s), $warnings warning(s).")
                 echo("   Fix the errors above, then run 'vericore doctor' again.")
+                throw ProgramResult(1)
             }
             warnings > 0 -> {
                 echo("⚠ Vericore is ready for deterministic analysis; $warnings optional configuration item(s) need attention.")
