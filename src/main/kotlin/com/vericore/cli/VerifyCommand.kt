@@ -37,8 +37,11 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
             echo(encoded)
         }
         echo("Status: ${result.status}")
-        if (result.status == com.vericore.core.workflow.SafetyStatus.FAIL) {
-            throw IllegalStateException("Change verification failed: the prepared contract or change scope is invalid")
+        if (result.status != com.vericore.core.workflow.SafetyStatus.PASS) {
+            throw IllegalStateException(
+                "Change verification did not pass: ${result.status}. " +
+                    "Review the verification report before considering the change safe."
+            )
         }
     }
 }
