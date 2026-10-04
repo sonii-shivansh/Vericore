@@ -124,6 +124,11 @@ jobs:
           test -s output/agent-change-contract.json
           python3 -c 'import json; p=json.load(open("output/agent-change-contract.json")); assert p["fingerprint"] and len(p["fingerprint"]) == 64; assert p["repository"]; assert p["preparedHead"]'
 
+      - name: Validate OpenDataLoader Maven verification plan
+        if: ${{ inputs.repository == 'opendataloader-project/opendataloader-pdf' }}
+        working-directory: ${{ runner.temp }}/target
+        run: |
+          python3 -c 'import json; plan=json.load(open("output/engineering-plan.json")); commands=plan.get("verificationCommands", []); assert commands, commands; assert all("mvn" in command for command in commands), commands; assert all("java/pom.xml" in command for command in commands), commands; assert all("./gradlew" not in command for command in commands), commands'
       - name: Prove contract tamper detection
         working-directory: ${{ runner.temp }}/target
         run: |
