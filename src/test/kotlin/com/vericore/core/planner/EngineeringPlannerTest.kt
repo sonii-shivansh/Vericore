@@ -38,6 +38,7 @@ class EngineeringPlannerTest {
     fun `plan records canonical repository and verification commands`() {
         val repo = Files.createTempDirectory("vericore-plan-test").toFile()
         try {
+            repo.resolve("pom.xml").writeText("<project/>")
             val plan = planner.plan(
                 EngineeringPlanRequest(
                     changeSummary = "Update payment validation",
@@ -48,7 +49,52 @@ class EngineeringPlannerTest {
             )
             assertEquals(repo.canonicalPath, plan.repository)
             assertTrue(plan.verificationCommands.all { it.contains(repo.canonicalPath) })
+            assertTrue(plan.verificationCommands.none { "./gradlew" in it })
+            assertTrue(plan.verificationCommands.all { "mvn" in it })
             assertEquals(repo.canonicalPath, com.vericore.core.workflow.AgentChangeContract.fromPlan(plan).repository)
+        } finally {
+            repo.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `nested Maven project generates Maven commands without Gradle assumptions`() {
+        val repo = Files.createTempDirectory("vericore-plan-maven-").toFile()
+        try {
+            repo.resolve("java/pom.xml").apply {
+                parentFile.mkdirs()
+                writeText("<project/>")
+            }
+            val plan = planner.plan(
+                EngineeringPlanRequest(
+                    changeSummary = "Update PDF parser",
+                    changedPaths = listOf("java/src/Main.java"),
+                    evidence = GroundedEvidence(citations = emptyList()),
+                    repositoryPath = repo.path
+                )
+            )
+            assertTrue(plan.verificationCommands.all { "mvn" in it })
+            assertTrue(plan.verificationCommands.all { "-f 'java/pom.xml'" in it })
+            assertTrue(plan.verificationCommands.none { "gradle" in it.lowercase() })
+            assertTrue(plan.uncertainties.any { it.contains("no Maven wrapper") })
+        } finally {
+            repo.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `no supported build tool produces no invented verification command`() {
+        val repo = Files.createTempDirectory("vericore-plan-unknown-").toFile()
+        try {
+            val plan = planner.plan(
+                EngineeringPlanRequest(
+                    changeSummary = "Document change",
+                    evidence = GroundedEvidence(citations = emptyList()),
+                    repositoryPath = repo.path
+                )
+            )
+            assertTrue(plan.verificationCommands.isEmpty())
+            assertTrue(plan.uncertainties.any { it.contains("No supported Gradle or Maven build entry point") })
         } finally {
             repo.deleteRecursively()
         }
