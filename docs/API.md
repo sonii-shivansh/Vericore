@@ -1,116 +1,51 @@
 # API Reference
 
-Vericore exposes a CLI and a local REST API. The REST API is implemented by `com.vericore.server.VericoreServer` and is intended for trusted local or internal use.
+Vericore exposes two local integration surfaces:
 
-## Build and start
+1. the CLI, documented completely in [CLI Reference](CLI.md);
+2. the Ktor REST API, documented below.
 
-```bash
-./gradlew installDist
-./build/install/vericore/bin/vericore server --host 127.0.0.1 --port 8080
-```
+The REST API is intended for trusted local/internal use. The application does not provide deployment-grade authentication, authorization, tenant isolation, or TLS.
 
-Keep the default bind address on loopback for local use. Deployments beyond loopback must provide authentication, trusted-origin controls, TLS, quotas, report authorization, and tenant isolation at the deployment boundary.
-
-## CLI surface
-
-The current application registers these command families:
-
-```text
-analyze
-impact
-architecture
-architecture-drift
-architecture-contract
-context-snapshot
-context-diff
-evidence-graph
-reality
-pr-intelligence
-repo-qa
-plan
-prepare
-verify
-ask
-evolution
-server
-mcp
-setup
-doctor
-```
-
-Run `vericore <command> --help` for exact installed options.
-
-### Engineering Reality and context
+## Start the server
 
 ```bash
-vericore context-snapshot /path/to/repository --json
-vericore context-diff output/before.json output/after.json --json
-vericore reality /path/to/repository --json
+vericore server --host 127.0.0.1 --port 8080
 ```
 
-Reality binds deterministic analysis and repository-context state. A stale analysis is rejected instead of being silently combined with a newer repository state.
+Keep the bind address on loopback for local development.
 
-### Evidence graph
+## CLI
 
-```bash
-vericore evidence-graph /path/to/repository --json
-```
-
-The semantic evidence graph is a bounded, deterministic relationship layer over already-produced repository evidence. It is bound to repository/commit identity, rejects invalid provenance relationships, and exposes a stable SHA-256 digest for downstream identity and provenance.
-
-### Architecture drift and governance
-
-```bash
-vericore architecture /path/to/repository --json
-vericore architecture-drift /path/to/repository --baseline output/architecture-baseline.json --json
-vericore architecture-contract /path/to/repository --json
-```
-
-`architecture-drift` compares a previously generated `ArchitectureIntelligenceResult` with the current deterministic architecture analysis. `architecture-contract` evaluates current architecture findings against the configured deterministic governance contract.
-
-### Evidence, planning, and safe changes
-
-```bash
-vericore repo-qa "why is PaymentService risky?" \
-  --path /workspace/example \
-  --evidence-output output/grounded-evidence.json
-
-vericore plan "add payment validation" \
-  --evidence output/grounded-evidence.json \
-  --output output/engineering-plan.json
-
-vericore prepare "add payment validation" --path /workspace/example
-
-vericore verify \
-  --path /workspace/example \
-  --plan output/engineering-plan.json \
-  --contract output/agent-change-contract.json \
-  --output output/verification.json
-```
-
-`prepare` persists three repository-scoped artifacts by default:
-
-- `output/engineering-context.json`
-- `output/engineering-plan.json`
-- `output/agent-change-contract.json`
-
-The Agent Change Contract is bound to the canonical repository identity and prepared Git `HEAD` when available. Its fingerprint covers the change summary, repository identity, prepared `HEAD`, planned paths, expected components, verification commands, evidence IDs, and architecture expectations.
-
-`verify` loads the persisted contract and rejects missing, tampered, mismatched, cross-repository, or stale contracts rather than silently generating a replacement.
+For exact CLI syntax, options, defaults, artifacts, and command workflows, use **[CLI Reference](CLI.md)** rather than duplicating command details here.
 
 ## REST endpoints
 
 ### `GET /`
 
-Returns a service banner.
+Returns the service banner.
 
 ### `GET /health`
 
-Returns service health and version information. Liveness and readiness endpoints are also available.
+Returns service health and the current application version.
+
+### `GET /health/live`
+
+Returns the liveness state.
+
+### `GET /health/ready`
+
+Returns the readiness state.
+
+### `GET /reports/{id}.html`
+
+Serves a generated report from the local `output/` directory. Treat generated reports as potentially sensitive because they can contain repository-derived information.
 
 ### `POST /analyze`
 
-Analyzes an existing local repository and generates an HTML report.
+Analyze an existing local repository and generate an HTML report.
+
+Request:
 
 ```json
 {
@@ -118,15 +53,78 @@ Analyzes an existing local repository and generates an HTML report.
 }
 ```
 
-Remote URLs are rejected. The request path must resolve to a readable directory under a configured allowed root.
+The endpoint rejects remote repository URLs. The path must resolve to a readable directory within a configured allowed root.
 
-### `GET /reports/{id}.html`
+Response shape:
 
-Serves a generated report. Retention and authorization remain deployment responsibilities.
+```json
+{
+  "fileCount": 42,
+  "hotspots": [
+    {"file": "PaymentService.kt", "score": 0.42}
+  ],
+  "reportUrl": "/reports/<id>.html"
+}
+```
+
+### `POST /impact`
+
+Analyze dependency impact for changed repository-relative paths.
+
+Request:
+
+```json
+{
+  "repoPath": "/workspace/example",
+  "changedPaths": [
+    "src/main/kotlin/com/example/PaymentService.kt"
+  ]
+}
+```
+
+At most 100 changed paths are accepted per request.
+
+### `POST /architecture`
+
+Run deterministic Architecture Intelligence.
+
+Request:
+
+```json
+{
+  "repoPath": "/workspace/example"
+}
+```
+
+### `POST /pr-intelligence`
+
+Analyze the working tree or an explicit Git revision pair.
+
+Working tree:
+
+```json
+{
+  "repoPath": "/workspace/example"
+}
+```
+
+Revision pair:
+
+```json
+{
+  "repoPath": "/workspace/example",
+  "baseRevision": "main",
+  "headRevision": "feature/payment-retry"
+}
+```
+
+`baseRevision` and `headRevision` must either both be present or both be omitted. Each revision is limited to 256 characters.
 
 ### `POST /ask`
 
-Answers a repository question using the configured AI provider and repository-derived context.
+Ask the configured AI provider a repository question.
+
+Request:
 
 ```json
 {
@@ -135,25 +133,42 @@ Answers a repository question using the configured AI provider and repository-de
 }
 ```
 
-AI must be explicitly enabled. Provider data-handling requirements must be considered before sending source-derived context outside the local environment.
+AI must be enabled in the effective Vericore configuration. Questions are limited to 16,000 characters. Provider failures are sanitized before they reach the client.
 
 ### `POST /analyze-org`
 
-Analyzes multiple local repositories with bounded concurrency. At most 20 repositories may be submitted per request, and each repository is subject to `maxFilesAnalyze`.
+Analyze multiple local repositories with bounded concurrency.
 
-### Change and PR intelligence
+Request:
 
-Local change-impact and PR Intelligence flows are exposed through the application and CLI. See [PR_INTELLIGENCE.md](PR_INTELLIGENCE.md) for the deterministic result model and rules.
+```json
+[
+  "/workspace/service-a",
+  "/workspace/service-b"
+]
+```
+
+At most 20 repository paths are accepted per request. Each path is subject to the same repository path-safety boundary.
 
 ## Path security
 
-The server resolves paths with `Path.toRealPath()` and accepts only readable directories equal to or descendants of a configured allowed root.
+Repository paths are resolved with `toRealPath()` and must be readable directories under one of the configured allowed roots.
 
-Allowed roots are configured with `VERICORE_ALLOWED_PATHS`, separated by the platform path separator. The legacy `CODECONTEXT_ALLOWED_PATHS` variable remains supported as a compatibility path. Configure the smallest practical set of roots.
+Configure allowed roots with:
+
+```text
+VERICORE_ALLOWED_PATHS
+```
+
+The legacy `CODECONTEXT_ALLOWED_PATHS` variable remains supported only as a migration path. Use the canonical `VERICORE_ALLOWED_PATHS` name for new deployments.
+
+Keep the allowed-root set as narrow as practical.
 
 ## Rate limiting
 
-Rate limiting is enabled by default. Configuration includes:
+Rate limiting is enabled by default and is applied at the HTTP application boundary. The response includes `Retry-After`, `X-RateLimit-Limit`, and `X-RateLimit-Remaining` headers when the limiter is active.
+
+Example configuration:
 
 ```json
 {
@@ -165,13 +180,9 @@ Rate limiting is enabled by default. Configuration includes:
 }
 ```
 
-## AI boundary
+## Error contract
 
-AI is an optional reasoning layer. It must not be treated as the source of repository facts. Grounded evidence is deterministic and bounded before it is included in an AI request.
-
-Do not place secrets, credentials, or unapproved confidential source code in AI prompts. Provider and internal failures are sanitized before public API clients receive them.
-
-## Error shape
+Public API errors use a stable shape:
 
 ```json
 {
@@ -179,4 +190,22 @@ Do not place secrets, credentials, or unapproved confidential source code in AI 
 }
 ```
 
-Provider and internal failures are sanitized before being returned to clients.
+Internal exception details, provider response bodies, stack traces, credentials, and unnecessary absolute paths are not returned as public API errors.
+
+## AI and privacy boundary
+
+AI is optional. Deterministic analysis does not require an external provider. When `/ask` is invoked with AI enabled, bounded repository-derived context is sent to the configured provider.
+
+See [Data & Privacy](DATA_PRIVACY.md) for the application-level data boundary.
+
+## Current REST boundary
+
+The REST server is a local/internal integration surface. It does not currently provide:
+
+- authentication;
+- authorization or tenant isolation;
+- deployment-level TLS;
+- remote repository cloning;
+- autonomous source-code mutation.
+
+For a shared deployment, place an appropriate authenticated service boundary in front of Vericore.
