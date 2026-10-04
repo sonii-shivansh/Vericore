@@ -24,7 +24,17 @@ class AIAssistantCommand :
 
         var config = ConfigLoader.loadEffective()
         if (!config.ai.enabled || config.ai.apiKey.isBlank()) {
-            if (!AISetupPrompter.ensureConfigured(config.ai.model)) return
+            if (System.console() == null) {
+                throw com.vericore.core.exceptions.ConfigurationException(
+                    "AI is not configured. Non-interactive 'ask' cannot prompt for credentials. " +
+                        "Set VERICORE_GEMINI_API_KEY or run 'vericore setup' in an interactive terminal."
+                )
+            }
+            if (!AISetupPrompter.ensureConfigured(config.ai.model)) {
+                throw com.vericore.core.exceptions.ConfigurationException(
+                    "AI setup was not completed. Run 'vericore setup' or configure a supported AI credential."
+                )
+            }
             config = ConfigLoader.loadEffective()
         }
 
