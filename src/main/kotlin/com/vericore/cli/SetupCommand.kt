@@ -39,6 +39,13 @@ class SetupCommand : CliktCommand(
             return
         }
 
+        if (environmentKey.isBlank() && System.console() == null) {
+            throw ConfigurationException(
+                "Non-interactive 'setup' requires a Gemini API key via VERICORE_GEMINI_API_KEY, " +
+                    "VERICORE_GOOGLE_API_KEY, GEMINI_API_KEY, or GOOGLE_API_KEY."
+            )
+        }
+
         val apiKey = environmentKey.ifBlank { readSecret("Gemini API key") }
         if (apiKey.isBlank()) {
             echo("❌ No API key supplied. Nothing was changed.")
