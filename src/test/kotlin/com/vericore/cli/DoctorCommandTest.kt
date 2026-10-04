@@ -11,7 +11,7 @@ class DoctorCommandTest {
         val directory = Files.createTempDirectory("vericore-doctor-").toFile()
         try {
             assertFailsWith<ConfigurationException> {
-                DoctorCommand { directory }.run()
+                DoctorCommand { directory }.main(emptyArray())
             }
         } finally {
             directory.deleteRecursively()
