@@ -1,35 +1,58 @@
 # Documentation Hub
 
-> Find the shortest path to the information you need.
+> The shortest path to the right Vericore documentation.
 
 ## Start here
 
-| You are... | Read |
+| Need | Read |
 |---|---|
-| New to Vericore | [Getting Started](GETTING_STARTED.md) |
-| Learning the architecture | [Architecture](ARCHITECTURE.md) |
-| Building a feature | [Development](DEVELOPMENT.md) |
-| Building an AI-agent integration | [MCP](MCP.md) |
-| Preparing or verifying a code change | [Change Safety](CHANGE_SAFETY.md) |
-| Integrating the REST API | [API](API.md) |
-| Understanding repository state | [Engineering Reality](ENGINEERING_REALITY.md) |
-| Reviewing PR/change risk | [PR Intelligence](PR_INTELLIGENCE.md) |
-| Reviewing privacy/data flow | [Data & Privacy](DATA_PRIVACY.md) |
-| Checking shipped capabilities | [Implementation Status](ENTERPRISE_ROADMAP.md) |
-| Reviewing the 0.8.0 release candidate | [Release Readiness](RELEASE_READINESS_0.8.0.md) |
+| Install and run Vericore | [Getting Started](GETTING_STARTED.md) |
+| **Use a command** | **[CLI Reference](CLI.md)** |
+| Understand the system | [Architecture](ARCHITECTURE.md) |
+| Analyze or review a change | [Change Safety](CHANGE_SAFETY.md) |
+| Integrate REST | [API](API.md) |
+| Integrate an AI agent | [MCP](MCP.md) |
+| Understand repository identity | [Engineering Reality](ENGINEERING_REALITY.md) |
+| Understand deterministic PR review | [PR Intelligence](PR_INTELLIGENCE.md) |
+| Review data handling | [Data & Privacy](DATA_PRIVACY.md) |
+| Contribute to Vericore | [Development](DEVELOPMENT.md) |
+| Check implemented capabilities | [Implementation Status](ENTERPRISE_ROADMAP.md) |
+| Review the 0.8.0 release candidate | [Release Readiness](RELEASE_READINESS_0.8.0.md) |
 
-## Recommended paths
+## Recommended reading paths
 
-### New developer
+### New user
 
 ```text
 Getting Started
       ↓
+CLI Reference
+      ↓
+Architecture
+```
+
+### Developer
+
+```text
+Getting Started
+      ↓
+CLI Reference
+      ↓
 Architecture
       ↓
 Development
+```
+
+### Safe code-change workflow
+
+```text
+CLI Reference
+      ↓
+Engineering Reality
       ↓
 Change Safety
+      ↓
+prepare → change → verify
 ```
 
 ### AI-agent integration
@@ -44,84 +67,46 @@ MCP
 Change Safety
 ```
 
-### Contributor adding a deterministic capability
-
-```text
-Architecture
-      ↓
-Development
-      ↓
-PR Intelligence
-      ↓
-API / MCP
-```
-
-### Security review
-
-```text
-Data & Privacy
-      ↓
-Architecture
-      ↓
-API
-      ↓
-MCP
-      ↓
-Change Safety
-```
-
-### 0.8.0 release certification
+### Release review
 
 ```text
 Release Readiness
       ↓
-Release Readiness Plan
-      ↓
-0.8.0 Release Audit
-      ↓
-Machine-readable readiness certificate
+Release certification
       ↓
 Release workflow
 ```
 
-The release-readiness documents are pre-release operational documents. They are updated before publication so the public 0.8.0 documentation does not depend on a post-release catch-up pass.
-
-## Documentation conventions
-
-Each document should answer, in this order where applicable:
-
-1. **Purpose** — why the document exists.
-2. **Audience / when to read** — who needs it.
-3. **Quick start** — the shortest useful path.
-4. **Concepts and contracts** — behavior that must remain true.
-5. **Examples** — copyable commands or payloads.
-6. **Failure modes** — what happens when inputs or state are invalid.
-7. **Related documents** — where to go next.
-
-Use:
-
-- Mermaid for system and sequence diagrams;
-- tables for stable contracts and comparisons;
-- fenced code blocks for copyable commands;
-- `<details>` only for genuinely optional deep dives;
-- explicit **Implemented**, **Current limitation**, and **Future direction** labels when status could otherwise be ambiguous.
-
 ## Documentation rules
 
-- Document the current Vericore implementation, not an intended future architecture.
-- Keep examples executable or clearly label them as illustrative.
-- Avoid repeating the same contract in multiple documents; link to the authoritative document instead.
-- Update documentation in the same pull request as behavior or contract changes.
-- Never include credentials, private repository content, generated reports, or machine-specific paths.
-- Prefer short sections and progressive disclosure over one large reference document.
+The documentation set has four purposes:
 
-## Source of truth
+1. **User documentation** — installation, commands, APIs, and integrations.
+2. **Engineering documentation** — architecture, safety boundaries, development, and implementation status.
+3. **Release documentation** — the current release-readiness contract.
+4. **Project policy** — contribution, security, DCO, conduct, licensing, and trademarks at the repository root.
+
+Historical implementation notes may explain a design decision, but they must not be presented as current product instructions.
+
+### Source of truth
 
 When documents disagree, use this order:
 
 1. implemented code and executable tests;
-2. public API/schema contracts;
+2. public CLI/API/MCP contracts;
 3. architecture and safety documentation;
-4. roadmap/future-direction documents.
+4. implementation-status and release documents;
+5. historical design notes.
 
-A roadmap must never be used as evidence that an unimplemented feature exists.
+A roadmap or historical design note never proves that an unimplemented capability exists.
+
+### Command documentation rule
+
+Every user-facing CLI command must have its syntax, options, defaults, outputs, and important failure semantics documented in [CLI Reference](CLI.md). Update that document in the same change whenever the CLI contract changes.
+
+### Avoid duplication
+
+- Keep the README concise and link to the CLI reference instead of duplicating every command.
+- Keep Getting Started task-oriented; do not turn it into a second command reference.
+- Keep API and MCP documents focused on their respective protocols.
+- Prefer links to authoritative contracts instead of copying the same rules into multiple documents.
