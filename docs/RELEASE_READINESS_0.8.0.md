@@ -5,8 +5,9 @@ This document is the pre-release operational contract for the `release/0.8.0-pre
 ## Current candidate
 
 - Preparation branch: `release/0.8.0-preparation-v2`
-- Current candidate: `12f40f19b05113b61134c650f0f4609d03c5f1eb`
+- Current candidate: `b4e7d9dac74a0c9feec3e658498420e8442eae94`
 - Release target: `0.8.0`
+- Last published release: `0.7.0`
 - Local end-to-end execution assumption: unavailable; GitHub Actions is the authoritative execution environment.
 
 ## Workflow responsibility matrix
@@ -23,7 +24,7 @@ This document is the pre-release operational contract for the `release/0.8.0-pre
 | `live-output-quality.yml` | Reusable release E2E | Real-repository CLI output quality and command-surface checks | Tests user-visible outputs against real repositories | Direct release certification dependency |
 | `live-repository-gate.yml` | Reusable release E2E/security | Real-repository contract binding, stale state, mutation detection, MCP/REST and immutability | Deep adversarial safety validation | Direct release certification dependency |
 | `release-audit.yml` | Release certification | Central deterministic, product, platform, regression, onboarding, live-repository, output-quality, and readiness-certificate orchestration | One authoritative candidate decision | **Authoritative certification workflow** |
-| `release.yml` | Publishing | Version verification, cross-platform packaging, checksums, GitHub Release publication | Actual release publication | Blocked until release audit succeeds |
+| `release.yml` | Publishing | Version verification, cross-platform packaging, checksums, GitHub Release publication | Actual release publication | Invokes certification before packaging/publishing |
 
 ## Why the workflows are not duplicates
 
@@ -81,7 +82,9 @@ It fails closed: a failed, cancelled, skipped, neutral, or missing required job 
 
 ## Release publication gate
 
-`release.yml` invokes `release-audit.yml` as a reusable workflow before version resolution, packaging, or publication. The release path is therefore:
+`release.yml` invokes `release-audit.yml` as a reusable workflow before version resolution, packaging, or publication. A successful `release-audit` therefore becomes the required prerequisite for all downstream release jobs.
+
+The release path is:
 
 ```text
 release candidate
@@ -103,7 +106,9 @@ If the release audit fails, the packaging and publish jobs cannot proceed.
 
 ## Verification status
 
-The centralized release-certification architecture, machine-readable certificate, and publication dependency are implemented on the current candidate. GitHub Actions verification is still required before these changes are considered complete.
+The centralized release-certification architecture, machine-readable certificate, and publication dependency are implemented and have passed on the current candidate `b4e7d9dac74a0c9feec3e658498420e8442eae94`.
+
+The final documentation audit is now the remaining pre-release activity. Documentation is being frozen before publication; no post-release documentation catch-up is planned.
 
 ## Required final state
 
