@@ -6,7 +6,19 @@ All notable changes to Vericore are documented here. The format follows [Keep a 
 
 ## [Unreleased]
 
-Changes after `0.8.0` only. Keep this section for work that is intentionally outside the published 0.8.0 release.
+Changes after `0.8.1` only. Keep this section for work that is intentionally outside the published 0.8.1 release.
+
+## [0.8.1] — 2026-10-04
+
+### Fixed
+
+- Closed the post-0.8.0 end-to-end audit findings across REST serialization, diagnostic exit semantics, repository-QA evidence grounding, engineering-plan mutation scope, validation failure UX, and architecture-drift reporting.
+- Hardened release and cross-platform validation for the corrected engineering workflow.
+
+### Release engineering
+
+- Application and Gradle build version aligned to `0.8.1`.
+- Release candidate must pass the complete release audit and fresh platform packaging before publication.
 
 ## [0.8.0] — 2026-10-04
 
