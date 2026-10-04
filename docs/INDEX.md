@@ -17,7 +17,7 @@
 | Review data handling | [Data & Privacy](DATA_PRIVACY.md) |
 | Contribute to Vericore | [Development](DEVELOPMENT.md) |
 | Check implemented capabilities | [Implementation Status](IMPLEMENTATION_STATUS.md) |
-| Review the 0.8.0 release candidate | [Release Readiness](RELEASE_READINESS_0.8.0.md) |
+| Review the 0.8.0 release record | [Release Readiness](RELEASE_READINESS_0.8.0.md) |
 
 ## Recommended reading paths
 
@@ -70,7 +70,7 @@ Change Safety
 ### Release review
 
 ```text
-Release Readiness
+Release Readiness / Release Record
       ↓
 Release certification
       ↓
@@ -83,7 +83,7 @@ The documentation set has four purposes:
 
 1. **User documentation** — installation, commands, APIs, and integrations.
 2. **Engineering documentation** — architecture, safety boundaries, development, and implementation status.
-3. **Release documentation** — the current release-readiness contract.
+3. **Release documentation** — release certification evidence and the current release record.
 4. **Project policy** — contribution, security, DCO, conduct, licensing, and trademarks at the repository root.
 
 Historical implementation notes may explain a design decision, but they must not be presented as current product instructions.
