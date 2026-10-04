@@ -5,7 +5,7 @@ This document is the pre-release operational contract for the `release/0.8.0-pre
 ## Current candidate
 
 - Preparation branch: `release/0.8.0-preparation-v2`
-- Current candidate: `b4e7d9dac74a0c9feec3e658498420e8442eae94`
+- Current candidate: `5072963424784d2498050c1e1caa28c507c05b79`
 - Release target: `0.8.0`
 - Last published release: `0.7.0`
 - Local end-to-end execution assumption: unavailable; GitHub Actions is the authoritative execution environment.
@@ -106,16 +106,16 @@ If the release audit fails, the packaging and publish jobs cannot proceed.
 
 ## Verification status
 
-The centralized release-certification architecture, machine-readable certificate, and publication dependency are implemented and have passed on the current candidate `b4e7d9dac74a0c9feec3e658498420e8442eae94`.
+The centralized release-certification architecture and machine-readable readiness certificate were fully green on the previous candidate `b4e7d9dac74a0c9feec3e658498420e8442eae94`. The documentation-freeze commits since that certification intentionally form a new candidate and must receive one final complete GitHub Actions certification before release readiness is declared final.
 
-The final documentation audit is now the remaining pre-release activity. Documentation is being frozen before publication; no post-release documentation catch-up is planned.
+The documentation audit has now been performed before publication. Identified drift in Engineering Reality, the CLI API reference, Phase 6 semantic-evidence documentation, workflow governance, and release-readiness records was corrected on this preparation branch.
 
 ## Required final state
 
 Before publishing 0.8.0:
 
-- all required GitHub Actions checks are green;
-- the readiness certificate identifies the exact candidate SHA and version;
+- all required GitHub Actions checks are green on the exact post-documentation candidate;
+- the readiness certificate identifies that exact candidate SHA and version;
 - release publication is blocked when certification fails or is missing;
 - real-repository gates remain green and prove repository immutability;
 - platform, onboarding, Windows, Linux, regression, and live-repository evidence are included in the final certification decision;
