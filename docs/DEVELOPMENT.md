@@ -219,7 +219,7 @@ For AI-assisted features, also document evidence sources, provider boundaries, d
 9. Confirm Agent Change Contract mutation tests pass.
 10. Tag and publish only from the exact candidate certified by the final release audit.
 
-For the completed 0.8.0 release, see [Release Readiness & Release Record](RELEASE_READINESS_0.8.0.md).
+For the current release candidate, see [0.8.1 Release Readiness](RELEASE_READINESS_0.8.1.md). The completed 0.8.0 release remains documented in [RELEASE_READINESS_0.8.0.md](RELEASE_READINESS_0.8.0.md).
 
 ## Documentation ownership
 

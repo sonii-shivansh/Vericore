@@ -2,9 +2,9 @@
 set -euo pipefail
 
 # Vericore local release-preparation helper.
-# Official 0.8.0 packaging and publishing are performed by .github/workflows/release.yml.
+# Official 0.8.1 packaging and publishing are performed by .github/workflows/release.yml.
 
-EXPECTED_VERSION="0.8.0"
+EXPECTED_VERSION="0.8.1"
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 

@@ -1,5 +1,5 @@
 {
-  "name": "Vericore 0.8.0 Release Lab",
+  "name": "Vericore 0.8.1 Release Lab",
   "image": "mcr.microsoft.com/devcontainers/java:1-21-bookworm",
   "features": {
     "ghcr.io/devcontainers/features/git:1": {}
