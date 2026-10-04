@@ -6,7 +6,26 @@ All notable changes to Vericore are documented here. The format follows [Keep a 
 
 ## [Unreleased]
 
-Changes after `0.8.1` only. Keep this section for work that is intentionally outside the published 0.8.1 release.
+Changes after `0.8.2` only. Keep this section for work that is intentionally outside the published `0.8.2` release.
+
+## [0.8.2] — 2026-10-04
+
+### Fixed
+
+- Closed the post-`0.8.1` audit findings around diagnostic exit semantics, controlled validation failures, repository-QA dependency evidence, architecture dependency-edge persistence and drift detection, and organization-analysis response serialization.
+- Stabilized organization-analysis hotspots as JSON objects with explicit `file` and `score` fields instead of Kotlin `Pair` serialization.
+- Persisted deterministic architecture dependency edges so architecture drift can report `EDGE_ADDED` and `EDGE_REMOVED` changes from explicit edge sets.
+- Added regression and release-hardening coverage for the historical `0.8.1` findings.
+
+### Changed
+
+- Architecture Intelligence artifacts use schema `1.1` and include persisted `dependencyEdges`; schema `1.0` remains historical compatibility material where applicable.
+- Release preparation and current-release documentation are aligned to `0.8.2` while preserving the published `0.8.1` release record.
+
+### Release engineering
+
+- Application and Gradle build version aligned to `0.8.2`.
+- Release certification continues to require deterministic audit, complete tests, CLI/MCP/REST validation, live repositories, onboarding/regression gates, four-platform packaging, bundled-runtime checks, and SHA-256 checksums.
 
 ## [0.8.1] — 2026-10-04
 
