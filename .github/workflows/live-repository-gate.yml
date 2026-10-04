@@ -122,6 +122,17 @@ jobs:
           test -s output/engineering-plan.json
           test -s output/engineering-context.json
           test -s output/agent-change-contract.json
+          if [[ "$TARGET_REPOSITORY" == "opendataloader-project/opendataloader-pdf" ]]; then
+            python3 - <<'PY'
+            import json
+            plan=json.load(open('output/engineering-plan.json'))
+            commands=plan.get('verificationCommands', [])
+            assert commands, commands
+            assert all('mvn' in command for command in commands), commands
+            assert all('java/pom.xml' in command for command in commands), commands
+            assert all('./gradlew' not in command for command in commands), commands
+            PY
+          fi
           python3 - <<'PY'
           import json
           p=json.load(open('output/agent-change-contract.json'))
@@ -200,7 +211,7 @@ jobs:
           test "$(git rev-parse HEAD)" = "$original"
           test -z "$(git diff --name-only)"
           test -z "$(git diff --cached --name-only)"
-          test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/|\.vericore/)' || true)"
+          test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/)' || true)"
       - name: Verify MCP returns the persisted contract exactly
         working-directory: ${{ runner.temp }}/target
         run: |
@@ -236,7 +247,7 @@ jobs:
           cp "$RUNNER_TEMP/release-gate-readme.original" "$TEST_FILE"
           test -z "$(git diff --name-only)"
           test -z "$(git diff --cached --name-only)"
-          test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/|\.vericore/)' || true)"
+          test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/)' || true)"
       - name: Verify prepared contract remains valid after mutation tests
         working-directory: ${{ runner.temp }}/target
         run: |
@@ -318,7 +329,7 @@ jobs:
           test "$before" = "$after"
           test -z "$(git diff --name-only)"
           test -z "$(git diff --cached --name-only)"
-          test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/|\.vericore/)' || true)"
+          test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/)' || true)"
       - name: Upload release-gate evidence
         if: always()
         uses: actions/upload-artifact@v7

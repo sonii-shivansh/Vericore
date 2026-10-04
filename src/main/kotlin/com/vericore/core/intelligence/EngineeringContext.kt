@@ -1,12 +1,12 @@
 package com.vericore.core.intelligence
 
 import com.vericore.core.scanner.RepositoryScanner
+import com.vericore.core.workflow.RepositoryState
 import java.io.File
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import org.eclipse.jgit.api.Git
 
 const val ENGINEERING_CONTEXT_SCHEMA_VERSION = "1.0"
 
@@ -73,15 +73,15 @@ object EngineeringContextEngine {
             ContextFile(relative, sha256(file.readBytes()), file.length())
         }
         val gitState = runCatching {
-            Git.open(repositoryRoot).use { git ->
-                val commit = git.repository.resolve("HEAD")?.name
-                val status = git.status().call()
-                val changed = (status.added + status.changed + status.removed + status.modified + status.missing + status.untracked)
-                    .map { it.replace(File.separatorChar, '/') }
-                    .filterNot(::isGeneratedPath)
-                    .distinct().sorted()
-                commit to changed
-            }
+            val commit = RepositoryState.head(repositoryRoot.path)
+            val changed = GitChangeSetBuilder.fromWorkingTree(repositoryRoot.path)
+                .files
+                .flatMap { listOfNotNull(it.path, it.oldPath) }
+                .map { it.replace(File.separatorChar, '/') }
+                .filterNot(::isGeneratedPath)
+                .distinct()
+                .sorted()
+            commit to changed
         }.getOrNull()
         val languages = contextFiles.mapNotNull { file ->
             when (file.path.substringAfterLast('.', "").lowercase()) {

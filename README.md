@@ -77,7 +77,7 @@ vericore prepare "add payment validation" --path /path/to/repository
 vericore verify --path /path/to/repository
 ```
 
-`prepare` persists the engineering context, engineering plan, and Agent Change Contract. `verify` checks the original persisted contract; it does not silently replace it.
+`prepare` persists an `EngineeringContextSnapshot` at `output/engineering-context.json`, an `EngineeringPreparationResult` at `output/engineering-preparation.json`, an engineering plan, and an Agent Change Contract. `verify` checks the original persisted contract; it does not silently replace it.
 
 ### Run the local API
 

@@ -64,6 +64,28 @@ class GitChangeSetBuilderTest {
     }
 
     @Test
+    fun `working tree preserves Unicode paths without corrupting them`() {
+        val root = Files.createTempDirectory("codecontext-working-tree-unicode-").toFile()
+        Git.init().setDirectory(root).call().use { git ->
+            val unicode = root.resolve("Ünicode.kt")
+            unicode.writeText("class Unicode\n")
+            git.add().addFilepattern("Ünicode.kt").call()
+            git.commit().setMessage("initial")
+                .setAuthor(PersonIdent("test", "test@example.com"))
+                .setCommitter(PersonIdent("test", "test@example.com"))
+                .call()
+
+            unicode.appendText("fun changed() = Unit\n")
+
+            val result = GitChangeSetBuilder.fromWorkingTree(root.path)
+
+            assertEquals(listOf("Ünicode.kt"), result.files.map { it.path })
+            assertEquals(ChangeType.MODIFIED, result.files.single().changeType)
+        }
+        root.deleteRecursively()
+    }
+
+    @Test
     fun `working tree ignores Vericore and legacy CodeContext generated output`() {
         val root = Files.createTempDirectory("codecontext-working-tree-").toFile()
         Git.init().setDirectory(root).call().use { git ->

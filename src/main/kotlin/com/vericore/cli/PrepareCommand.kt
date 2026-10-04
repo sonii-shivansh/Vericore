@@ -1,5 +1,8 @@
 package com.vericore.cli
 
+import com.vericore.core.config.ConfigLoader
+import com.vericore.core.intelligence.EngineeringContextEngine
+import com.vericore.core.scanner.RepositoryScanner
 import com.vericore.core.workflow.EngineeringPreparation
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
@@ -22,7 +25,10 @@ class PrepareCommand : CliktCommand(name = "prepare", help = "Prepare an evidenc
         val root = File(path).canonicalFile
         val result = runBlocking { EngineeringPreparation.prepare(root.path, changeSummary) }
         val json = Json { prettyPrint = true; encodeDefaults = true }
-        val artifactPath = output ?: root.resolve("output/engineering-context.json").path
+        val contextPath = root.resolve("output/engineering-context.json").apply { parentFile?.mkdirs() }
+        val snapshot = EngineeringContextEngine.snapshot(root, RepositoryScanner(ConfigLoader.loadForRepository(root.path)))
+        contextPath.writeText(EngineeringContextEngine.encode(snapshot))
+        val artifactPath = output ?: root.resolve("output/engineering-preparation.json").path
         val artifact = File(artifactPath).let { if (it.isAbsolute) it else root.resolve(it.path) }.apply { parentFile?.mkdirs() }
         artifact.writeText(json.encodeToString(result))
         val planPath = planOutput ?: root.resolve("output/engineering-plan.json").path
@@ -31,7 +37,8 @@ class PrepareCommand : CliktCommand(name = "prepare", help = "Prepare an evidenc
         val contractPath = contractOutput ?: root.resolve("output/agent-change-contract.json").path
         val contractFile = File(contractPath).let { if (it.isAbsolute) it else root.resolve(it.path) }.apply { parentFile?.mkdirs() }
         contractFile.writeText(json.encodeToString(result.contract))
-        echo("Engineering context: ${artifact.path}")
+        echo("Engineering context snapshot: ${contextPath.path}")
+        echo("Engineering preparation: ${artifact.path}")
         echo("Engineering plan: ${planFile.path}")
         echo("Agent change contract: ${contractFile.path}")
         echo("Risk: ${result.plan.riskLevel}")

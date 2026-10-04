@@ -204,7 +204,7 @@ jobs:
           test "$(cat "$RUNNER_TEMP/target-before.sha")" = "$(git rev-parse HEAD)"
           test -z "$(git diff --name-only)"
           test -z "$(git diff --cached --name-only)"
-          test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/|\.vericore/)' || true)"
+          test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/)' || true)"
       - name: Upload complete output evidence
         if: always()
         uses: actions/upload-artifact@v7

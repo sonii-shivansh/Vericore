@@ -2,6 +2,10 @@ package com.vericore.mcp
 
 import java.io.ByteArrayOutputStream
 import java.io.PrintStream
+import java.nio.file.Files
+import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.lib.PersonIdent
+import com.vericore.core.intelligence.EngineeringContextSnapshot
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -44,6 +48,62 @@ class McpProtocolTest {
             assertTrue(warning.contains("migrate to 'vericore_get_engineering_reality'"))
         } finally {
             System.setErr(originalErr)
+        }
+    }
+
+    @Test
+    fun prepareChangePersistsContractForImmediateRetrieval() {
+        val root = Files.createTempDirectory("vericore-mcp-prepare-").toFile()
+        try {
+            root.resolve("src/App.kt").apply {
+                parentFile.mkdirs()
+                writeText("class App")
+            }
+            Git.init().setDirectory(root).call().use { git ->
+                git.add().addFilepattern(".").call()
+                git.commit()
+                    .setMessage("baseline")
+                    .setAuthor(PersonIdent("test", "test@example.com"))
+                    .setCommitter(PersonIdent("test", "test@example.com"))
+                    .call()
+            }
+
+            val prepare = McpProtocol.handle(buildJsonObject {
+                put("jsonrpc", JsonPrimitive("2.0"))
+                put("id", JsonPrimitive(10))
+                put("method", JsonPrimitive("tools/call"))
+                put("params", buildJsonObject {
+                    put("name", JsonPrimitive("vericore_prepare_change"))
+                    put("arguments", buildJsonObject {
+                        put("repoPath", JsonPrimitive(root.path))
+                        put("changeSummary", JsonPrimitive("update App"))
+                    })
+                })
+            })
+            assertTrue(prepare["result"] != null)
+            val contextFile = root.resolve("output/engineering-context.json")
+            val preparationFile = root.resolve("output/engineering-preparation.json")
+            val contractFile = root.resolve("output/agent-change-contract.json")
+            assertTrue(contextFile.isFile)
+            assertTrue(preparationFile.isFile)
+            assertTrue(contractFile.isFile)
+            val snapshot = kotlinx.serialization.json.Json.decodeFromString(EngineeringContextSnapshot.serializer(), contextFile.readText())
+            assertTrue(snapshot.snapshotDigest.isNotBlank())
+
+            val get = McpProtocol.handle(buildJsonObject {
+                put("jsonrpc", JsonPrimitive("2.0"))
+                put("id", JsonPrimitive(11))
+                put("method", JsonPrimitive("tools/call"))
+                put("params", buildJsonObject {
+                    put("name", JsonPrimitive("vericore_get_change_contract"))
+                    put("arguments", buildJsonObject { put("repoPath", JsonPrimitive(root.path)) })
+                })
+            })
+            val result = get["result"]?.toString() ?: ""
+            assertTrue(result.contains("fingerprint"))
+            assertTrue(result.contains(root.canonicalPath))
+        } finally {
+            root.deleteRecursively()
         }
     }
 

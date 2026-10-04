@@ -20,15 +20,21 @@ import com.vericore.core.scanner.RepositoryScanner
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
 import io.ktor.server.http.content.*
+import io.ktor.server.plugins.BadRequestException
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.request.*
+
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.Paths
+import java.net.InetAddress
+import java.nio.channels.UnresolvedAddressException
 import java.util.UUID
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
 
 @Serializable data class AnalysisRequest(val repoPath: String)
 @Serializable data class AskRequest(val repoPath: String, val question: String)
@@ -43,6 +49,28 @@ private const val MAX_QUESTION_LENGTH = 16_000
 private const val MAX_CHANGED_PATHS = 100
 private const val MAX_REVISION_LENGTH = 256
 
+private val requestJson = Json { ignoreUnknownKeys = false }
+
+private suspend inline fun <reified T> ApplicationCall.receiveJson(): T {
+    val contentType = request.contentType()
+    if (!contentType.match(io.ktor.http.ContentType.Application.Json)) {
+        throw BadRequestException("Content-Type must be application/json")
+    }
+    val body = try {
+        receiveText()
+    } catch (e: Exception) {
+        throw BadRequestException("Unable to read request body", e)
+    }
+    if (body.isBlank()) {
+        throw BadRequestException("Request body must contain JSON")
+    }
+    return try {
+        requestJson.decodeFromString<T>(body)
+    } catch (e: SerializationException) {
+        throw BadRequestException("Malformed or unsupported JSON request body", e)
+    }
+}
+
 fun Application.module() {
     install(ContentNegotiation) { json() }
     configureRateLimiting()
@@ -56,7 +84,7 @@ fun Application.module() {
 
         post("/analyze") {
             try {
-                val request = call.receive<AnalysisRequest>()
+                val request = call.receiveJson<AnalysisRequest>()
                 require(request.repoPath.isNotBlank()) { "Repository path is invalid" }
                 require(!request.repoPath.startsWith("http://", true) && !request.repoPath.startsWith("https://", true)) { "Remote repositories are not supported by this local endpoint" }
                 val path = sanitizePath(request.repoPath) ?: return@post call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError("Invalid or unsafe repository path"))
@@ -68,6 +96,10 @@ fun Application.module() {
                 com.vericore.output.ReportGenerator().generate(graph, reportFile.absolutePath, enrichedFiles, com.vericore.core.generator.LearningPathGenerator().generate(graph))
                 val hotspots = graph.getTopHotspots(5).map { HotspotInfo(File(it.first).name, it.second) }
                 call.respond(AnalysisResponse(parsedFiles.size, hotspots, "/reports/$reportId.html"))
+            } catch (e: BadRequestException) {
+                call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError(e.message ?: "Invalid request"))
+            } catch (e: io.ktor.server.plugins.ContentTransformationException) {
+                call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError("Malformed or unsupported JSON request body"))
             } catch (e: IllegalArgumentException) {
                 call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError(e.message ?: "Invalid request"))
             } catch (e: Exception) {
@@ -78,7 +110,7 @@ fun Application.module() {
 
         post("/impact") {
             try {
-                val request = call.receive<ImpactRequest>()
+                val request = call.receiveJson<ImpactRequest>()
                 require(request.changedPaths.isNotEmpty() && request.changedPaths.size <= MAX_CHANGED_PATHS) { "Between 1 and $MAX_CHANGED_PATHS changed paths are required" }
                 val path = sanitizePath(request.repoPath) ?: return@post call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError("Invalid or unsafe repository path"))
                 val config = ConfigLoader.loadForRepository(path)
@@ -88,6 +120,10 @@ fun Application.module() {
                 val changedAbsolute = request.changedPaths.map { File(path, it).absolutePath.replace('\\', '/') }
                 val result: ChangeImpactResult = ChangeImpactEngine.analyze(graph.graph, changedAbsolute, graph.pageRankScores, pathLookup.mapValues { it.value.gitMetadata.changeFrequency }, pathLookup.mapValues { it.value.packageName })
                 call.respond(result)
+            } catch (e: BadRequestException) {
+                call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError(e.message ?: "Invalid request"))
+            } catch (e: io.ktor.server.plugins.ContentTransformationException) {
+                call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError("Malformed or unsupported JSON request body"))
             } catch (e: IllegalArgumentException) {
                 call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError(e.message ?: "Invalid request"))
             } catch (e: Exception) {
@@ -98,13 +134,17 @@ fun Application.module() {
 
         post("/architecture") {
             try {
-                val request = call.receive<ArchitectureRequest>()
+                val request = call.receiveJson<ArchitectureRequest>()
                 require(request.repoPath.isNotBlank()) { "Repository path is invalid" }
                 val path = sanitizePath(request.repoPath) ?: return@post call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError("Invalid or unsafe repository path"))
                 val config = ConfigLoader.loadForRepository(path)
                 val (graph, _, _) = AnalysisLogic.analyze(path, config)
                 val result: ArchitectureIntelligenceResult = ArchitectureIntelligenceEngine.analyze(graph.graph, File(path), config.architecture)
                 call.respond(result)
+            } catch (e: BadRequestException) {
+                call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError(e.message ?: "Invalid request"))
+            } catch (e: io.ktor.server.plugins.ContentTransformationException) {
+                call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError("Malformed or unsupported JSON request body"))
             } catch (e: IllegalArgumentException) {
                 call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError(e.message ?: "Invalid request"))
             } catch (e: Exception) {
@@ -115,7 +155,7 @@ fun Application.module() {
 
         post("/pr-intelligence") {
             try {
-                val request = call.receive<PRIntelligenceRequest>()
+                val request = call.receiveJson<PRIntelligenceRequest>()
                 require(request.repoPath.isNotBlank()) { "Repository path is invalid" }
                 require(request.repoPath.length <= 4096) { "Repository path is invalid" }
                 require(!request.repoPath.startsWith("http://", true) && !request.repoPath.startsWith("https://", true)) { "Remote repositories are not supported by this local endpoint" }
@@ -124,6 +164,10 @@ fun Application.module() {
                 val changeSet = if (request.baseRevision != null) GitChangeSetBuilder.fromRevisions(path, request.baseRevision, request.headRevision!!) else GitChangeSetBuilder.fromWorkingTree(path)
                 val result: PRIntelligenceResult = PRIntelligenceAnalyzer.analyze(path, changeSet, ConfigLoader.loadForRepository(path))
                 call.respond(result)
+            } catch (e: BadRequestException) {
+                call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError(e.message ?: "Invalid request"))
+            } catch (e: io.ktor.server.plugins.ContentTransformationException) {
+                call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError("Malformed or unsupported JSON request body"))
             } catch (e: IllegalArgumentException) {
                 call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError(e.message ?: "Invalid request"))
             } catch (e: Exception) {
@@ -134,7 +178,7 @@ fun Application.module() {
 
         post("/ask") {
             try {
-                val request = call.receive<AskRequest>()
+                val request = call.receiveJson<AskRequest>()
                 require(request.question.isNotBlank() && request.question.length <= MAX_QUESTION_LENGTH) { "Question is invalid" }
                 val path = sanitizePath(request.repoPath) ?: return@post call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError("Invalid or unsafe repository path"))
                 val config = ConfigLoader.loadForRepository(path)
@@ -142,6 +186,10 @@ fun Application.module() {
                 val (graph, parsedFiles, _) = AnalysisLogic.analyze(path, config)
                 val context = CodebaseContext(parsedFiles.size, listOf("Kotlin/Java"), graph.getTopHotspots(10).map { it.first }, emptyList())
                 call.respond(AICodeAnalyzer(config.ai.apiKey, config.ai.model, config.ai.provider).askQuestion(request.question, context))
+            } catch (e: BadRequestException) {
+                call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError(e.message ?: "Invalid request"))
+            } catch (e: io.ktor.server.plugins.ContentTransformationException) {
+                call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError("Malformed or unsupported JSON request body"))
             } catch (e: IllegalArgumentException) {
                 call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError(e.message ?: "Invalid request"))
             } catch (e: Exception) {
@@ -152,10 +200,14 @@ fun Application.module() {
 
         post("/analyze-org") {
             try {
-                val paths = call.receive<List<String>>()
+                val paths = call.receiveJson<List<String>>()
                 require(paths.isNotEmpty() && paths.size <= 20) { "At most 20 repositories may be analyzed per request" }
                 paths.forEach { require(sanitizePath(it) != null) { "Invalid or unsafe repository path" } }
                 call.respond(com.vericore.enterprise.OrganizationAnalyzer().analyzeRepositories(paths))
+            } catch (e: BadRequestException) {
+                call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError(e.message ?: "Invalid request"))
+            } catch (e: io.ktor.server.plugins.ContentTransformationException) {
+                call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError("Malformed or unsupported JSON request body"))
             } catch (e: IllegalArgumentException) {
                 call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError(e.message ?: "Invalid request"))
             } catch (e: Exception) {

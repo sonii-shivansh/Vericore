@@ -81,18 +81,20 @@ class EngineeringPlanner {
             if (citations.isEmpty()) add("No repository evidence was supplied; implementation-specific conclusions cannot be established.")
             if (plannedPaths.isEmpty()) add("No explicit planned paths were supplied; change-scope safety can only evaluate evidence-derived context.")
         }
-        val shellRoot = repository.replace("'", "'\\''")
+        val verification = VerificationCommandGenerator.generate(root)
+        val allConcerns = (concerns + verification.notes).distinct().sorted()
+        val allUncertainties = (uncertainties + verification.uncertainties).distinct().sorted()
         val provisional = EngineeringPlan(
             changeSummary = request.changeSummary.trim(),
             repository = repository,
             affectedComponents = affected,
             plannedPaths = plannedPaths,
-            concerns = concerns.sorted(),
+            concerns = allConcerns,
             riskLevel = risk,
             steps = steps,
-            verificationCommands = listOf("cd '$shellRoot' && ./gradlew --no-daemon clean test", "cd '$shellRoot' && ./gradlew --no-daemon build installDist"),
+            verificationCommands = verification.commands,
             evidenceIds = evidenceIds,
-            uncertainties = uncertainties
+            uncertainties = allUncertainties
         )
         return provisional.copy(contractFingerprint = com.vericore.core.workflow.AgentChangeContract.fingerprintFor(provisional))
     }

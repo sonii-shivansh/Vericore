@@ -62,7 +62,8 @@ object EngineeringPreparation {
             EngineeringPlanRequest(
                 changeSummary = changeSummary,
                 changedPaths = changeSet.files.map { it.path },
-                evidence = evidence
+                evidence = evidence,
+                repositoryPath = root.path
             )
         )
         val preparedHead = RepositoryState.head(root.path).orEmpty()

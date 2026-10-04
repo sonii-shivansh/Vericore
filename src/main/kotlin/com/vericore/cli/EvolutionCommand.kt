@@ -22,6 +22,8 @@ class EvolutionCommand : CliktCommand(
     override fun run() {
         val root = File(path).canonicalFile
         require(root.isDirectory) { "Repository path is not a directory: $path" }
+        require(months > 0) { "--months must be greater than 0" }
+        require(interval > 0) { "--interval must be greater than 0" }
         echo("⏳ Starting Temporal Analysis (Time Machine)...")
         echo("   Looking back $months months, every $interval days.")
 
