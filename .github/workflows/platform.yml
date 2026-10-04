@@ -1,9 +1,8 @@
 name: Platform Smoke
 
 on:
-  pull_request:
-    branches: [main]
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read

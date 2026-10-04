@@ -10,7 +10,8 @@ This document is the version-controlled source of truth for the GitHub repositor
 - **Visibility:** Public
 - **Homepage:** `https://sonii-shivansh.github.io/Vericore-Website/`
 - **Canonical icon:** `docs/images/vericore-icon.svg`
-- **Stable release:** `v0.7.0`
+- **Release candidate:** `v0.8.0`
+- **Last published release:** `v0.7.0`
 
 The website favicon SVG is the canonical project icon. Do not create a second logo variant in the repository unless the website branding is intentionally changed first.
 
@@ -18,9 +19,9 @@ The website favicon SVG is the canonical project icon. Do not create a second lo
 
 These controls live in Git and should be reviewed like code:
 
-- DCO verification runs on pull requests targeting `main`.
-- CI/CD runs on pull requests targeting `main` and `develop`.
-- Verification runs on pull requests targeting `main`.
+- DCO verification runs independently on pull requests targeting `main`.
+- The `0.8.0 Release Audit` is the authoritative PR release-certification workflow for `main` and composes the reusable CI, verification, platform, onboarding, regression, and live-repository workflows.
+- `ci.yml`, `verification.yml`, `platform.yml`, `onboarding-e2e.yml`, `phase1-regression.yml`, `phase4-regression.yml`, `live-repository-gate.yml`, and `live-output-quality.yml` are reusable workflows and are not independent PR-triggered merge gates.
 - Dependabot configuration covers Gradle and GitHub Actions.
 - Security vulnerability reporting remains governed by `SECURITY.md`; vulnerabilities should not be disclosed through public issues.
 - Issue templates and the pull-request template are the contribution intake contract.
@@ -65,18 +66,19 @@ Create or update a ruleset for `main` with these requirements:
 
 #### Required status checks
 
-GitHub rulesets require the **job/check names**, not the workflow display names. For the current Vericore workflows, require these four stable PR checks:
+The current workflow architecture has one authoritative product/release certification check plus independent DCO governance:
 
-1. **Test on Windows** — CI/CD test/build job
-2. **Build Distribution** — CI/CD distribution job
-3. **Build, test, and end-to-end verify** — Verification
-4. **Check commit sign-offs** — DCO
+1. **0.8.0 Release Audit** — authoritative candidate certification on pull requests targeting `main`;
+2. **Check commit sign-offs** — independent DCO governance check.
 
-Do **not** require CodeQL yet. CodeQL is currently managed by GitHub's dynamic code-scanning workflow and should only become merge-blocking after its configuration is deliberately reviewed and its check is confirmed stable for this repository. Do not require manual-only or quota-sensitive workflows merely because they exist; keep them informative until they are deterministic and appropriate as merge gates.
+The reusable workflows called by the release audit should not be added individually as required status checks, because that would duplicate the certification graph at the branch-ruleset layer.
+
+Do **not** require CodeQL yet. CodeQL is currently managed by GitHub's dynamic code-scanning workflow and should only become merge-blocking after its configuration is deliberately reviewed and its check is confirmed stable for this repository.
 
 ### Releases
 
 - Do not rewrite the published `v0.7.0` tag or its artifacts.
+- `v0.8.0` is the current release candidate and must originate from the release workflow after all verification gates pass.
 - Future releases should originate from the repository's release workflow after the normal verification gates pass.
 - Release artifacts must remain reproducible and accompanied by checksums where the release workflow provides them.
 
@@ -100,7 +102,6 @@ Before merging a repository-governance change:
 - [ ] No intentional compatibility path was removed.
 - [ ] PR template and issue templates remain valid.
 - [ ] DCO passes.
-- [ ] CI/CD passes.
-- [ ] Verification passes.
+- [ ] Release Audit passes for release-candidate preparation changes.
 - [ ] Release tags/artifacts were not rewritten.
 - [ ] The final GitHub Settings state matches this document.

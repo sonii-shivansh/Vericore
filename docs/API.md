@@ -23,6 +23,7 @@ architecture-drift
 architecture-contract
 context-snapshot
 context-diff
+evidence-graph
 reality
 pr-intelligence
 repo-qa
@@ -48,6 +49,14 @@ vericore reality /path/to/repository --json
 ```
 
 Reality binds deterministic analysis and repository-context state. A stale analysis is rejected instead of being silently combined with a newer repository state.
+
+### Evidence graph
+
+```bash
+vericore evidence-graph /path/to/repository --json
+```
+
+The semantic evidence graph is a bounded, deterministic relationship layer over already-produced repository evidence. It is bound to repository/commit identity, rejects invalid provenance relationships, and exposes a stable SHA-256 digest for downstream identity and provenance.
 
 ### Architecture drift and governance
 

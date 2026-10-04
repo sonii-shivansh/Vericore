@@ -140,6 +140,6 @@ sequenceDiagram
 
 ## Current boundary
 
-Engineering Reality currently composes deterministic analysis and repository-context artifacts. It does not yet include the complete semantic evidence graph, cross-repository system identity, or autonomous repository mutation.
+Engineering Reality composes deterministic analysis, repository-context artifacts, and the semantic evidence graph identity. The evidence graph contributes repository/commit-bound identity, deterministic graph cardinality, and a stable SHA-256 graph digest to the Engineering Reality contract. The graph does not invent repository facts and does not replace the dependency graph.
 
-The separate Agent Change Contract builds on this state identity for the prepare → change → verify workflow. It is a verification boundary, not an authorization system or an autonomous coding mechanism.
+Engineering Reality does not include cross-repository system identity or autonomous repository mutation. The separate Agent Change Contract builds on this state identity for the prepare → change → verify workflow. It is a verification boundary, not an authorization system or an autonomous coding mechanism.

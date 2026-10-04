@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: "Release version without v prefix, for example 0.7.0"
+        description: "Release version without v prefix, for example 0.8.0"
         required: true
         type: string
   push:
@@ -15,8 +15,14 @@ permissions:
   contents: write
 
 jobs:
+  release-audit:
+    name: Certify release candidate
+    uses: ./.github/workflows/release-audit.yml
+    secrets: inherit
+
   resolve-version:
     name: Resolve and verify release version
+    needs: release-audit
     runs-on: ubuntu-24.04
     outputs:
       version: ${{ steps.version.outputs.version }}
@@ -147,7 +153,7 @@ jobs:
 
   publish:
     name: Publish GitHub Release
-    needs: [resolve-version, package]
+    needs: [release-audit, resolve-version, package]
     runs-on: ubuntu-24.04
     steps:
       - name: Download release artifacts

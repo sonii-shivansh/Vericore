@@ -46,25 +46,21 @@ jobs:
       TARGET_REPOSITORY: ${{ inputs.repository || 'spring-projects/spring-petclinic' }}
       TARGET_REF: ${{ inputs.ref || 'main' }}
       HAS_GEMINI: ${{ secrets.GEMINI_API_KEY != '' && (inputs.run_gemini == true || inputs.run_gemini == '') }}
-
     steps:
       - name: Checkout Vericore
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
-
       - name: Set up JDK 21
         uses: actions/setup-java@v6
         with:
           java-version: 21
           distribution: temurin
           cache: gradle
-
       - name: Build and test Vericore
         run: |
           chmod +x ./gradlew
           ./gradlew --no-daemon clean test installDist
-
       - name: Clone live target repository
         run: |
           rm -rf "$RUNNER_TEMP/target"
@@ -73,7 +69,6 @@ jobs:
           test -d .git
           git status --short
           git rev-parse HEAD > "$RUNNER_TEMP/target-before.sha"
-
       - name: Run complete CLI surface
         working-directory: ${{ runner.temp }}/target
         run: |
@@ -82,7 +77,7 @@ jobs:
           "$CLI" doctor
           "$CLI" analyze .
           "$CLI" architecture . --json
-          SOURCE_FILE="$(find . -type f \( -name '*.java' -o -name '*.kt' \) | grep -v '/build/' | head -1)"
+          SOURCE_FILE="$(find . -type f \( -name '*.java' -o -name '*.kt' \) -not -path './build/*' -print -quit)"
           test -n "$SOURCE_FILE"
           "$CLI" impact . "$SOURCE_FILE" --json
           cp output/architecture.json output/architecture-baseline.json
@@ -93,21 +88,28 @@ jobs:
           "$CLI" context-diff output/engineering-context-baseline.json output/engineering-context.json --json
           "$CLI" evidence-graph . --json
           test -s output/semantic-evidence-graph.json
+          cp output/semantic-evidence-graph.json "$RUNNER_TEMP/evidence-graph-first.json"
+          "$CLI" evidence-graph . --json
           python3 - <<'PY'
           import json
-          graph=json.load(open('output/semantic-evidence-graph.json'))
-          assert graph['schemaVersion'] == '1.0'
-          assert graph['repositoryId']
-          assert graph['observedCommit']
-          assert graph['digest'] and len(graph['digest']) == 64
-          assert graph['nodeCount'] == len(graph['nodes'])
-          assert graph['edgeCount'] == len(graph['edges'])
-          node_ids={n['id'] for n in graph['nodes']}
-          assert all(e['fromId'] in node_ids and e['toId'] in node_ids for e in graph['edges'])
+          import os
+          from pathlib import Path
+          first=json.loads((Path(os.environ['RUNNER_TEMP']) / 'evidence-graph-first.json').read_text())
+          second=json.loads(Path('output/semantic-evidence-graph.json').read_text())
+          assert first == second, 'semantic evidence graph is not deterministic across repeated runs'
+          assert second['schemaVersion'] == '1.0'
+          assert second['repositoryId']
+          assert second['observedCommit']
+          assert second['digest'] and len(second['digest']) == 64
+          assert second['nodeCount'] == len(second['nodes'])
+          assert second['edgeCount'] == len(second['edges'])
+          node_ids={n['id'] for n in second['nodes']}
+          assert all(e['fromId'] in node_ids and e['toId'] in node_ids for e in second['edges'])
+          assert all(n['repositoryId'] == second['repositoryId'] for n in second['nodes'])
+          assert all(n['observedCommit'] == second['observedCommit'] for n in second['nodes'])
           PY
           "$CLI" evolution
           "$CLI" pr-intelligence . --base HEAD~1 --head HEAD --json
-
       - name: Grounded intelligence and preparation
         working-directory: ${{ runner.temp }}/target
         run: |
@@ -127,7 +129,6 @@ jobs:
           assert p['repository']
           assert p['preparedHead']
           PY
-
       - name: Prove contract tamper detection
         working-directory: ${{ runner.temp }}/target
         run: |
@@ -146,24 +147,96 @@ jobs:
           test "$status" -ne 0
           grep -q 'Status: FAIL' "$RUNNER_TEMP/contract-tamper.log"
           cp "$RUNNER_TEMP/contract-original.json" output/agent-change-contract.json
-
+      - name: Prove repository and plan binding integrity
+        working-directory: ${{ runner.temp }}/target
+        run: |
+          CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
+          cp output/agent-change-contract.json "$RUNNER_TEMP/contract-before-binding-tests.json"
+          cp output/engineering-plan.json "$RUNNER_TEMP/plan-before-binding-test.json"
+          python3 - <<'PY'
+          import json
+          contract=json.load(open('output/agent-change-contract.json'))
+          contract['repository'] = 'https://github.com/example/incorrect-repository.git'
+          json.dump(contract, open('output/agent-change-contract.json','w'), indent=2)
+          PY
+          set +e
+          "$CLI" verify --output output/wrong-repository-verify.json > "$RUNNER_TEMP/wrong-repository.log" 2>&1
+          status=$?
+          set -e
+          test "$status" -ne 0
+          grep -Eq 'Status: FAIL|Verification failed' "$RUNNER_TEMP/wrong-repository.log"
+          cp "$RUNNER_TEMP/contract-before-binding-tests.json" output/agent-change-contract.json
+          python3 - <<'PY'
+          import json
+          plan=json.load(open('output/engineering-plan.json'))
+          plan['changeSummary'] = 'Tampered plan that was never prepared'
+          json.dump(plan, open('output/engineering-plan.json','w'), indent=2)
+          PY
+          set +e
+          "$CLI" verify --output output/mismatched-plan-verify.json > "$RUNNER_TEMP/mismatched-plan.log" 2>&1
+          status=$?
+          set -e
+          test "$status" -ne 0
+          grep -Eq 'Status: FAIL|Verification failed' "$RUNNER_TEMP/mismatched-plan.log"
+          cp "$RUNNER_TEMP/plan-before-binding-test.json" output/engineering-plan.json
+      - name: Prove stale prepared HEAD detection
+        working-directory: ${{ runner.temp }}/target
+        run: |
+          CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
+          original=$(cat "$RUNNER_TEMP/target-before.sha")
+          git config user.name 'Vericore Release Gate'
+          git config user.email 'vericore-release-gate@example.invalid'
+          printf '%s\n' 'temporary release-gate HEAD mutation' > .vericore-release-gate-head-change
+          git add .vericore-release-gate-head-change
+          git commit -m 'test: simulate stale prepared head'
+          set +e
+          "$CLI" verify --output output/stale-head-verify.json > "$RUNNER_TEMP/stale-head.log" 2>&1
+          status=$?
+          set -e
+          test "$status" -ne 0
+          grep -Eq 'Status: FAIL|Verification failed' "$RUNNER_TEMP/stale-head.log"
+          git reset --hard "$original"
+          rm -f .vericore-release-gate-head-change
+          test "$(git rev-parse HEAD)" = "$original"
+          test -z "$(git diff --name-only)"
+          test -z "$(git diff --cached --name-only)"
+          test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/|\.vericore/)' || true)"
+      - name: Verify MCP returns the persisted contract exactly
+        working-directory: ${{ runner.temp }}/target
+        run: |
+          CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
+          printf '%s\n' \
+            '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"release-gate","version":"1.0"}}}' \
+            '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"vericore_get_change_contract","arguments":{"repoPath":"."}}}' \
+            | "$CLI" mcp > output/mcp-contract.jsonl
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          responses=[json.loads(line) for line in Path('output/mcp-contract.jsonl').read_text().splitlines() if line.strip()]
+          response=next(r for r in responses if r.get('id') == 2)
+          result=response.get('result')
+          assert result and result.get('isError') is False, response
+          returned=json.loads(''.join(x.get('text','') for x in result.get('content',[])))
+          persisted=json.loads(Path('output/agent-change-contract.json').read_text())
+          assert returned == persisted, 'MCP did not return the persisted Agent Change Contract exactly'
+          PY
       - name: Prove unexpected source change detection
         working-directory: ${{ runner.temp }}/target
         run: |
           CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
-          TEST_FILE="src/vericore-live-gate-safety-check.txt"
-          printf '%s\n' 'intentional release-gate mutation' > "$TEST_FILE"
+          TEST_FILE="README.md"
+          cp "$TEST_FILE" "$RUNNER_TEMP/release-gate-readme.original"
+          printf '\nintentional release-gate mutation\n' >> "$TEST_FILE"
           set +e
           "$CLI" verify --output output/unexpected-change-verify.json > "$RUNNER_TEMP/unexpected-change.log" 2>&1
           status=$?
           set -e
           test "$status" -ne 0
           grep -q 'Status: FAIL' "$RUNNER_TEMP/unexpected-change.log"
-          rm -f "$TEST_FILE"
+          cp "$RUNNER_TEMP/release-gate-readme.original" "$TEST_FILE"
           test -z "$(git diff --name-only)"
           test -z "$(git diff --cached --name-only)"
-          test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/|\.vericore/)')"
-
+          test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/|\.vericore/)' || true)"
       - name: Verify prepared contract remains valid after mutation tests
         working-directory: ${{ runner.temp }}/target
         run: |
@@ -171,7 +244,6 @@ jobs:
           "$CLI" verify --output output/final-verify.json
           test -s output/final-verify.json
           grep -q '"valid": true' output/final-verify.json
-
       - name: MCP protocol and gateway smoke test
         working-directory: ${{ runner.temp }}/target
         run: |
@@ -202,7 +274,6 @@ jobs:
           assert contract.get('fingerprint') and len(contract['fingerprint']) == 64
           assert contract.get('repository')
           PY
-
       - name: REST API live repository smoke test
         working-directory: ${{ runner.temp }}/target
         run: |
@@ -221,7 +292,6 @@ jobs:
           test -s output/rest-architecture.json
           status=$(curl --silent --output /tmp/traversal.json --write-out '%{http_code}' -H 'Content-Type: application/json' -d '{"repoPath":"/tmp/../etc"}' http://127.0.0.1:18080/analyze)
           test "$status" = '400'
-
       - name: Live Gemini smoke test
         if: ${{ env.HAS_GEMINI == 'true' }}
         working-directory: ${{ runner.temp }}/target
@@ -240,7 +310,6 @@ jobs:
             test "$status" -eq 0
             ! grep -q 'AI features disabled' output/live-gemini.txt
           fi
-
       - name: Verify target repository was not modified
         working-directory: ${{ runner.temp }}/target
         run: |
@@ -249,8 +318,7 @@ jobs:
           test "$before" = "$after"
           test -z "$(git diff --name-only)"
           test -z "$(git diff --cached --name-only)"
-          test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/|\.vericore/)')"
-
+          test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/|\.vericore/)' || true)"
       - name: Upload release-gate evidence
         if: always()
         uses: actions/upload-artifact@v7

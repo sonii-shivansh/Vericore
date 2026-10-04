@@ -1,7 +1,12 @@
-name: 0.7.0 Release Audit
+name: 0.8.0 Release Audit
 
 on:
   workflow_dispatch:
+  workflow_call:
+    outputs:
+      ready:
+        description: "Whether the exact candidate passed every required release-audit check"
+        value: ${{ jobs.readiness-certificate.outputs.ready }}
   pull_request:
     branches: [ main ]
   push:
@@ -15,6 +20,8 @@ jobs:
     name: Deterministic audit
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -26,6 +33,13 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew --no-daemon clean test installDist
+      - name: Resolve application version
+        id: version
+        shell: bash
+        run: |
+          version="$(./gradlew -q properties | awk -F': ' '$1 == "version" {print $2; exit}')"
+          test -n "$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
       - name: Run CLI audit
         run: bash scripts/audit/cli-audit.sh
       - name: Run MCP audit
@@ -64,8 +78,44 @@ jobs:
           path: output/
           if-no-files-found: ignore
 
-  live-release-gate:
-    name: Existing live repository gate
+  windows-ci:
+    name: Windows CI
+    needs: deterministic-audit
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+
+  verification:
+    name: Product verification
+    needs: deterministic-audit
+    uses: ./.github/workflows/verification.yml
+    secrets: inherit
+
+  platform:
+    name: Cross-platform smoke
+    needs: deterministic-audit
+    uses: ./.github/workflows/platform.yml
+    secrets: inherit
+
+  onboarding:
+    name: Onboarding E2E
+    needs: deterministic-audit
+    uses: ./.github/workflows/onboarding-e2e.yml
+    secrets: inherit
+
+  phase1:
+    name: Phase 1 regression
+    needs: deterministic-audit
+    uses: ./.github/workflows/phase1-regression.yml
+    secrets: inherit
+
+  phase4:
+    name: Phase 4 regression
+    needs: deterministic-audit
+    uses: ./.github/workflows/phase4-regression.yml
+    secrets: inherit
+
+  live-petclinic:
+    name: Live repository gate — Spring Petclinic
     needs: deterministic-audit
     uses: ./.github/workflows/live-repository-gate.yml
     with:
@@ -73,3 +123,118 @@ jobs:
       ref: main
       run_gemini: false
     secrets: inherit
+
+  live-runelite:
+    name: Live repository gate — RuneLite
+    needs: deterministic-audit
+    uses: ./.github/workflows/live-repository-gate.yml
+    with:
+      repository: runelite/runelite
+      ref: master
+      run_gemini: false
+    secrets: inherit
+
+  output-petclinic:
+    name: Output quality — Spring Petclinic
+    needs: deterministic-audit
+    uses: ./.github/workflows/live-output-quality.yml
+    with:
+      repository: spring-projects/spring-petclinic
+      ref: main
+      run_gemini: true
+    secrets: inherit
+
+  output-runelite:
+    name: Output quality — RuneLite
+    needs: deterministic-audit
+    uses: ./.github/workflows/live-output-quality.yml
+    with:
+      repository: runelite/runelite
+      ref: master
+      run_gemini: false
+    secrets: inherit
+
+  readiness-certificate:
+    name: Generate release readiness certificate
+    if: always()
+    needs: [deterministic-audit, windows-ci, verification, platform, onboarding, phase1, phase4, live-petclinic, live-runelite, output-petclinic, output-runelite]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      ready: ${{ steps.certificate.outputs.ready }}
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          java-version: "21"
+          distribution: "temurin"
+          cache: "gradle"
+      - name: Resolve exact candidate version
+        id: version
+        shell: bash
+        run: |
+          version="$(./gradlew -q properties | awk -F': ' '$1 == "version" {print $2; exit}')"
+          test -n "$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Generate certificate
+        id: certificate
+        shell: bash
+        env:
+          CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          CANDIDATE_REF: ${{ github.head_ref || github.ref_name }}
+        run: |
+          output="release-readiness-${{ steps.version.outputs.version }}.json"
+          python3 scripts/audit/release-readiness.py \
+            --output "$output" \
+            --version "${{ steps.version.outputs.version }}" \
+            --sha "$CANDIDATE_SHA" \
+            --ref "$CANDIDATE_REF" \
+            --check "deterministic-audit=${{ needs.deterministic-audit.result }}" \
+            --check "windows-ci=${{ needs.windows-ci.result }}" \
+            --check "verification=${{ needs.verification.result }}" \
+            --check "platform=${{ needs.platform.result }}" \
+            --check "onboarding=${{ needs.onboarding.result }}" \
+            --check "phase1=${{ needs.phase1.result }}" \
+            --check "phase4=${{ needs.phase4.result }}" \
+            --check "live-petclinic=${{ needs.live-petclinic.result }}" \
+            --check "live-runelite=${{ needs.live-runelite.result }}" \
+            --check "output-petclinic=${{ needs.output-petclinic.result }}" \
+            --check "output-runelite=${{ needs.output-runelite.result }}"
+          ready="$(python3 -c 'import json; print(str(json.load(open("'"$output"'"))["overallReady"]).lower())')"
+          echo "ready=$ready" >> "$GITHUB_OUTPUT"
+      - name: Validate certificate schema and candidate binding
+        shell: bash
+        env:
+          CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          files = sorted(Path('.').glob('release-readiness-*.json'))
+          assert len(files) == 1, files
+          certificate = json.loads(files[0].read_text())
+          assert certificate['schemaVersion'] == '1.0'
+          assert certificate['project'] == 'Vericore'
+          assert certificate['candidate']['sha'] == os.environ['CANDIDATE_SHA']
+          assert certificate['checks']
+          assert certificate['overallReady'] is all(item['passed'] for item in certificate['checks'].values())
+          assert all(item['required'] is True for item in certificate['checks'].values())
+          PY
+      - name: Upload readiness certificate
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-readiness-${{ steps.version.outputs.version }}
+          path: release-readiness-*.json
+          if-no-files-found: error
+      - name: Fail closed when candidate is not release-ready
+        if: always()
+        shell: bash
+        run: |
+          ready='${{ steps.certificate.outputs.ready }}'
+          test "$ready" = "true"
