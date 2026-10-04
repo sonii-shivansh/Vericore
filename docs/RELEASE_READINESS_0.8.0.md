@@ -5,9 +5,10 @@ This document is the pre-release operational contract for the `release/0.8.0-pre
 ## Current candidate
 
 - Preparation branch: `release/0.8.0-preparation-v2`
-- Current candidate: `5072963424784d2498050c1e1caa28c507c05b79`
 - Release target: `0.8.0`
 - Last published release: `0.7.0`
+- Last fully certified pre-documentation candidate: `b4e7d9dac74a0c9feec3e658498420e8442eae94`
+- Final post-documentation candidate: the exact HEAD commit containing the final documentation freeze; the machine-readable readiness certificate is the authoritative source for its SHA/ref/version binding.
 - Local end-to-end execution assumption: unavailable; GitHub Actions is the authoritative execution environment.
 
 ## Workflow responsibility matrix
