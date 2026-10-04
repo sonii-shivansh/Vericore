@@ -11,6 +11,10 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 
 class CodeParallelParser(private val cacheManager: CacheManager? = null) {
+    companion object {
+        const val DEFAULT_PARSER_CONCURRENCY = 8
+        const val MAX_PARSER_CONCURRENCY = 32
+    }
     @Volatile
     var lastWarningCount: Int = 0
         private set
@@ -21,22 +25,18 @@ class CodeParallelParser(private val cacheManager: CacheManager? = null) {
             return@coroutineScope emptyList()
         }
 
-        val runtime = Runtime.getRuntime()
-        val availableMemory = runtime.freeMemory()
-        val chunkSize =
-            when {
-                availableMemory < 256_000_000 -> 25
-                availableMemory < 512_000_000 -> 50
-                else -> 100
-            }
+        val concurrency = System.getenv("VERICORE_PARSER_CONCURRENCY")
+            ?.toIntOrNull()
+            ?.coerceIn(1, MAX_PARSER_CONCURRENCY)
+            ?: DEFAULT_PARSER_CONCURRENCY
+        val dispatcher = Dispatchers.IO.limitedParallelism(concurrency)
 
         val processed = AtomicInteger(0)
         val warnings = AtomicInteger(0)
         val total = files.size
 
-        val parsedFiles = files.chunked(chunkSize).flatMap { chunk ->
-            chunk.map { file ->
-                async(Dispatchers.IO) {
+        val parsedFiles = files.map { file ->
+                async(dispatcher) {
                     try {
                         cacheManager?.getCachedParse(file)?.let { cached ->
                             cached.parseWarning?.let { warnings.incrementAndGet() }
