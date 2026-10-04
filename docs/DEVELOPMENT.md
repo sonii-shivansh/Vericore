@@ -210,14 +210,16 @@ For AI-assisted features, also document evidence sources, provider boundaries, d
 
 1. Confirm the application version and `build.gradle.kts` agree.
 2. Update `CHANGELOG.md` and implementation-status documentation.
-3. Freeze root and `docs/` Markdown before publication; do not defer documentation updates until after release.
-4. Run the complete 0.8.0 release certification, including Windows, Linux, cross-platform, onboarding, regression, live-repository, and output-quality checks.
+3. Freeze root and `docs/` Markdown before publication; do not defer required release-state documentation until after release.
+4. Run the complete release certification for the target version, including Windows, Linux, cross-platform, onboarding, regression, live-repository, and output-quality checks.
 5. Confirm the machine-readable readiness certificate identifies the exact candidate SHA, ref, version, and successful required checks.
 6. Confirm the release workflow invokes release certification before version resolution, packaging, or publication.
 7. Review generated artifacts, checksums, and dependency changes.
 8. Review security and data-handling implications.
 9. Confirm Agent Change Contract mutation tests pass.
 10. Tag and publish only from the exact candidate certified by the final release audit.
+
+For the completed 0.8.0 release, see [Release Readiness & Release Record](RELEASE_READINESS_0.8.0.md).
 
 ## Documentation ownership
 
