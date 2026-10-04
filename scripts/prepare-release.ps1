@@ -1,8 +1,8 @@
 # Vericore local release-preparation helper for Windows.
-# Official 0.8.1 packaging and publishing are performed by .github/workflows/release.yml.
+# Official 0.8.2 packaging and publishing are performed by .github/workflows/release.yml.
 
 $ErrorActionPreference = "Stop"
-$ExpectedVersion = "0.8.1"
+$ExpectedVersion = "0.8.2"
 $Root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 Set-Location $Root
 
