@@ -17,7 +17,8 @@
 | Review data handling | [Data & Privacy](DATA_PRIVACY.md) |
 | Contribute to Vericore | [Development](DEVELOPMENT.md) |
 | Check implemented capabilities | [Implementation Status](IMPLEMENTATION_STATUS.md) |
-| Review the current 0.8.1 release candidate | [Release Readiness](RELEASE_READINESS_0.8.1.md) |
+| Review the current 0.8.2 release preparation | [0.8.2 Release Readiness](RELEASE_READINESS_0.8.2.md) |
+| Review the published 0.8.1 release record | [0.8.1 Release Readiness](RELEASE_READINESS_0.8.1.md) |
 | Review the previous 0.8.0 release record | [0.8.0 Release Readiness](RELEASE_READINESS_0.8.0.md) |
 
 ## Recommended reading paths

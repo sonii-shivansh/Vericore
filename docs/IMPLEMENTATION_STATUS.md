@@ -40,12 +40,13 @@
 - cycle and boundary signals
 - deterministic architecture artifacts
 - architecture drift comparison against an explicit baseline artifact
-- deterministic drift reporting for findings, cycles, and layer counts
+- deterministic drift reporting for findings, cycles, layer counts, and dependency-edge additions/removals
 - deterministic architecture contracts for CI/governance enforcement
 - `architecture-contract` CLI command
 - contract templates with explicit finding/cycle/severity limits
 - deterministic contract decision records with repository commit, contract/result digests, and stable decision IDs
 - idempotent contract decision history persistence via `--record`
+- architecture artifact schema `1.1` with persisted dependency edges
 
 ### Engineering context and Reality
 
@@ -177,6 +178,7 @@ The MCP server is a trusted local integration without authentication or tenant i
 - path validation
 - rate limiting
 - sanitized public errors
+- organization-analysis hotspots serialized as explicit `{file, score}` objects
 
 The server is intended for trusted local/internal use and does not provide authentication, authorization, tenant isolation, or deployment-level TLS.
 
@@ -207,7 +209,7 @@ GitHub Actions is the authoritative automated execution environment for release 
 
 ## Current release line
 
-`v0.8.0` is the **latest published Vericore release**. `v0.8.1` is the current release candidate on `main` and is not considered released until the exact candidate passes final release certification and the resulting artifacts are published successfully. Earlier public releases were published under the former project name.
+`v0.8.1` is the **latest published Vericore release**. `v0.8.2` is the current release-preparation branch and is not considered released until the exact candidate passes final release certification and the resulting artifacts are published successfully. Earlier public releases were published under the former project name.
 
 ## Current limitations
 

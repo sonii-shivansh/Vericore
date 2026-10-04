@@ -14,7 +14,7 @@ Vericore is a Kotlin/JVM CLI and local REST application for Java and Kotlin repo
 
 ## Current status
 
-Vericore `0.8.0` is the latest **published** release. `0.8.1` is the current release candidate on `main` and must pass the complete release certification and fresh artifact validation before publication.
+Vericore `0.8.1` is the latest **published** release. `0.8.2` is the current release-preparation branch and must pass complete release certification and fresh artifact validation before publication.
 
 ## What Vericore does
 
@@ -201,7 +201,8 @@ See [Contributing](CONTRIBUTING.md) and [Development](docs/DEVELOPMENT.md).
 | Data & Privacy | [Data & Privacy](docs/DATA_PRIVACY.md) |
 | Development | [Development](docs/DEVELOPMENT.md) |
 | Implementation status | [Implementation Status](docs/IMPLEMENTATION_STATUS.md) |
-| Release candidate | [0.8.1 Release Readiness](docs/RELEASE_READINESS_0.8.1.md) |
+| Release preparation | [0.8.2 Release Readiness](docs/RELEASE_READINESS_0.8.2.md) |
+| Published release record | [0.8.1 Release Readiness](docs/RELEASE_READINESS_0.8.1.md) |
 | Previous release record | [0.8.0 Release Readiness](docs/RELEASE_READINESS_0.8.0.md) |
 | Contributing | [Contributing](CONTRIBUTING.md) |
 | Security | [Security](SECURITY.md) |
