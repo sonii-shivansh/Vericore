@@ -48,7 +48,7 @@ if "$APP" architecture-contract "$contract_fixture" --json > "$contract_fixture/
 fi
 grep -q "Architecture contract failed" "$contract_fixture/contract.log"
 ! grep -q "Unexpected error occurred" "$contract_fixture/contract.log"
-! grep -q \tat ' "$contract_fixture/contract.log"
+! grep -Eq '^[[:space:]]+at ' "$contract_fixture/contract.log"
 
 cat > "$qa_fixture/Target.kt" <<'KOTLIN'
 package fixture
