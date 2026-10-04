@@ -132,7 +132,7 @@ object GitChangeSetBuilder {
             mergeDuplicateChanges(changes),
             source = "working-tree-native-git"
         ).also {
-            System.err.println("JGit working-tree diff was unavailable (\${jgitFailure.message}); used native Git status for path-safe recovery.")
+            System.err.println("JGit working-tree diff was unavailable (${jgitFailure.message}); used native Git status for path-safe recovery.")
         }
     }
 
@@ -149,7 +149,7 @@ object GitChangeSetBuilder {
         }
         if (process.exitValue() != 0) {
             val message = decodeUtf8Strict(stderr).trim()
-            throw IllegalStateException("Git working-tree status failed: \${if (message.isBlank()) "git exited \${process.exitValue()}" else message}")
+            throw IllegalStateException("Git working-tree status failed: ${if (message.isBlank()) "git exited ${process.exitValue()}" else message}")
         }
         return stdout
     }
