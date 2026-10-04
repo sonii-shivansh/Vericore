@@ -16,7 +16,7 @@
 | Understand deterministic PR review | [PR Intelligence](PR_INTELLIGENCE.md) |
 | Review data handling | [Data & Privacy](DATA_PRIVACY.md) |
 | Contribute to Vericore | [Development](DEVELOPMENT.md) |
-| Check implemented capabilities | [Implementation Status](ENTERPRISE_ROADMAP.md) |
+| Check implemented capabilities | [Implementation Status](IMPLEMENTATION_STATUS.md) |
 | Review the 0.8.0 release candidate | [Release Readiness](RELEASE_READINESS_0.8.0.md) |
 
 ## Recommended reading paths

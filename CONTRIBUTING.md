@@ -45,7 +45,7 @@ For exact Vericore command syntax and output contracts, use [docs/CLI.md](docs/C
 ./gradlew --no-daemon build installDist
 ```
 
-For release-candidate work, the authoritative product certification is the `0.8.0 Release Audit`; reusable CI workflows are composed by that audit rather than being treated as independent release decisions.
+For release-candidate work, the authoritative product certification is the `Release Audit`; reusable CI workflows are composed by that audit rather than being treated as independent release decisions.
 
 ## Developer Certificate of Origin
 

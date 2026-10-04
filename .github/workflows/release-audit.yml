@@ -1,4 +1,4 @@
-name: 0.8.0 Release Audit
+name: Release Audit
 
 on:
   workflow_dispatch:

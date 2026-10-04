@@ -38,6 +38,7 @@ temp/
 .codecontext/cache/
 .vericore/cache/
 test_output*.txt
+/output.txt
 build-error.log
 build_log.txt
 
