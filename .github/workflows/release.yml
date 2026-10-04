@@ -156,10 +156,32 @@ jobs:
     needs: [release-audit, resolve-version, package]
     runs-on: ubuntu-24.04
     steps:
-      - name: Download release artifacts
+      # Download only the four release packages; diagnostic artifacts are intentionally excluded.
+      - name: Download Linux release artifact
         uses: actions/download-artifact@v8
         with:
-          pattern: vericore-*
+          name: vericore-linux-x64
+          path: release-assets
+          merge-multiple: true
+
+      - name: Download Windows release artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: vericore-windows-x64
+          path: release-assets
+          merge-multiple: true
+
+      - name: Download macOS x64 release artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: vericore-macos-x64
+          path: release-assets
+          merge-multiple: true
+
+      - name: Download macOS arm64 release artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: vericore-macos-arm64
           path: release-assets
           merge-multiple: true
 
