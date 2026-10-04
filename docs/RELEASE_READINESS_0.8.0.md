@@ -1,0 +1,78 @@
+# Vericore 0.8.0 Release Readiness
+
+This document is the pre-release operational contract for the `release/0.8.0-preparation-v2` branch. It is intentionally maintained before the 0.8.0 release so that documentation does not require a post-release catch-up pass.
+
+## Current candidate
+
+- Preparation branch: `release/0.8.0-preparation-v2`
+- Candidate at the start of this readiness cycle: `06e17cee6ac26402f952322d366d364a371263bb`
+- Release target: `0.8.0`
+- Local end-to-end execution assumption: unavailable; GitHub Actions is the authoritative execution environment.
+
+## Workflow responsibility matrix
+
+| Workflow | Class | Responsibility | Unique value | Release-certification role |
+|---|---|---|---|---|
+| `ci.yml` | Permanent CI | Windows build, test, and Windows distribution smoke | Full Windows CI environment | Supporting evidence |
+| `dco.yml` | Governance | Commit sign-off enforcement | DCO compliance | Required repository governance |
+| `verification.yml` | Permanent verification | Linux build, tests, CLI, analysis, engineering intelligence, REST, security boundaries | Broad product verification | Supporting evidence; candidate gate to be formalized |
+| `platform.yml` | Platform verification | Linux, Windows, macOS Intel, macOS ARM distribution smoke | Cross-platform packaging | Supporting evidence; candidate gate to be formalized |
+| `onboarding-e2e.yml` | Product E2E | Fresh-user setup/doctor and clean Git fixture | Zero-setup user experience | Supporting evidence; candidate gate to be formalized |
+| `phase1-regression.yml` | Regression | Repository-scoped configuration/output/failure semantics | Prevents known Phase 1 regressions | Supporting evidence |
+| `phase4-regression.yml` | Regression/security | Repository scope, path traversal, evidence containment | Prevents known engineering-workflow regressions | Supporting evidence |
+| `live-output-quality.yml` | Reusable release E2E | Real-repository CLI output quality and command-surface checks | Tests user-visible outputs against real repositories | Direct release certification dependency |
+| `live-repository-gate.yml` | Reusable release E2E/security | Real-repository contract binding, stale state, mutation detection, MCP/REST and immutability | Deep adversarial safety validation | Direct release certification dependency |
+| `release-audit.yml` | Release certification | Deterministic CLI/MCP/REST audit plus Petclinic/RuneLite live gates and output quality | Candidate-level certification orchestrator | Authoritative certification workflow |
+| `release.yml` | Publishing | Version verification, cross-platform packaging, checksums, GitHub Release publication | Actual release publication | Must be gated by certification before publish |
+
+## Why the workflows are not duplicates
+
+The workflows operate at different assurance layers:
+
+```text
+unit/property correctness
+        ↓
+repository-scoped regression safety
+        ↓
+CLI/product verification
+        ↓
+platform packaging
+        ↓
+real repository execution
+        ↓
+adversarial contract/integrity validation
+        ↓
+release candidate certification
+        ↓
+release packaging and publication
+```
+
+A workflow may repeat a build because it must establish its own execution boundary, but repeated setup is not itself duplicate coverage. A workflow should only be removed when its behavioral contract is already represented elsewhere and the evidence remains equivalent.
+
+## Release certification principle
+
+`release-audit.yml` is the authoritative release-candidate orchestrator. It currently certifies:
+
+1. deterministic build/test/distribution behavior;
+2. CLI audit;
+3. MCP audit;
+4. REST audit;
+5. adversarial contract behavior;
+6. Spring Petclinic live repository integrity;
+7. RuneLite live repository integrity;
+8. Spring Petclinic output quality;
+9. RuneLite output quality.
+
+The next readiness step is to make that result machine-readable and bind release publication to the exact certified commit/version.
+
+## Required final state
+
+Before publishing 0.8.0:
+
+- all required GitHub Actions checks are green;
+- the readiness certificate identifies the exact candidate SHA and version;
+- release publication is blocked when certification fails or is missing;
+- real-repository gates remain green and prove repository immutability;
+- platform/onboarding/regression evidence is included in the final certification decision;
+- Markdown documentation is synchronized with the verified 0.8.0 behavior;
+- no post-release documentation update is required to describe the 0.8.0 candidate.
