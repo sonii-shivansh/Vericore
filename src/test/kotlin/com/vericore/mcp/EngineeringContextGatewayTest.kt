@@ -39,6 +39,15 @@ class EngineeringContextGatewayTest {
         val root = Files.createTempDirectory("gateway-safety-scope").toFile()
         try {
             root.resolve("src/App.kt").apply { parentFile.mkdirs(); writeText("class App") }
+            root.resolve("src/Related.kt").writeText("class Related")
+            org.eclipse.jgit.api.Git.init().setDirectory(root).call().use { git ->
+                git.add().addFilepattern(".").call()
+                git.commit().setMessage("baseline")
+                    .setAuthor(org.eclipse.jgit.lib.PersonIdent("test", "test@example.com"))
+                    .setCommitter(org.eclipse.jgit.lib.PersonIdent("test", "test@example.com"))
+                    .call()
+            }
+            root.resolve("src/Related.kt").appendText("\nfun changed() = Unit\n")
             val plan = Json { encodeDefaults = true }.encodeToJsonElement(
                 com.vericore.core.planner.EngineeringPlan.serializer(),
                 com.vericore.core.planner.EngineeringPlan(
