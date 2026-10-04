@@ -3,12 +3,13 @@ package com.vericore.cli
 import com.vericore.core.Version
 import com.vericore.core.ai.AISetup
 import com.vericore.core.ai.AISetupResult
+import com.vericore.core.exceptions.ConfigurationException
 import com.vericore.core.config.ConfigLoader
 import com.vericore.core.config.UserConfigStore
 import com.github.ajalt.clikt.core.CliktCommand
 import java.io.File
 
-class DoctorCommand : CliktCommand(
+class DoctorCommand(private val repositoryRoot: () -> File = { File(".").absoluteFile }) : CliktCommand(
     name = "doctor",
     help = "Check the local Vericore installation and configuration"
 ) {
@@ -36,7 +37,7 @@ class DoctorCommand : CliktCommand(
         val javaMajor = Runtime.version().feature()
         check("Java runtime", javaMajor >= 21, "Java $javaMajor${if (javaMajor >= 21) " (supported)" else " (requires 21+)"}")
 
-        val root = File(".").absoluteFile
+        val root = repositoryRoot().canonicalFile
         check("Repository", File(root, ".git").exists(), root.absolutePath)
 
         val canonicalProjectConfig = File(ConfigLoader.DEFAULT_CONFIG_FILE)
@@ -98,6 +99,10 @@ class DoctorCommand : CliktCommand(
                 echo("   Run 'vericore setup' if you want to enable AI features.")
             }
             else -> echo("✓ Vericore is ready to use.")
+        }
+
+        if (failures > 0) {
+            throw ConfigurationException("Doctor found $failures error(s); see the diagnostics above.")
         }
     }
 }

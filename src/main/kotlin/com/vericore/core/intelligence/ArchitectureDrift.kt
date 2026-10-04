@@ -8,7 +8,9 @@ data class ArchitectureDriftSummary(
     val removedFindings: Int,
     val newCycles: Int,
     val removedCycles: Int,
-    val changedLayers: Int
+    val changedLayers: Int,
+    val addedEdges: Int = 0,
+    val removedEdges: Int = 0
 )
 
 @Serializable
@@ -48,6 +50,14 @@ object ArchitectureDriftEngine {
         val layerNames = (baseline.layers.keys + current.layers.keys).toSortedSet()
         val changedLayers = layerNames.filter { baseline.layers[it] != current.layers[it] }
 
+        // Version 1.0 baselines did not persist dependency edges. Do not treat every
+        // current edge as newly added when comparing an older baseline.
+        val compareDependencyEdges = baseline.schemaVersion != "1.0" || baseline.dependencyEdges.isNotEmpty()
+        val baselineEdges = if (compareDependencyEdges) baseline.dependencyEdges.map(::edgeKey).toSet() else emptySet()
+        val currentEdges = if (compareDependencyEdges) current.dependencyEdges.map(::edgeKey).toSet() else emptySet()
+        val addedEdges = currentEdges - baselineEdges
+        val removedEdges = baselineEdges - currentEdges
+
         val changes = buildList {
             addedFindings.sorted().forEach { key ->
                 add(ArchitectureDriftChange("FINDING_ADDED", key, "Architecture finding is present in the current snapshot but not the baseline"))
@@ -61,6 +71,12 @@ object ArchitectureDriftEngine {
             removedCycles.sorted().forEach { key ->
                 add(ArchitectureDriftChange("CYCLE_REMOVED", key, "Strongly connected architecture cycle is absent from the current snapshot"))
             }
+            addedEdges.sorted().forEach { key ->
+                add(ArchitectureDriftChange("EDGE_ADDED", key, "Dependency edge is present in the current architecture snapshot but not the baseline"))
+            }
+            removedEdges.sorted().forEach { key ->
+                add(ArchitectureDriftChange("EDGE_REMOVED", key, "Dependency edge is present in the baseline architecture snapshot but not the current snapshot"))
+            }
             changedLayers.forEach { layer ->
                 add(
                     ArchitectureDriftChange(
@@ -73,7 +89,7 @@ object ArchitectureDriftEngine {
         }
 
         return ArchitectureDriftResult(
-            schemaVersion = "1.0",
+            schemaVersion = "1.1",
             baselineSchemaVersion = baseline.schemaVersion,
             currentSchemaVersion = current.schemaVersion,
             summary = ArchitectureDriftSummary(
@@ -81,7 +97,9 @@ object ArchitectureDriftEngine {
                 removedFindings = removedFindings.size,
                 newCycles = newCycles.size,
                 removedCycles = removedCycles.size,
-                changedLayers = changedLayers.size
+                changedLayers = changedLayers.size,
+                addedEdges = addedEdges.size,
+                removedEdges = removedEdges.size
             ),
             changes = changes
         )
@@ -91,4 +109,6 @@ object ArchitectureDriftEngine {
         listOf(finding.ruleId, finding.source, finding.target.orEmpty(), finding.relationship, finding.evidence).joinToString("|")
 
     private fun cycleKey(cycle: ArchitectureCycle): String = cycle.members.sorted().joinToString("|")
+
+    private fun edgeKey(edge: ArchitectureDependencyEdge): String = "${edge.source}|${edge.target}"
 }

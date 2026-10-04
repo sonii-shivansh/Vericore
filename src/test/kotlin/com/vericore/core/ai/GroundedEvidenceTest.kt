@@ -8,6 +8,7 @@ import com.vericore.core.intelligence.HotspotSnapshot
 import com.vericore.core.intelligence.RepositorySnapshot
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldContain
+import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.shouldBe
 
 class GroundedEvidenceTest : FunSpec({
@@ -28,6 +29,20 @@ class GroundedEvidenceTest : FunSpec({
 
         evidence.citations.size shouldBe 3
         evidence.citations.map { it.id } shouldBe listOf("repo.metrics", "hotspot.1", "hotspot.2")
+    }
+
+    test("exposes direct dependent paths for dependency questions") {
+        val evidence = GroundedEvidenceBuilder.fromSnapshot(
+            snapshot(),
+            dependencyPaths = mapOf(
+                "/repo/A.kt" to DependencyPaths(dependents = listOf("UsesA.kt", "OtherUsesA.kt"))
+            )
+        )
+        val dependencyCitation = evidence.citations.first { it.relatedPaths.isNotEmpty() }
+
+        dependencyCitation.relatedPaths shouldBe listOf("OtherUsesA.kt", "UsesA.kt")
+        dependencyCitation.detail shouldContain "OtherUsesA.kt"
+        dependencyCitation.detail shouldContain "UsesA.kt"
     }
 
     test("exposes repository-relative paths instead of absolute filesystem paths") {

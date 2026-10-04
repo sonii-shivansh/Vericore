@@ -1,6 +1,7 @@
 package com.vericore.cli
 
 import com.vericore.core.exceptions.VericoreException
+import com.vericore.core.exceptions.ValidationException
 import com.vericore.core.exceptions.ConfigurationException
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
@@ -31,6 +32,17 @@ class ErrorHandlerTest {
         System.err.flush()
         val output = outputStreamCaptor.toString()
         assertTrue(output.contains("❌ Config error"), "Should contain friendly error message. Got: '$output'")
+    }
+
+    @Test
+    fun `handle should keep validation failures stack-trace free`() {
+        ErrorHandler.handle(ValidationException("Architecture contract failed"))
+
+        System.err.flush()
+        val output = outputStreamCaptor.toString()
+        assertTrue(output.contains("❌ Architecture contract failed"))
+        assertTrue(!output.contains("ValidationException"))
+        assertTrue(!output.contains("\tat "))
     }
 
     @Test

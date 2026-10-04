@@ -8,13 +8,15 @@ class ArchitectureDriftTest : FunSpec({
     fun result(
         findings: List<ArchitectureFinding> = emptyList(),
         cycles: List<ArchitectureCycle> = emptyList(),
-        layers: Map<String, Int> = emptyMap()
+        layers: Map<String, Int> = emptyMap(),
+        dependencyEdges: List<ArchitectureDependencyEdge> = emptyList()
     ) = ArchitectureIntelligenceResult(
         schemaVersion = "1.0",
         summary = ArchitectureSummary(3, 2, findings.size, cycles.size, 1, 0),
         findings = findings,
         cycles = cycles,
-        layers = layers
+        layers = layers,
+        dependencyEdges = dependencyEdges
     )
 
     test("detects added and removed findings deterministically") {
@@ -53,6 +55,28 @@ class ArchitectureDriftTest : FunSpec({
         drift.changes.map { it.key } shouldContainExactly listOf("api", "repository")
     }
 
+    test("detects dependency edge additions and removals even when counts stay stable") {
+        val baseline = result(
+            dependencyEdges = listOf(
+                ArchitectureDependencyEdge("src/A.kt", "src/B.kt"),
+                ArchitectureDependencyEdge("src/B.kt", "src/C.kt")
+            )
+        )
+        val current = result(
+            dependencyEdges = listOf(
+                ArchitectureDependencyEdge("src/A.kt", "src/C.kt"),
+                ArchitectureDependencyEdge("src/B.kt", "src/C.kt")
+            )
+        )
+
+        val drift = ArchitectureDriftEngine.compare(baseline, current)
+
+        drift.summary.addedEdges shouldBe 1
+        drift.summary.removedEdges shouldBe 1
+        drift.changes.map { it.type } shouldContainExactly listOf("EDGE_ADDED", "EDGE_REMOVED")
+        drift.changes.map { it.key } shouldContainExactly listOf("src/A.kt|src/C.kt", "src/A.kt|src/B.kt")
+    }
+
     test("identical results produce no drift") {
         val snapshot = result(
             findings = listOf(ArchitectureFinding("ARCH-A", "HIGH", "a.kt", relationship = "coupling", evidence = "same")),
@@ -62,7 +86,7 @@ class ArchitectureDriftTest : FunSpec({
 
         val drift = ArchitectureDriftEngine.compare(snapshot, snapshot)
 
-        drift.summary shouldBe ArchitectureDriftSummary(0, 0, 0, 0, 0)
+        drift.summary shouldBe ArchitectureDriftSummary(0, 0, 0, 0, 0, 0, 0)
         drift.changes shouldBe emptyList()
     }
 })

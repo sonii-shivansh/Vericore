@@ -3,6 +3,7 @@ package com.vericore.cli
 import com.vericore.core.cache.CacheManager
 import com.vericore.core.config.ArchitectureContractFileResolver
 import com.vericore.core.config.ConfigLoader
+import com.vericore.core.exceptions.ValidationException
 import com.vericore.core.graph.RobustDependencyGraph
 import com.vericore.core.intelligence.ArchitectureContract
 import com.vericore.core.intelligence.ArchitectureContractEngine
@@ -75,7 +76,7 @@ class ArchitectureContractCommand : CliktCommand(
             result.violations.take(30).forEach { violation ->
                 echo("   ${violation.ruleId}: ${violation.message}")
             }
-            throw IllegalStateException("Architecture contract failed")
+            throw ValidationException("Architecture contract failed")
         }
     }
 }

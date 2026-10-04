@@ -7,3 +7,5 @@ class ConfigurationException(message: String, cause: Throwable? = null) : Verico
 class AIProviderException(message: String, cause: Throwable? = null) : VericoreException(message, cause)
 
 class AnalysisException(message: String, cause: Throwable? = null) : VericoreException(message, cause)
+
+class ValidationException(message: String, cause: Throwable? = null) : VericoreException(message, cause)

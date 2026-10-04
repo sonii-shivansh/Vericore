@@ -12,7 +12,8 @@ data class EvidenceCitation(
     val type: String,
     val path: String? = null,
     val detail: String,
-    val metrics: Map<String, String> = emptyMap()
+    val metrics: Map<String, String> = emptyMap(),
+    val relatedPaths: List<String> = emptyList()
 )
 
 @Serializable
@@ -31,8 +32,17 @@ data class GroundedEvidence(
  * Converts deterministic analysis output into compact evidence for AI prompts.
  * The model never becomes the source of these facts.
  */
+data class DependencyPaths(
+    val dependents: List<String> = emptyList(),
+    val dependencies: List<String> = emptyList()
+)
+
 object GroundedEvidenceBuilder {
-    fun fromSnapshot(snapshot: AnalysisSnapshot, maxCitations: Int = 24): GroundedEvidence {
+    fun fromSnapshot(
+        snapshot: AnalysisSnapshot,
+        maxCitations: Int = 24,
+        dependencyPaths: Map<String, DependencyPaths> = emptyMap()
+    ): GroundedEvidence {
         require(maxCitations > 0) { "maxCitations must be positive" }
 
         val citations = buildList {
@@ -56,13 +66,17 @@ object GroundedEvidenceBuilder {
                         id = "hotspot.${index + 1}",
                         type = "hotspot",
                         path = repositoryRelativePath(snapshot.repository.path, hotspot.path),
-                        detail = "Dependency-centrality hotspot identified by the deterministic analysis.",
+                        detail = graphDetail(
+                            "Dependency-centrality hotspot identified by the deterministic analysis.",
+                            dependencyPaths[hotspot.path]?.dependents.orEmpty()
+                        ),
                         metrics = mapOf(
                             "score" to hotspot.score.toString(),
                             "dependents" to hotspot.dependents.toString(),
                             "dependencies" to hotspot.dependencies.toString(),
                             "churn" to hotspot.churn.toString()
-                        )
+                        ),
+                        relatedPaths = dependencyPaths[hotspot.path]?.dependents.orEmpty().sorted()
                     )
                 )
             }
@@ -76,13 +90,17 @@ object GroundedEvidenceBuilder {
                             id = "file.${index + 1}",
                             type = "file-graph-fact",
                             path = repositoryRelativePath(snapshot.repository.path, file.path),
-                            detail = "File participates in the analyzed dependency graph.",
+                            detail = graphDetail(
+                                "File participates in the analyzed dependency graph.",
+                                dependencyPaths[file.path]?.dependents.orEmpty()
+                            ),
                             metrics = mapOf(
                                 "dependents" to file.dependents.toString(),
                                 "dependencies" to file.dependencies.toString(),
                                 "churn" to file.churn.toString(),
                                 "pageRank" to file.pageRank.toString()
-                            )
+                            ),
+                            relatedPaths = dependencyPaths[file.path]?.dependents.orEmpty().sorted()
                         )
                     )
                 }
@@ -103,6 +121,9 @@ object GroundedEvidenceBuilder {
 
         return GroundedEvidence(citations = citations.take(maxCitations))
     }
+
+    private fun graphDetail(base: String, dependents: List<String>): String =
+        if (dependents.isEmpty()) base else "$base Direct dependents: ${dependents.sorted().joinToString(", ")}."
 
     private fun repositoryRelativePath(repository: String, file: String): String {
         val root = Path.of(repository).toAbsolutePath().normalize()
