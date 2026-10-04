@@ -1,10 +1,8 @@
 name: CI/CD
 
 on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
+  workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
