@@ -37,7 +37,8 @@ Changes after `0.8.2` only. Keep this section for work that is intentionally out
 ### Release engineering
 
 - Application and Gradle build version aligned to `0.8.1`.
-- Release candidate must pass the complete release audit and fresh platform packaging before publication.
+- `v0.8.1` was published on 2026-10-04 with Linux x64, Windows x64, macOS x64, and macOS ARM64 artifacts plus SHA-256 checksums.
+- The later post-release remediation is intentionally excluded from this historical release record and is prepared as `0.8.2`.
 
 ## [0.8.0] — 2026-10-04
 
