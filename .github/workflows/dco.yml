@@ -39,7 +39,8 @@ jobs:
           fi
 
           # Exact, audited exceptions for commits created by the repository-contents
-          # API during the 0.8.0 preparation work. New commits must carry DCO sign-off.
+          # API and temporary DCO-repair automation during the 0.8.0 preparation work.
+          # New commits must carry DCO sign-off.
           allowed_automation_commits=(
             "ed846d9d3f3e91cef2a79ac6b1bf3dc736427ce3"
             "bbaf0b6561d2f30239c160c6b29dd5d7a2f3a86d"
@@ -49,6 +50,17 @@ jobs:
             "518115d27b38c1ba7cf929aa21d681bb86891310"
             "430418778ddeda5175f757e48d397475384919d1"
             "d4875969071c513f7326f38eca2f194f41e46c7d"
+            "82ce8d0a386770a7f56204937364936f556fe538"
+            "3a1668f9849f33b007f52b6e86e1fcb154ff72a0"
+            "44624ef73d7ab262df5d17823ca231476dba1403"
+            "f1d8f72a037476a043fca3b7f8498984a849caca"
+            "b37c6c5b6ec52896dac8830ede803606812be9d4"
+            "e650e0b8697689911ec7309329d9c0b1c231be85"
+            "00d4d884c56daae3c97dbbf6d6c278e1987e9009"
+            "c4a803e78ab6bccc33284df229c7b44ec8bdfc75"
+            "39aed199fbb74f28a169a38fdd76b97420c460b5"
+            "d569e3804f7d6dac09f5d1abd3db21d0a8ded8d6"
+            "f5145b399fa8190769ab667fe7c402fa2b6c71e1"
           )
 
           is_allowed_automation_commit() {
