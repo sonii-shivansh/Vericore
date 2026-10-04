@@ -21,7 +21,7 @@ class CacheManager(private val cacheDir: File = defaultCacheDirectory()) {
 
     fun getCachedParse(file: File): ParsedFile? {
         val cacheKey = getCacheKey(file)
-        val cacheFile = File(cacheDir, "\${cacheKey}.json")
+        val cacheFile = File(cacheDir, "${cacheKey}.json")
         return getLock(cacheKey).read {
             if (!cacheFile.exists()) return@read null
             try {
@@ -35,7 +35,7 @@ class CacheManager(private val cacheDir: File = defaultCacheDirectory()) {
 
     fun saveParse(file: File, parsed: ParsedFile) {
         val cacheKey = getCacheKey(file)
-        val cacheFile = File(cacheDir, "\${cacheKey}.json")
+        val cacheFile = File(cacheDir, "${cacheKey}.json")
         getLock(cacheKey).write {
             try {
                 val temp = File(cacheFile.absolutePath + ".tmp")
@@ -51,7 +51,7 @@ class CacheManager(private val cacheDir: File = defaultCacheDirectory()) {
                     Files.move(temp.toPath(), cacheFile.toPath(), StandardCopyOption.REPLACE_EXISTING)
                 }
             } catch (e: Exception) {
-                System.err.println("Failed to cache \${file.name}: \${e.message}")
+                System.err.println("Failed to cache ${file.name}: ${e.message}")
             }
         }
     }
@@ -101,7 +101,7 @@ class CacheManager(private val cacheDir: File = defaultCacheDirectory()) {
             }
         }
         val contentHash = digest.digest().joinToString("") { "%02x".format(it) }
-        val metadata = "\${file.canonicalPath}:\$contentHash"
+        val metadata = "${file.canonicalPath}:\$contentHash"
         return MessageDigest.getInstance("SHA-256")
             .digest(metadata.toByteArray(StandardCharsets.UTF_8))
             .joinToString("") { "%02x".format(it) }
