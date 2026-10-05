@@ -19,7 +19,7 @@ jobs:
             ref: ''
           - repository: quarkusio/quarkus
             ref: main
-    uses: ./.github/workflows/live-repository-gate.yml
+    uses: ./.github/workflows/live-repository-gate-v2.yml
     with:
       repository: ${{ matrix.repository }}
       ref: ${{ matrix.ref }}
