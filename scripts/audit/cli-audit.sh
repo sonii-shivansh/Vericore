@@ -30,6 +30,7 @@ trap 'rm -rf "$audit_fixture" "$doctor_fixture" "$contract_fixture" "$qa_fixture
   git commit -qm 'second fixture revision'
 )
 run "$APP" analyze "$REPO" >/dev/null
+run "$APP" analyze "$audit_fixture" >/dev/null
 run "$APP" reality "$audit_fixture" --json >/dev/null
 run "$APP" architecture "$audit_fixture" --json >/dev/null
 run "$APP" context-snapshot "$audit_fixture" --json >/dev/null
