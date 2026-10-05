@@ -2,6 +2,9 @@
 set -euo pipefail
 APP="./build/install/vericore/bin/vericore"
 mkdir -p output
+# Seed the persisted contract with the CLI prepare path. The MCP prepare tool
+# returns an in-memory plan/contract but does not itself create this file.
+"$APP" prepare "release audit MCP contract validation" --path "." >/dev/null
 printf '%s\n' \
 '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"audit-lab","version":"1.0"}}}' \
 '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
