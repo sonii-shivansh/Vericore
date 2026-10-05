@@ -28,6 +28,8 @@ trap 'rm -rf "$audit_fixture" "$doctor_fixture" "$contract_fixture" "$qa_fixture
   printf '%s\n' 'package fixture' 'class Target' 'class Added' > Target.kt
   git add Target.kt
   git commit -qm 'second fixture revision'
+  # Leave an intentional working-tree change so prepare/verify have a real scope.
+  printf '%s\n' 'package fixture' 'class Target' 'class Added' 'class PendingChange' > Target.kt
 )
 run "$APP" analyze "$REPO" >/dev/null
 run "$APP" analyze "$audit_fixture" >/dev/null
