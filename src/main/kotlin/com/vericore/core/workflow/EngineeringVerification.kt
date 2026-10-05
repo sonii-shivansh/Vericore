@@ -86,15 +86,15 @@ object EngineeringVerification {
         }
         val contractValid = reasons.isEmpty()
         val contractResult = AgentChangeContractResult(contract, contractValid, reasons)
-        val execution = if (contractValid) {
+        val execution = if (contractValid && safety.status != SafetyStatus.FAIL) {
             VerificationExecutionResult(commands = VerificationCommandExecutor.execute(root, contract.verificationCommands))
         } else {
             VerificationExecutionResult()
         }
         val status = when {
             !contractValid -> SafetyStatus.FAIL
-            !execution.allCommandsPassed -> SafetyStatus.FAIL
             safety.status == SafetyStatus.FAIL -> SafetyStatus.FAIL
+            !execution.allCommandsPassed -> SafetyStatus.FAIL
             safety.status == SafetyStatus.REVIEW_REQUIRED || pr.aggregateSeverity.name == "CRITICAL" -> SafetyStatus.REVIEW_REQUIRED
             else -> SafetyStatus.PASS
         }
