@@ -46,7 +46,13 @@ object EngineeringContextGateway {
         return json.encodeToJsonElement(AgentChangeContract.serializer(), contract).jsonObject
     }
     fun evidence(repoPath: String, changeSummary: String): JsonObject { val result = runBlocking { EngineeringPreparation.prepare(repository(repoPath).path, changeSummary) }; return json.encodeToJsonElement(com.vericore.core.ai.GroundedEvidence.serializer(), result.evidence).jsonObject }
-    fun changeSafety(repoPath: String, plan: JsonObject): JsonObject { val root = repository(repoPath); val engineeringPlan = json.decodeFromJsonElement(EngineeringPlan.serializer(), plan); val changeSet = GitChangeSetBuilder.fromWorkingTree(root.path); val result = ChangeSafetyAnalyzer.verify(changeSet.files, engineeringPlan.plannedPaths.ifEmpty { engineeringPlan.affectedComponents }); return json.encodeToJsonElement(com.vericore.core.workflow.ChangeSafetyResult.serializer(), result).jsonObject }
+    fun changeSafety(repoPath: String, plan: JsonObject): JsonObject {
+        val root = repository(repoPath)
+        val engineeringPlan = json.decodeFromJsonElement(EngineeringPlan.serializer(), plan)
+        val changeSet = GitChangeSetBuilder.fromWorkingTree(root.path)
+        val result = ChangeSafetyAnalyzer.verify(changeSet.files, engineeringPlan.plannedPaths)
+        return json.encodeToJsonElement(com.vericore.core.workflow.ChangeSafetyResult.serializer(), result).jsonObject
+    }
     fun verify(repoPath: String, plan: JsonObject): JsonObject {
         val root = repository(repoPath)
         val engineeringPlan = json.decodeFromJsonElement(EngineeringPlan.serializer(), plan)
