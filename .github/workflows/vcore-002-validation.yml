@@ -1,0 +1,141 @@
+name: VCORE-002 Validation
+
+on:
+  push:
+    branches:
+      - fix/vcore-002-build-command-detection
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  vcore-002:
+    name: VCORE-002 build-command validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          java-version: "21"
+          distribution: temurin
+          cache: gradle
+
+      - name: Build and test Vericore
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon clean test installDist
+
+      - name: Validate Maven-only repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLI="$PWD/build/install/vericore/bin/vericore"
+          fixture="$(mktemp -d)"
+          trap 'rm -rf "$fixture"' EXIT
+          mkdir -p "$fixture/output" "$fixture/src"
+          cat > "$fixture/pom.xml" <<'EOF'
+          <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+            <modelVersion>4.0.0</modelVersion>
+            <groupId>test</groupId><artifactId>maven-only</artifactId><version>1.0</version>
+          </project>
+          EOF
+          printf '%s\n' '{"schemaVersion":"1.0","citations":[]}' > "$fixture/output/grounded-evidence.json"
+          "$CLI" plan "Fix the service safely" --repository "$fixture" --changed src/Service.java --output "$fixture/output/plan.json"
+          python3 - "$fixture/output/plan.json" <<'PY'
+          import json, sys
+          plan=json.load(open(sys.argv[1]))
+          assert plan['buildSystem']=='MAVEN', plan
+          assert len(plan['verificationCommands'])==2, plan
+          assert all('mvn' in c for c in plan['verificationCommands']), plan
+          assert all('gradle' not in c.lower() for c in plan['verificationCommands']), plan
+          assert all('./gradlew' not in c for c in plan['verificationCommands']), plan
+          PY
+
+      - name: Validate Gradle repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLI="$PWD/build/install/vericore/bin/vericore"
+          fixture="$(mktemp -d)"
+          trap 'rm -rf "$fixture"' EXIT
+          mkdir -p "$fixture/output" "$fixture/src"
+          printf '%s\n' 'plugins {}' > "$fixture/build.gradle.kts"
+          printf '%s\n' '{"schemaVersion":"1.0","citations":[]}' > "$fixture/output/grounded-evidence.json"
+          "$CLI" plan "Fix the service safely" --repository "$fixture" --changed src/Service.kt --output "$fixture/output/plan.json"
+          python3 - "$fixture/output/plan.json" <<'PY'
+          import json, sys
+          plan=json.load(open(sys.argv[1]))
+          assert plan['buildSystem']=='GRADLE', plan
+          assert len(plan['verificationCommands'])==2, plan
+          assert all('gradle' in c.lower() for c in plan['verificationCommands']), plan
+          assert all('mvn' not in c.lower() for c in plan['verificationCommands']), plan
+          PY
+
+      - name: Validate executable Maven wrapper precedence
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLI="$PWD/build/install/vericore/bin/vericore"
+          fixture="$(mktemp -d)"
+          trap 'rm -rf "$fixture"' EXIT
+          mkdir -p "$fixture/output"
+          printf '%s\n' '<project/>' > "$fixture/pom.xml"
+          printf '%s\n' '#!/bin/sh' 'exit 0' > "$fixture/mvnw"
+          chmod +x "$fixture/mvnw"
+          printf '%s\n' '{"schemaVersion":"1.0","citations":[]}' > "$fixture/output/grounded-evidence.json"
+          "$CLI" plan "Fix the service safely" --repository "$fixture" --output "$fixture/output/plan.json"
+          python3 - "$fixture/output/plan.json" <<'PY'
+          import json, sys
+          plan=json.load(open(sys.argv[1]))
+          assert plan['buildSystem']=='MAVEN', plan
+          assert all('./mvnw' in c for c in plan['verificationCommands']), plan
+          PY
+
+      - name: Validate unknown repository fails closed for build commands
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLI="$PWD/build/install/vericore/bin/vericore"
+          fixture="$(mktemp -d)"
+          trap 'rm -rf "$fixture"' EXIT
+          mkdir -p "$fixture/output"
+          printf '%s\n' '{"schemaVersion":"1.0","citations":[]}' > "$fixture/output/grounded-evidence.json"
+          "$CLI" plan "Fix the service safely" --repository "$fixture" --output "$fixture/output/plan.json"
+          python3 - "$fixture/output/plan.json" <<'PY'
+          import json, sys
+          plan=json.load(open(sys.argv[1]))
+          assert plan['buildSystem']=='UNKNOWN', plan
+          assert plan['verificationCommands']==[], plan
+          assert any('build system' in item.lower() for item in plan['uncertainties']), plan
+          PY
+
+      - name: Validate real repository build layouts
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLI="$PWD/build/install/vericore/bin/vericore"
+          for repo in spring-projects/spring-petclinic openai/open-data-loader-pdf runelite/runelite quarkusio/quarkus; do
+            name="${repo#*/}"
+            rm -rf "$RUNNER_TEMP/$name"
+            git clone --depth 1 "https://github.com/$repo.git" "$RUNNER_TEMP/$name"
+            printf '%s\n' '{"schemaVersion":"1.0","citations":[]}' > "$RUNNER_TEMP/$name/grounded-evidence.json"
+            "$CLI" plan "Validate repository build commands" --repository "$RUNNER_TEMP/$name" --output "$RUNNER_TEMP/$name/plan.json"
+            python3 - "$RUNNER_TEMP/$name/plan.json" "$name" <<'PY'
+          import json, sys
+          plan=json.load(open(sys.argv[1]))
+          name=sys.argv[2]
+          assert plan['buildSystem'] in ('MAVEN','GRADLE'), (name, plan)
+          assert plan['verificationCommands'], (name, plan)
+          if plan['buildSystem']=='MAVEN':
+              assert all('mvn' in c for c in plan['verificationCommands']), (name, plan)
+              assert all('gradle' not in c.lower() for c in plan['verificationCommands']), (name, plan)
+          else:
+              assert all('gradle' in c.lower() for c in plan['verificationCommands']), (name, plan)
+              assert all('mvn' not in c.lower() for c in plan['verificationCommands']), (name, plan)
+          PY
+          done
