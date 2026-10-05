@@ -95,4 +95,31 @@ class GitChangeSetBuilderTest {
         }
         root.deleteRecursively()
     }
+
+    @Test
+    fun `working tree returns empty change set when only generated output exists`() {
+        val root = Files.createTempDirectory("codecontext-working-tree-clean-").toFile()
+        Git.init().setDirectory(root).call().use { git ->
+            root.resolve("README.md").writeText("hello\n")
+            git.add().addFilepattern("README.md").call()
+            git.commit().setMessage("initial")
+                .setAuthor(PersonIdent("test", "test@example.com"))
+                .setCommitter(PersonIdent("test", "test@example.com"))
+                .call()
+
+            root.resolve("output/analysis-snapshot.json").apply {
+                parentFile.mkdirs()
+                writeText("generated")
+            }
+            root.resolve(".vericore/cache/generated.json").apply {
+                parentFile.mkdirs()
+                writeText("generated")
+            }
+
+            val result = GitChangeSetBuilder.fromWorkingTree(root.path)
+
+            assertTrue(result.files.isEmpty())
+        }
+        root.deleteRecursively()
+    }
 }
