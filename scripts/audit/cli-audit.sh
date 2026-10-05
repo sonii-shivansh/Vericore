@@ -11,6 +11,7 @@ run "$APP" analyze "$REPO" >/dev/null
 run "$APP" reality "$REPO" --json >/dev/null
 run "$APP" architecture "$REPO" --json >/dev/null
 run "$APP" context-snapshot "$REPO" --json >/dev/null
+# Keep release audit evolution bounded so CI exercises the command without scanning unnecessary history.
 run "$APP" evolution "$REPO" --months 1 --interval 30 >/dev/null
 rm -rf output
 run "$APP" prepare "audit release workflow" --path "$REPO" >/dev/null
