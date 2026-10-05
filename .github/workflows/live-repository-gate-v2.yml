@@ -51,35 +51,27 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
-
       - name: Set up JDK 21
         uses: actions/setup-java@v6
         with:
           java-version: 21
           distribution: temurin
           cache: gradle
-
       - name: Build and test Vericore
         run: |
           set -euo pipefail
           chmod +x ./gradlew
           ./gradlew --no-daemon clean test installDist
-
       - name: Resolve live target repository ref
         id: target
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          if [ -n "$TARGET_REF" ]; then
-            resolved_ref="$TARGET_REF"
-          else
-            resolved_ref="$(gh api "repos/$TARGET_REPOSITORY" --jq '.default_branch')"
-          fi
+          if [ -n "$TARGET_REF" ]; then resolved_ref="$TARGET_REF"; else resolved_ref="$(gh api "repos/$TARGET_REPOSITORY" --jq '.default_branch')"; fi
           test -n "$resolved_ref"
           echo "ref=$resolved_ref" >> "$GITHUB_OUTPUT"
           echo "Resolved target ref: $resolved_ref"
-
       - name: Clone live target repository
         env:
           RESOLVED_TARGET_REF: ${{ steps.target.outputs.ref }}
@@ -91,7 +83,6 @@ jobs:
           test -d .git
           git status --short
           git rev-parse HEAD > "$RUNNER_TEMP/target-before.sha"
-
       - name: Run complete CLI surface
         working-directory: ${{ runner.temp }}/target
         run: |
@@ -130,7 +121,6 @@ jobs:
           PY
           "$CLI" evolution
           "$CLI" pr-intelligence . --base HEAD~1 --head HEAD --json
-
       - name: Grounded intelligence and preparation
         working-directory: ${{ runner.temp }}/target
         run: |
@@ -150,7 +140,6 @@ jobs:
           assert p['fingerprint'] and len(p['fingerprint']) == 64
           assert p['repository'] and p['preparedHead']
           PY
-
       - name: Prove contract tamper detection
         working-directory: ${{ runner.temp }}/target
         run: |
@@ -170,7 +159,6 @@ jobs:
           test "$status" -ne 0
           grep -q 'Status: FAIL' "$RUNNER_TEMP/contract-tamper.log"
           cp "$RUNNER_TEMP/contract-original.json" output/agent-change-contract.json
-
       - name: Prove repository and plan binding integrity
         working-directory: ${{ runner.temp }}/target
         run: |
@@ -204,7 +192,6 @@ jobs:
           test "$status" -ne 0
           grep -Eq 'Status: FAIL|Verification failed' "$RUNNER_TEMP/mismatched-plan.log"
           cp "$RUNNER_TEMP/plan-before-binding-test.json" output/engineering-plan.json
-
       - name: Prove stale prepared HEAD detection
         working-directory: ${{ runner.temp }}/target
         run: |
@@ -227,7 +214,6 @@ jobs:
           test "$(git rev-parse HEAD)" = "$original"
           test -z "$(git diff --name-only)"
           test -z "$(git diff --cached --name-only)"
-
       - name: Verify MCP returns the persisted contract exactly
         working-directory: ${{ runner.temp }}/target
         run: |
@@ -245,7 +231,6 @@ jobs:
           persisted=json.loads(Path('output/agent-change-contract.json').read_text())
           assert returned==persisted
           PY
-
       - name: Prove unexpected source change detection
         working-directory: ${{ runner.temp }}/target
         run: |
@@ -263,7 +248,6 @@ jobs:
           cp "$RUNNER_TEMP/release-gate-readme.original" "$TEST_FILE"
           test -z "$(git diff --name-only)"
           test -z "$(git diff --cached --name-only)"
-
       - name: Verify prepared contract remains valid after mutation tests
         working-directory: ${{ runner.temp }}/target
         run: |
@@ -272,7 +256,6 @@ jobs:
           "$CLI" verify --contract-only --output output/final-contract-verify.json
           test -s output/final-contract-verify.json
           grep -q '"valid": true' output/final-contract-verify.json
-
       - name: MCP protocol and gateway smoke test
         working-directory: ${{ runner.temp }}/target
         run: |
@@ -291,7 +274,6 @@ jobs:
               result=by_id[request_id].get('result')
               assert result and result.get('isError') is False
           PY
-
       - name: REST API live repository smoke test
         working-directory: ${{ runner.temp }}/target
         run: |
@@ -300,10 +282,7 @@ jobs:
           "$CLI" server --host 127.0.0.1 --port 18080 > "$RUNNER_TEMP/vericore-live-server.log" 2>&1 &
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
-          for attempt in {1..30}; do
-            curl --fail --silent http://127.0.0.1:18080/health > output/rest-health.json && break
-            sleep 1
-          done
+          for attempt in {1..30}; do curl --fail --silent http://127.0.0.1:18080/health > output/rest-health.json && break; sleep 1; done
           test -s output/rest-health.json
           curl --fail --silent http://127.0.0.1:18080/ > output/rest-root.txt
           grep -F 'Vericore API is running' output/rest-root.txt
@@ -311,7 +290,6 @@ jobs:
           test -s output/rest-architecture.json
           status=$(curl --silent --output /tmp/traversal.json --write-out '%{http_code}' -H 'Content-Type: application/json' -d '{"repoPath":"/tmp/../etc"}' http://127.0.0.1:18080/analyze)
           test "$status" = '400'
-
       - name: Live Gemini smoke test
         if: env.HAS_GEMINI == 'true'
         working-directory: ${{ runner.temp }}/target
@@ -322,7 +300,6 @@ jobs:
           CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
           "$CLI" repo-qa "Summarize the main architectural hotspots in one sentence." --path . --provider gemini > output/gemini-release-gate.txt
           test -s output/gemini-release-gate.txt
-
       - name: Verify target repository was not modified
         working-directory: ${{ runner.temp }}/target
         run: |
@@ -332,12 +309,14 @@ jobs:
           test -z "$(git diff --name-only)"
           test -z "$(git diff --cached --name-only)"
           test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/|\.vericore/|\.codecontext/)' || true)"
-
+      - name: Prepare artifact name
+        if: always()
+        run: echo "ARTIFACT_NAME=vcore-001-live-release-gate-${TARGET_REPOSITORY//\//-}" >> "$GITHUB_ENV"
       - name: Upload release-gate evidence
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
-          name: vcore-001-live-release-gate-${{ matrix.repository || inputs.repository }}
+          name: ${{ env.ARTIFACT_NAME }}
           path: |
             ${{ runner.temp }}/target/output
             ${{ runner.temp }}/vericore-live-server.log
