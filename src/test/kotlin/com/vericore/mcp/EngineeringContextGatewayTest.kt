@@ -18,6 +18,7 @@ import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class EngineeringContextGatewayTest {
     @Test
@@ -40,40 +41,41 @@ class EngineeringContextGatewayTest {
     @Test
     fun `change safety fails closed when planned paths are empty`() {
         val root = Files.createTempDirectory("gateway-safety").toFile()
+        val git = Git.init().setDirectory(root).call()
         try {
-            Git.init().setDirectory(root).call().use { git ->
-                git.repository.config.setString("user", null, "name", "VCORE CI")
-                git.repository.config.setString("user", null, "email", "ci@example.com")
-                git.repository.config.save()
+            git.repository.config.setString("user", null, "name", "VCORE CI")
+            git.repository.config.setString("user", null, "email", "ci@example.com")
+            git.repository.config.save()
 
-                val source = root.resolve("src/App.kt")
-                source.parentFile.mkdirs()
-                source.writeText("class App")
-                git.add().addFilepattern("src/App.kt").call()
-                git.commit().setMessage("initial fixture").setAuthor("VCORE CI", "ci@example.com").call()
+            val source = root.resolve("src/App.kt")
+            source.parentFile.mkdirs()
+            source.writeText("class App")
+            git.add().addFilepattern("src/App.kt").call()
+            git.commit().setMessage("initial fixture").setAuthor("VCORE CI", "ci@example.com").call()
 
-                source.writeText("class App { fun changed() = true }")
+            source.writeText("class App { fun changed() = true }")
 
-                val plan = EngineeringPlan(
-                    changeSummary = "test change",
-                    repository = root.canonicalPath,
-                    affectedComponents = listOf("src/App.kt"),
-                    plannedPaths = emptyList(),
-                    concerns = emptyList(),
-                    riskLevel = com.vericore.core.planner.RiskLevel.MEDIUM,
-                    steps = emptyList(),
-                    verificationCommands = emptyList(),
-                    evidenceIds = emptyList()
-                )
-                val payload = Json { encodeDefaults = true }
-                    .encodeToJsonElement(EngineeringPlan.serializer(), plan)
-                    .jsonObject
+            val plan = EngineeringPlan(
+                changeSummary = "test change",
+                repository = root.canonicalPath,
+                affectedComponents = listOf("src/App.kt"),
+                plannedPaths = emptyList(),
+                concerns = emptyList(),
+                riskLevel = com.vericore.core.planner.RiskLevel.MEDIUM,
+                steps = emptyList(),
+                verificationCommands = emptyList(),
+                evidenceIds = emptyList(),
+                uncertainties = emptyList()
+            )
+            val payload = Json { encodeDefaults = true }
+                .encodeToJsonElement(EngineeringPlan.serializer(), plan)
+                .jsonObject
 
-                val result = EngineeringContextGateway.changeSafety(root.path, payload)
-                assertEquals("FAIL", result["status"]?.jsonPrimitive?.content)
-                assertTrue(result["unexpectedPaths"]?.toString()?.contains("src/App.kt") == true)
-            }
+            val result = EngineeringContextGateway.changeSafety(root.path, payload)
+            assertEquals("FAIL", result["status"]?.jsonPrimitive?.content)
+            assertTrue(result["unexpectedPaths"]?.toString()?.contains("src/App.kt") == true)
         } finally {
+            git.close()
             root.deleteRecursively()
         }
     }
