@@ -1,9 +1,11 @@
 package com.vericore.cli
 
 import com.vericore.core.ai.DependencyPaths
+import com.vericore.core.ai.GroundedEvidence
 import com.vericore.core.ai.GroundedEvidenceBuilder
 import com.vericore.core.cache.CacheManager
 import com.vericore.core.graph.RobustDependencyGraph
+import com.vericore.core.intelligence.AnalysisSnapshot
 import com.vericore.core.intelligence.AnalysisSnapshotBuilder
 import com.vericore.core.intelligence.EngineeringContextSnapshot
 import com.vericore.core.parser.ParsedFile
@@ -36,6 +38,20 @@ class RepositoryQACommand : CliktCommand(name = "repo-qa", help = "Retrieve grou
         require(root.isDirectory) { "Repository path is not a directory: $path" }
         require(maxResults in 1..32) { "--max-results must be between 1 and 32" }
 
+        val parsedQuestion = RepositoryQuestionClassifier.classify(question)
+        val json = Json { prettyPrint = true; encodeDefaults = true; ignoreUnknownKeys = true }
+        val cachedEvidence = loadReusableGroundedEvidence(root, json)
+        if (cachedEvidence != null) {
+            val result = RepositoryEvidenceRetriever().retrieve(parsedQuestion, cachedEvidence, maxResults)
+            if (evidenceOutput != null) {
+                val output = File(evidenceOutput!!)
+                output.parentFile?.mkdirs()
+                output.writeText(json.encodeToString(cachedEvidence))
+            }
+            echo(json.encodeToString(result))
+            return
+        }
+
         val files = RepositoryScanner().scan(root.path)
         val parsedFiles: List<ParsedFile> = runBlocking {
             CodeParallelParser(CacheManager()).parseFiles(files)
@@ -57,7 +73,7 @@ class RepositoryQACommand : CliktCommand(name = "repo-qa", help = "Retrieve grou
             pageRankScores = graph.pageRankScores,
             hasCycles = graph.hasCycles,
             parseFailures = parseFailures,
-            repositoryState = loadReusableRepositoryState(root)
+            repositoryState = loadReusableRepositoryState(root, json)
         )
         val dependencyPaths = enriched.associate { parsed ->
             val sourcePath = parsed.file.absolutePath
@@ -76,10 +92,8 @@ class RepositoryQACommand : CliktCommand(name = "repo-qa", help = "Retrieve grou
             sourcePath to DependencyPaths(dependents = dependents, dependencies = dependencies)
         }
         val grounded = GroundedEvidenceBuilder.fromSnapshot(snapshot, dependencyPaths = dependencyPaths)
-        val parsedQuestion = RepositoryQuestionClassifier.classify(question)
         val result = RepositoryEvidenceRetriever().retrieve(parsedQuestion, grounded, maxResults)
 
-        val json = Json { prettyPrint = true; encodeDefaults = true }
         if (evidenceOutput != null) {
             val output = File(evidenceOutput!!)
             output.parentFile?.mkdirs()
@@ -88,12 +102,28 @@ class RepositoryQACommand : CliktCommand(name = "repo-qa", help = "Retrieve grou
         echo(json.encodeToString(result))
     }
 
-    private fun loadReusableRepositoryState(root: File): EngineeringContextSnapshot? {
+    private fun loadReusableGroundedEvidence(root: File, json: Json): GroundedEvidence? {
+        val snapshotFile = root.resolve("output/analysis-snapshot.json")
+        val evidenceFile = root.resolve("output/grounded-evidence.json")
+        if (!snapshotFile.isFile || !evidenceFile.isFile) return null
+        return runCatching {
+            val snapshot = json.decodeFromString<AnalysisSnapshot>(snapshotFile.readText())
+            val currentState = Git.open(root).use { git ->
+                val commit = git.repository.resolve("HEAD")?.name
+                val status = git.status().call()
+                commit to status.isClean
+            }
+            require(currentState.second) { "Repository working tree is dirty" }
+            require(snapshot.repository.repositoryCommit == currentState.first) { "Cached analysis snapshot is stale" }
+            json.decodeFromString<GroundedEvidence>(evidenceFile.readText())
+        }.getOrNull()
+    }
+
+    private fun loadReusableRepositoryState(root: File, json: Json): EngineeringContextSnapshot? {
         val contextFile = root.resolve("output/engineering-context.json")
         if (!contextFile.isFile) return null
         return runCatching {
-            val snapshot = Json { ignoreUnknownKeys = true }
-                .decodeFromString<EngineeringContextSnapshot>(contextFile.readText())
+            val snapshot = json.decodeFromString<EngineeringContextSnapshot>(contextFile.readText())
             val currentCommit = Git.open(root).use { git -> git.repository.resolve("HEAD")?.name }
             if (snapshot.repositoryCommit != null && snapshot.repositoryCommit == currentCommit) snapshot else null
         }.getOrNull()
