@@ -1,6 +1,9 @@
 name: Phase 1 Regression
 
 on:
+  push:
+    branches:
+      - fix/vcore-001-same-package-dependencies
   workflow_dispatch:
   workflow_call:
 

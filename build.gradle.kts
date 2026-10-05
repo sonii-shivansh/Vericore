@@ -19,7 +19,7 @@ dependencies {
     implementation("com.github.ajalt.clikt:clikt:4.2.2")
     implementation("com.github.javaparser:javaparser-symbol-solver-core:3.28.2")
     implementation("com.squareup:kotlinpoet:1.16.0")
-    implementation("org.eclipse.jgit:org.eclipse.jgit:6.8.0.202311291450-r")
+    implementation("org.eclipse.jgit:org.eclipse.jgit:6.10.0.202406032230-r")
     implementation("org.jgrapht:jgrapht-core:1.5.2")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
     implementation("io.github.microutils:kotlin-logging-jvm:3.0.5")

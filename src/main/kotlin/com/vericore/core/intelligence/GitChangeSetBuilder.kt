@@ -17,18 +17,37 @@ object GitChangeSetBuilder {
     fun fromWorkingTree(repoPath: String): ChangeSet {
         openRepository(repoPath).use { repository ->
             Git(repository).use { git ->
+                val status = git.status().call()
+                val stagedChanges = status.added + status.changed + status.removed
+                val workingChanges = status.modified + status.missing
+                val untrackedChanges = status.untracked
+
+                // Release-gate and preparation runs create output/.vericore artifacts that are
+                // intentionally outside the mutation scope. If nothing else changed, avoid the
+                // two full-tree JGit diff scans that the old implementation performed.
+                if (listOf(stagedChanges, workingChanges, untrackedChanges)
+                        .flatten()
+                        .none(::isMeaningfulPath)) {
+                    return ChangeSet(emptyList(), source = "working-tree")
+                }
+
                 val entries = mutableListOf<DiffEntry>()
-                entries += git.diff().setCached(true).call()
-                entries += git.diff().setCached(false).call()
+                if (stagedChanges.any(::isMeaningfulPath)) {
+                    entries += git.diff().setCached(true).call()
+                }
+                if (workingChanges.any(::isMeaningfulPath)) {
+                    entries += git.diff().setCached(false).call()
+                }
+
                 val changes = entries
                     .map { toChangedFile(it, repository) }
                     .filterNot { isToolGeneratedPath(it.path) }
                     .toMutableList()
                 val trackedPaths = changes.flatMap { listOfNotNull(it.path, it.oldPath) }.toSet()
 
-                git.status().call().untracked
+                untrackedChanges
                     .filter { it !in trackedPaths }
-                    .filterNot(::isToolGeneratedPath)
+                    .filter(::isMeaningfulPath)
                     .sorted()
                     .forEach { path ->
                         changes += ChangedFile(path, ChangeType.ADDED, additions = countLines(File(repository.workTree, path)))
@@ -116,6 +135,8 @@ object GitChangeSetBuilder {
             normalized == "output" ||
             normalized.startsWith("output/")
     }
+
+    private fun isMeaningfulPath(path: String): Boolean = !isToolGeneratedPath(path)
 
     private fun resolveTree(repository: Repository, revision: String): ObjectId =
         repository.resolve("$revision^{tree}") ?: throw IllegalArgumentException("Invalid revision: $revision")

@@ -17,13 +17,24 @@ import java.io.File
 import kotlinx.serialization.Serializable
 
 @Serializable
+data class VerificationExecutionResult(
+    val commands: List<VerificationCommandResult> = emptyList(),
+    val commandsDeclared: Int = commands.size,
+    val commandsExecuted: Int = commands.count { it.executed },
+    val allCommandsExecuted: Boolean = commands.isNotEmpty() && commands.all { it.executed },
+    val allCommandsPassed: Boolean = commands.isNotEmpty() && commands.all { it.executed && !it.timedOut && it.exitCode == 0 },
+    val executionComplete: Boolean = commands.isNotEmpty() && commands.all { it.executed }
+)
+
+@Serializable
 data class EngineeringVerificationResult(
-    val schemaVersion: String = "1.1",
+    val schemaVersion: String = "1.2",
     val repository: String,
     val safety: ChangeSafetyResult,
     val prIntelligence: com.vericore.core.intelligence.PRIntelligenceResult,
     val architecture: ArchitectureIntelligenceResult,
     val verificationCommands: List<String>,
+    val verification: VerificationExecutionResult,
     val status: SafetyStatus,
     val provenance: DecisionProvenance = DecisionProvenance.create("verify", null, "1.0", emptyList()),
     val contract: AgentChangeContractResult? = null
@@ -75,16 +86,29 @@ object EngineeringVerification {
         }
         val contractValid = reasons.isEmpty()
         val contractResult = AgentChangeContractResult(contract, contractValid, reasons)
+        val execution = if (contractValid) {
+            VerificationExecutionResult(commands = VerificationCommandExecutor.execute(root, contract.verificationCommands))
+        } else {
+            VerificationExecutionResult()
+        }
         val status = when {
             !contractValid -> SafetyStatus.FAIL
+            !execution.allCommandsPassed -> SafetyStatus.FAIL
             safety.status == SafetyStatus.FAIL -> SafetyStatus.FAIL
             safety.status == SafetyStatus.REVIEW_REQUIRED || pr.aggregateSeverity.name == "CRITICAL" -> SafetyStatus.REVIEW_REQUIRED
             else -> SafetyStatus.PASS
         }
         val provenance = DecisionProvenance.capture(root.path, "verify", snapshot.schemaVersion, contract.evidenceIds)
         return EngineeringVerificationResult(
-            repository = root.path, safety = safety, prIntelligence = pr, architecture = architecture,
-            verificationCommands = contract.verificationCommands, status = status, provenance = provenance, contract = contractResult
+            repository = root.path,
+            safety = safety,
+            prIntelligence = pr,
+            architecture = architecture,
+            verificationCommands = contract.verificationCommands,
+            verification = execution,
+            status = status,
+            provenance = provenance,
+            contract = contractResult
         )
     }
 }

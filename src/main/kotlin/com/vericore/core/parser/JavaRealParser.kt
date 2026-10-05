@@ -3,6 +3,7 @@ package com.vericore.core.parser
 import com.github.javaparser.JavaParser
 import com.github.javaparser.ParserConfiguration
 import com.github.javaparser.ast.CompilationUnit
+import com.github.javaparser.ast.type.ClassOrInterfaceType
 import java.io.File
 
 class JavaRealParser : LanguageParser {
@@ -19,6 +20,9 @@ class JavaRealParser : LanguageParser {
 
             val packageName = cu.packageDeclaration.map { it.nameAsString }.orElse("")
             val imports = cu.imports.map { it.nameAsString }
+            val referencedTypes = cu.findAll(ClassOrInterfaceType::class.java)
+                .map { it.nameWithScope }
+                .distinct()
 
             var description = ""
             cu.primaryType.ifPresent { type ->
@@ -42,7 +46,8 @@ class JavaRealParser : LanguageParser {
                 packageName = packageName,
                 imports = imports,
                 description = description,
-                parseWarning = warning
+                parseWarning = warning,
+                referencedTypes = referencedTypes
             )
         } catch (e: Exception) {
             val warning = "Failed to parse Java file ${file.name} at language level $languageLevel: ${e.message}"

@@ -1,0 +1,143 @@
+name: VCORE-002 Validation
+
+on:
+  push:
+    branches:
+      - fix/vcore-002-build-command-detection
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  vcore-002:
+    name: VCORE-002 build-command validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          java-version: "21"
+          distribution: temurin
+          cache: gradle
+      - name: Build and test Vericore
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon clean test installDist
+      - name: Validate Maven-only repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLI="$PWD/build/install/vericore/bin/vericore"
+          fixture="$(mktemp -d)"; trap 'rm -rf "$fixture"' EXIT
+          mkdir -p "$fixture/output" "$fixture/src"
+          cat > "$fixture/pom.xml" <<'EOF'
+          <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd"><modelVersion>4.0.0</modelVersion><groupId>test</groupId><artifactId>maven-only</artifactId><version>1.0</version></project>
+          EOF
+          printf '%s\n' '{"schemaVersion":"1.0","citations":[]}' > "$fixture/output/grounded-evidence.json"
+          "$CLI" plan "Fix the service safely" --repository "$fixture" --changed src/Service.java --output "$fixture/output/plan.json"
+          python3 - "$fixture/output/plan.json" <<'PY'
+          import json,sys
+          p=json.load(open(sys.argv[1])); assert p['buildSystem']=='MAVEN',p; assert len(p['verificationCommands'])==2,p; assert all('mvn' in c and 'gradle' not in c.lower() for c in p['verificationCommands']),p
+          PY
+      - name: Validate Gradle repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLI="$PWD/build/install/vericore/bin/vericore"; fixture="$(mktemp -d)"; trap 'rm -rf "$fixture"' EXIT
+          mkdir -p "$fixture/output" "$fixture/src"; printf '%s\n' 'plugins {}' > "$fixture/build.gradle.kts"; printf '%s\n' '{"schemaVersion":"1.0","citations":[]}' > "$fixture/output/grounded-evidence.json"
+          "$CLI" plan "Fix the service safely" --repository "$fixture" --changed src/Service.kt --output "$fixture/output/plan.json"
+          python3 - "$fixture/output/plan.json" <<'PY'
+          import json,sys
+          p=json.load(open(sys.argv[1])); assert p['buildSystem']=='GRADLE',p; assert len(p['verificationCommands'])==2,p; assert all('gradle' in c.lower() and 'mvn' not in c.lower() for c in p['verificationCommands']),p
+          PY
+      - name: Validate executable Maven wrapper precedence
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLI="$PWD/build/install/vericore/bin/vericore"; fixture="$(mktemp -d)"; trap 'rm -rf "$fixture"' EXIT
+          mkdir -p "$fixture/output"; printf '%s\n' '<project/>' > "$fixture/pom.xml"; printf '%s\n' '#!/bin/sh' 'exit 0' > "$fixture/mvnw"; chmod +x "$fixture/mvnw"; printf '%s\n' '{"schemaVersion":"1.0","citations":[]}' > "$fixture/output/grounded-evidence.json"
+          "$CLI" plan "Fix the service safely" --repository "$fixture" --output "$fixture/output/plan.json"
+          python3 - "$fixture/output/plan.json" <<'PY'
+          import json,sys
+          p=json.load(open(sys.argv[1])); assert p['buildSystem']=='MAVEN',p; assert all('./mvnw' in c for c in p['verificationCommands']),p
+          PY
+      - name: Validate unknown repository fails closed for build commands
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLI="$PWD/build/install/vericore/bin/vericore"; fixture="$(mktemp -d)"; trap 'rm -rf "$fixture"' EXIT
+          mkdir -p "$fixture/output"; printf '%s\n' '{"schemaVersion":"1.0","citations":[]}' > "$fixture/output/grounded-evidence.json"
+          "$CLI" plan "Fix the service safely" --repository "$fixture" --output "$fixture/output/plan.json"
+          python3 - "$fixture/output/plan.json" <<'PY'
+          import json,sys
+          p=json.load(open(sys.argv[1])); assert p['buildSystem']=='UNKNOWN',p; assert p['verificationCommands']==[],p; assert any('build system' in x.lower() for x in p['uncertainties']),p
+          PY
+      - name: Validate nested Maven module
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLI="$PWD/build/install/vericore/bin/vericore"; fixture="$(mktemp -d)"; trap 'rm -rf "$fixture"' EXIT
+          mkdir -p "$fixture/java/output" "$fixture/java/src/main/java" "$fixture/output"; printf '%s\n' '<project/>' > "$fixture/java/pom.xml"; printf '%s\n' '{"schemaVersion":"1.0","citations":[]}' > "$fixture/output/grounded-evidence.json"
+          "$CLI" plan "Fix PDF processing" --repository "$fixture" --changed java/src/main/java/App.java --output "$fixture/output/plan.json"
+          python3 - "$fixture/output/plan.json" <<'PY'
+          import json,sys
+          p=json.load(open(sys.argv[1])); assert p['buildSystem']=='MAVEN',p; assert all('/java' in c and 'mvn' in c and 'gradle' not in c.lower() for c in p['verificationCommands']),p
+          PY
+      - name: Validate real repository build layouts
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLI="$PWD/build/install/vericore/bin/vericore"
+          for repo in spring-projects/spring-petclinic opendataloader-project/opendataloader-pdf runelite/runelite quarkusio/quarkus; do
+            name="${repo#*/}"; rm -rf "$RUNNER_TEMP/$name"; git clone --depth 1 "https://github.com/$repo.git" "$RUNNER_TEMP/$name"; mkdir -p "$RUNNER_TEMP/$name/output"; printf '%s\n' '{"schemaVersion":"1.0","citations":[]}' > "$RUNNER_TEMP/$name/output/grounded-evidence.json"
+            "$CLI" plan "Validate repository build commands" --repository "$RUNNER_TEMP/$name" --output "$RUNNER_TEMP/$name/output/plan.json"
+            python3 - "$RUNNER_TEMP/$name/output/plan.json" "$name" <<'PY'
+          import json,sys
+          p=json.load(open(sys.argv[1])); name=sys.argv[2]; assert p['buildSystem'] in ('MAVEN','GRADLE'),(name,p); assert p['verificationCommands'],(name,p)
+          if p['buildSystem']=='MAVEN': assert all('mvn' in c and 'gradle' not in c.lower() for c in p['verificationCommands']),(name,p)
+          else: assert all('gradle' in c.lower() and 'mvn' not in c.lower() for c in p['verificationCommands']),(name,p)
+          PY
+          done
+      - name: Validate VCORE-003 executes declared verification commands
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLI="$PWD/build/install/vericore/bin/vericore"; fixture="$(mktemp -d)"; trap 'rm -rf "$fixture"' EXIT
+          mkdir -p "$fixture/src/main/java" "$fixture/output"
+          printf '%s\n' '<project xmlns="http://maven.apache.org/POM/4.0.0"><modelVersion>4.0.0</modelVersion><groupId>test</groupId><artifactId>verify-fixture</artifactId><version>1.0</version></project>' > "$fixture/pom.xml"
+          printf '%s\n' '#!/bin/sh' 'printf "%s\\n" "$*" >> verification-executed.log' 'exit 0' > "$fixture/mvnw"; chmod +x "$fixture/mvnw"
+          printf '%s\n' 'class Service { String value() { return "before"; } }' > "$fixture/src/main/java/Service.java"
+          git -C "$fixture" init -q; git -C "$fixture" config user.email "ci@example.com"; git -C "$fixture" config user.name "VCORE CI"; git -C "$fixture" add .; git -C "$fixture" commit -qm "initial fixture"
+          printf '%s\n' 'class Service { String value() { return "after"; } }' > "$fixture/src/main/java/Service.java"
+          "$CLI" prepare "Verify the service change" --path "$fixture" --plan-output "$fixture/output/plan.json" --contract-output "$fixture/output/contract.json" --output "$fixture/output/context.json"
+          set +e; "$CLI" verify --path "$fixture" --plan "$fixture/output/plan.json" --contract "$fixture/output/contract.json" --output "$fixture/output/verification.json"; rc=$?; set -e
+          cat "$fixture/output/verification.json"
+          test "$rc" -eq 0
+          python3 - "$fixture/output/verification.json" "$fixture/verification-executed.log" <<'PY'
+          import json,sys
+          r=json.load(open(sys.argv[1])); executed=open(sys.argv[2]).read().splitlines(); assert r['status']=='PASS',r; v=r['verification']; assert v['commandsDeclared']==2 and v['commandsExecuted']==2,v; assert v['allCommandsExecuted'] and v['allCommandsPassed'] and v['executionComplete'],v; assert len(executed)==2,executed; assert all(x['executed'] and not x['timedOut'] and x['exitCode']==0 for x in v['commands']),v
+          PY
+      - name: Validate VCORE-003 records command failure
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLI="$PWD/build/install/vericore/bin/vericore"; fixture="$(mktemp -d)"; trap 'rm -rf "$fixture"' EXIT
+          mkdir -p "$fixture/src/main/java" "$fixture/output"
+          printf '%s\n' '<project xmlns="http://maven.apache.org/POM/4.0.0"><modelVersion>4.0.0</modelVersion><groupId>test</groupId><artifactId>verify-negative</artifactId><version>1.0</version></project>' > "$fixture/pom.xml"
+          printf '%s\n' '#!/bin/sh' 'exit 9' > "$fixture/mvnw"; chmod +x "$fixture/mvnw"; printf '%s\n' 'class Service { String value() { return "before"; } }' > "$fixture/src/main/java/Service.java"
+          git -C "$fixture" init -q; git -C "$fixture" config user.email "ci@example.com"; git -C "$fixture" config user.name "VCORE CI"; git -C "$fixture" add .; git -C "$fixture" commit -qm "initial fixture"
+          printf '%s\n' 'class Service { String value() { return "after"; } }' > "$fixture/src/main/java/Service.java"
+          "$CLI" prepare "Verify the failing service change" --path "$fixture" --plan-output "$fixture/output/plan.json" --contract-output "$fixture/output/contract.json" --output "$fixture/output/context.json"
+          set +e; "$CLI" verify --path "$fixture" --plan "$fixture/output/plan.json" --contract "$fixture/output/contract.json" --output "$fixture/output/verification.json"; rc=$?; set -e
+          test "$rc" -ne 0
+          python3 - "$fixture/output/verification.json" <<'PY'
+          import json,sys
+          r=json.load(open(sys.argv[1])); assert r['status']=='FAIL',r; v=r['verification']; assert v['commandsExecuted']==2 and v['allCommandsExecuted'],v; assert not v['allCommandsPassed'],v; assert any(x['exitCode']==9 for x in v['commands']),v
+          PY
