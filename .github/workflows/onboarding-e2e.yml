@@ -71,6 +71,13 @@ jobs:
           MD
           git add .
           git commit -qm "initial fixture"
+          # Verify prepare/verify against an actual pending working-tree change.
+          cat > src/main/java/example/Service.java <<'JAVA'
+          package example;
+          public class Service {
+              public String greet(String name) { return "Hello, " + name; }
+          }
+          JAVA
           CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
           "$CLI" analyze .
           test -s output/index.html
