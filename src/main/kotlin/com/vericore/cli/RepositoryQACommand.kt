@@ -5,6 +5,7 @@ import com.vericore.core.ai.GroundedEvidenceBuilder
 import com.vericore.core.cache.CacheManager
 import com.vericore.core.graph.RobustDependencyGraph
 import com.vericore.core.intelligence.AnalysisSnapshotBuilder
+import com.vericore.core.intelligence.EngineeringContextSnapshot
 import com.vericore.core.parser.ParsedFile
 import com.vericore.core.qa.RepositoryEvidenceRetriever
 import com.vericore.core.qa.RepositoryQuestionClassifier
@@ -19,6 +20,7 @@ import java.io.File
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.eclipse.jgit.api.Git
 
 class RepositoryQACommand : CliktCommand(name = "repo-qa", help = "Retrieve grounded repository evidence for a developer question") {
     private val question by argument("question", help = "Question about the repository")
@@ -54,7 +56,8 @@ class RepositoryQACommand : CliktCommand(name = "repo-qa", help = "Retrieve grou
             graph = graph.graph,
             pageRankScores = graph.pageRankScores,
             hasCycles = graph.hasCycles,
-            parseFailures = parseFailures
+            parseFailures = parseFailures,
+            repositoryState = loadReusableRepositoryState(root)
         )
         val dependencyPaths = enriched.associate { parsed ->
             val sourcePath = parsed.file.absolutePath
@@ -83,6 +86,17 @@ class RepositoryQACommand : CliktCommand(name = "repo-qa", help = "Retrieve grou
             output.writeText(json.encodeToString(grounded))
         }
         echo(json.encodeToString(result))
+    }
+
+    private fun loadReusableRepositoryState(root: File): EngineeringContextSnapshot? {
+        val contextFile = root.resolve("output/engineering-context.json")
+        if (!contextFile.isFile) return null
+        return runCatching {
+            val snapshot = Json { ignoreUnknownKeys = true }
+                .decodeFromString<EngineeringContextSnapshot>(contextFile.readText())
+            val currentCommit = Git.open(root).use { git -> git.repository.resolve("HEAD")?.name }
+            if (snapshot.repositoryCommit != null && snapshot.repositoryCommit == currentCommit) snapshot else null
+        }.getOrNull()
     }
 
     private fun repositoryRelativePath(root: File, file: String): String =
