@@ -8,10 +8,6 @@ on:
 permissions:
   contents: read
 
-env:
-  # Enforce DCO only for commits introduced by the pull request over main.
-  DCO_BASELINE_SHA: c80a5b49b7ea9518e7cf460a6a054b3766968042
-
 jobs:
   dco:
     name: Check commit sign-offs
@@ -39,13 +35,10 @@ jobs:
           # Main is the authoritative reviewed baseline. Every non-merge
           # commit introduced by this PR must carry a DCO trailer.
           baseline="${BASE_SHA}"
-          if git cat-file -e "${DCO_BASELINE_SHA}^{commit}" 2>/dev/null; then
-            baseline="${DCO_BASELINE_SHA}"
-          fi
           commits="$(git rev-list --no-merges "${baseline}..${HEAD_SHA}")"
 
           if [[ -z "${commits}" ]]; then
-            echo "No non-merge commits after the DCO baseline; DCO check passes."
+            echo "No non-merge commits introduced by this PR; DCO check passes."
             exit 0
           fi
 

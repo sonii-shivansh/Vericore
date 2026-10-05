@@ -31,6 +31,10 @@ Describe the use case for this feature. Who would benefit from it?
 
 If applicable, add mockups, diagrams, or examples to help explain your idea.
 
+## 🔍 Compatibility / Impact
+
+Describe any CLI, REST, MCP, configuration, performance, security, or compatibility implications.
+
 ## 📝 Additional Context
 
-Add any other context or screenshots about the feature request here.
+Add any other context, screenshots, diagrams, or links that would help evaluate the request.

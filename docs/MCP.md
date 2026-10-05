@@ -154,7 +154,7 @@ For a shared or remote deployment, put an authenticated service boundary in fron
 
 ## Compatibility and lifecycle
 
-The current implementation targets the **2025-11-25 MCP lifecycle** and implements `initialize`, `notifications/initialized`, `ping`, `tools/list`, and `tools/call` for the current Vericore tool surface.
+The current implementation targets the **2025-11-25 MCP lifecycle** and implements `initialize`, `notifications/initialized`, `ping`, `tools/list`, and `tools/call` for the current Vericore tool surface. Legacy `codecontext_*` aliases are accepted only for migration and emit deprecation warnings on stderr.
 
 Modern MCP lifecycle behavior is intentionally deferred until the server can implement the required request/discovery model correctly rather than advertising unsupported behavior.
 

@@ -16,7 +16,7 @@ There is one application-level outbound-data path in the current implementation:
 
 AI analysis is disabled by default. When AI is explicitly configured and invoked, repository-derived context is sent to the configured provider over HTTPS using the provider API key supplied by the user.
 
-The current implementation supports Gemini and Anthropic/Claude provider paths.
+The core `AICodeAnalyzer` implements Gemini and Anthropic/Claude provider paths. The interactive `setup` flow currently provisions Gemini.
 
 The approximate payload boundaries in the current implementation are:
 
@@ -25,7 +25,8 @@ The approximate payload boundaries in the current implementation are:
 | Single-file AI analysis | Up to 3,000 characters of the selected file, plus file metadata and deterministic context |
 | Batch AI analysis | Up to 50 prioritized files by default; each file analysis uses the single-file boundary above |
 | AI PR review | Changed-file paths, affected hotspot names, and up to 5,000 characters of the diff |
-| Grounded repository Q&A | The user's question plus bounded deterministic evidence; the default evidence builder exposes at most 24 citations, with paths and aggregate metrics rather than raw file contents |
+| Evidence-grounded AI service | When this explicit service path is invoked, the user's question is combined with bounded deterministic evidence; the default evidence builder exposes at most 24 citations with paths and aggregate metrics rather than raw file contents |
+| Deterministic `repo-qa` | No external provider call; evidence is retrieved and ranked locally |
 
 The exact provider request also contains the prompt instructions and structured metadata required for the selected operation.
 
@@ -68,7 +69,8 @@ The authoritative implementation is the source code and configuration in this re
 
 - `ReportGenerator.kt` defines the self-contained report output and graph visualization.
 - `AICodeAnalyzer.kt` defines the AI provider requests and content-size boundaries.
-- `GroundedAIService.kt` and `GroundedEvidence.kt` define the bounded evidence sent for grounded Q&A.
+- `GroundedAIService.kt` and `GroundedEvidence.kt` define the separate bounded evidence-to-model path.
+- `RepositoryQACommand.kt` implements deterministic repository evidence retrieval without an external model.
 - `.vericore.json.template` shows the default AI configuration.
 
 If these implementation details change, this document must be updated in the same change.

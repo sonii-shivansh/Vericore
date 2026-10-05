@@ -76,7 +76,7 @@ Git working tree / revision pair
       Grounded evidence / planner / AI
 ```
 
-The deterministic core has no dependency on an LLM or GitHub API. This makes it suitable for CI and allows AI layers to explain evidence without becoming the source of truth.
+The deterministic core has no dependency on an LLM or GitHub API. The CLI and server can therefore use the result as a stable review signal even when AI is disabled. This makes it suitable for CI and allows AI layers to explain evidence without becoming the source of truth.
 
 ## Current boundary
 

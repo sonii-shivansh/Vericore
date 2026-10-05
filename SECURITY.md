@@ -4,9 +4,9 @@
 
 | Version | Supported |
 | --- | --- |
-| `0.7.x` | Yes — current Vericore release line |
-| `0.6.x` | Limited; upgrade to Vericore `0.7.x` recommended |
-| `0.5.x` and older | No |
+| `0.8.x` | Yes — current Vericore release line |
+| `0.7.x` | Limited; upgrade to Vericore `0.8.2` recommended |
+| `0.6.x` and older | No |
 
 ## Reporting a vulnerability
 
@@ -36,7 +36,7 @@ Vericore is designed primarily for local analysis:
 - grounded evidence uses repository-relative paths and bounded context;
 - generated HTML reports are self-contained and do not require a third-party browser asset at open time.
 
-The REST server does **not** provide authentication, tenant isolation, report authorization, TLS termination, report expiration, or a complete public-internet deployment boundary. Add those controls before exposing it outside a trusted local or internal network.
+The REST server does **not** provide authentication, tenant isolation, report authorization, TLS termination, report expiration, or a complete public-internet deployment boundary. The MCP stdio server also assumes a trusted local caller. Add those controls before exposing it outside a trusted local or internal network.
 
 ## Agentic security boundary
 

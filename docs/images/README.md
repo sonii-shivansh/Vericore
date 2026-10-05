@@ -1,6 +1,6 @@
-# Vericore demo assets
+# Vericore documentation assets
 
-This directory contains screenshots and other non-runtime assets used by the project documentation.
+This directory contains screenshots and other non-runtime assets used by the project documentation. These assets are documentation-only and are not required at runtime.
 
 ## Recreate the report
 

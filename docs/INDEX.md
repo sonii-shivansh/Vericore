@@ -17,9 +17,9 @@
 | Review data handling | [Data & Privacy](DATA_PRIVACY.md) |
 | Contribute to Vericore | [Development](DEVELOPMENT.md) |
 | Check implemented capabilities | [Implementation Status](IMPLEMENTATION_STATUS.md) |
-| Review the current 0.8.2 release preparation | [0.8.2 Release Readiness](RELEASE_READINESS_0.8.2.md) |
-| Review the published 0.8.1 release record | [0.8.1 Release Readiness](RELEASE_READINESS_0.8.1.md) |
-| Review the previous 0.8.0 release record | [0.8.0 Release Readiness](RELEASE_READINESS_0.8.0.md) |
+| Review the latest published release record | [0.8.2 Release Readiness](RELEASE_READINESS_0.8.2.md) |
+| Review the previous release record | [0.8.1 Release Readiness](RELEASE_READINESS_0.8.1.md) |
+| Review the earlier release record | [0.8.0 Release Readiness](RELEASE_READINESS_0.8.0.md) |
 
 ## Recommended reading paths
 
@@ -88,7 +88,7 @@ The documentation set has four purposes:
 3. **Release documentation** — release certification evidence and the current release record.
 4. **Project policy** — contribution, security, DCO, conduct, licensing, and trademarks at the repository root.
 
-Historical implementation notes may explain a design decision, but they must not be presented as current product instructions.
+Historical implementation notes may explain a design decision, but they must not be presented as current product instructions. The `main` branch may contain unreleased hardening after the latest published tag.
 
 ### Source of truth
 

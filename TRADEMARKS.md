@@ -1,5 +1,7 @@
 # Vericore branding
 
+> Informational guidance for reuse of the Vericore name and project branding.
+
 The Vericore source code is licensed under the MIT License. The license grants rights to the software; it does not by itself grant permission to use project names, logos, or other branding to imply endorsement, affiliation, or an official release.
 
 Community forks and derivative projects are encouraged to identify themselves clearly and should not present themselves as the official Vericore project.

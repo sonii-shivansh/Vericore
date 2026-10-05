@@ -35,6 +35,7 @@
 ## Documentation
 
 - [ ] Documentation updated for changed behavior/contracts
+- [ ] Machine-readable contracts/schemas updated when applicable
 - [ ] Changelog updated when user-visible
 
 ## Reviewer Notes

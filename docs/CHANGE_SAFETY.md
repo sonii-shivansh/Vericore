@@ -78,6 +78,8 @@ Verification loads the persisted contract and validates:
 9. recommended verification commands;
 10. verification provenance.
 
+For a fast boundary check, `vericore verify --contract-only` validates the persisted contract, repository identity, prepared `HEAD`, plan binding, and current mutation scope without rebuilding the full dependency analysis graph.
+
 A missing, tampered, mismatched, cross-repository, or stale contract produces `FAIL`. Verification does not silently reconstruct a replacement contract from a mutable plan.
 
 ## Status semantics
