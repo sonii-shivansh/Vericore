@@ -55,7 +55,7 @@ object EngineeringVerification {
         graph.analyze().getOrThrow()
 
         val changeSet = GitChangeSetBuilder.fromWorkingTree(root.path)
-        val plannedPaths = if (plan.plannedPaths.isNotEmpty()) plan.plannedPaths else plan.affectedComponents
+        val plannedPaths = plan.plannedPaths
         val safety = ChangeSafetyAnalyzer.verify(changeSet.files, plannedPaths)
         val packageByPath = enriched.associate { file -> root.toPath().relativize(file.file.toPath().toAbsolutePath().normalize()).toString().replace('\\', '/') to file.packageName }
         val absoluteByRelative = enriched.associate { file -> root.toPath().relativize(file.file.toPath().toAbsolutePath().normalize()).toString().replace('\\', '/') to file.file.absolutePath.replace('\\', '/') }
@@ -86,15 +86,15 @@ object EngineeringVerification {
         }
         val contractValid = reasons.isEmpty()
         val contractResult = AgentChangeContractResult(contract, contractValid, reasons)
-        val execution = if (contractValid) {
+        val execution = if (contractValid && safety.status != SafetyStatus.FAIL) {
             VerificationExecutionResult(commands = VerificationCommandExecutor.execute(root, contract.verificationCommands))
         } else {
             VerificationExecutionResult()
         }
         val status = when {
             !contractValid -> SafetyStatus.FAIL
-            !execution.allCommandsPassed -> SafetyStatus.FAIL
             safety.status == SafetyStatus.FAIL -> SafetyStatus.FAIL
+            !execution.allCommandsPassed -> SafetyStatus.FAIL
             safety.status == SafetyStatus.REVIEW_REQUIRED || pr.aggregateSeverity.name == "CRITICAL" -> SafetyStatus.REVIEW_REQUIRED
             else -> SafetyStatus.PASS
         }

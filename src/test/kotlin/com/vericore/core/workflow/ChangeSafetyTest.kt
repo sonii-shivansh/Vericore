@@ -44,9 +44,9 @@ class ChangeSafetyTest {
     }
 
     @Test
-    fun requestsReviewWhenSourceChangesHaveNoExplicitPlan() {
+    fun failsClosedWhenSourceChangesHaveNoExplicitPlan() {
         val result = ChangeSafetyAnalyzer.verify(listOf(ChangedFile("src/main/App.kt", ChangeType.MODIFIED)), emptyList())
-        assertEquals(SafetyStatus.REVIEW_REQUIRED, result.status)
+        assertEquals(SafetyStatus.FAIL, result.status)
         assertTrue(result.reasons.any { it.contains("No explicit source paths") })
     }
 }

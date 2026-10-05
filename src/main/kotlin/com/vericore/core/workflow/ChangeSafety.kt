@@ -17,7 +17,7 @@ data class ChangeSafetyResult(
 @Serializable
 enum class SafetyStatus { PASS, REVIEW_REQUIRED, FAIL }
 
-/** Compares actual source changes with an evidence-backed plan. Generated artifacts are ignored. */
+/** Compares actual source changes with an explicit evidence-backed mutation plan. */
 object ChangeSafetyAnalyzer {
     private val generatedPrefixes = listOf(".vericore/", ".codecontext/", "output/", "build/", "target/")
 
@@ -33,12 +33,12 @@ object ChangeSafetyAnalyzer {
 
         val reasons = buildList {
             if (actual.isEmpty()) add("No source working-tree changes were detected.")
-            if (planned.isEmpty() && actual.isNotEmpty()) add("No explicit source paths were supplied in the engineering plan.")
+            if (planned.isEmpty() && actual.isNotEmpty()) add("No explicit source paths were supplied in the engineering plan; source mutation is not permitted without an explicit scope.")
             if (unexpected.isNotEmpty() && planned.isNotEmpty()) add("One or more changed paths are outside the supplied engineering plan.")
             if (deleted.isNotEmpty()) add("Deleted files require explicit review before the change is considered safe.")
         }
         val status = when {
-            planned.isEmpty() && actual.isNotEmpty() -> SafetyStatus.REVIEW_REQUIRED
+            planned.isEmpty() && actual.isNotEmpty() -> SafetyStatus.FAIL
             unexpected.isNotEmpty() -> SafetyStatus.FAIL
             deleted.isNotEmpty() -> SafetyStatus.REVIEW_REQUIRED
             else -> SafetyStatus.PASS

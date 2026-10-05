@@ -74,8 +74,7 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
         }
 
         val changes = collectContractOnlyChanges(root)
-        val plannedPaths = if (plan.plannedPaths.isNotEmpty()) plan.plannedPaths else plan.affectedComponents
-        val safety = ChangeSafetyAnalyzer.verify(changes, plannedPaths)
+        val safety = ChangeSafetyAnalyzer.verify(changes, plan.plannedPaths)
         val allReasons = reasons + safety.reasons.filter { it != "No source working-tree changes were detected." }
         val status = when {
             reasons.isNotEmpty() || safety.status == com.vericore.core.workflow.SafetyStatus.FAIL -> com.vericore.core.workflow.SafetyStatus.FAIL

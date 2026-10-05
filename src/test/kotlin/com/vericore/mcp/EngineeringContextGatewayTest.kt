@@ -4,10 +4,13 @@ import com.vericore.core.intelligence.ArchitectureIntelligenceEngine
 import com.vericore.core.intelligence.ArchitectureIntelligenceResult
 import com.vericore.core.scanner.RepositoryScanner
 import com.vericore.core.config.VericoreConfig
+import com.vericore.core.planner.EngineeringPlan
 import com.vericore.cli.CodeParallelParser
 import com.vericore.core.cache.CacheManager
 import com.vericore.core.graph.RobustDependencyGraph
 import com.vericore.core.workflow.AgentChangeContract
+import kotlinx.serialization.json.jsonPrimitive
+import org.eclipse.jgit.api.Git
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonObject
@@ -15,6 +18,7 @@ import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 class EngineeringContextGatewayTest {
     @Test
@@ -34,6 +38,47 @@ class EngineeringContextGatewayTest {
         } finally { root.deleteRecursively() }
     }
 
+    @Test
+    fun `change safety fails closed when planned paths are empty`() {
+        val root = Files.createTempDirectory("gateway-safety").toFile()
+        val git = Git.init().setDirectory(root).call()
+        try {
+            git.repository.config.setString("user", null, "name", "VCORE CI")
+            git.repository.config.setString("user", null, "email", "ci@example.com")
+            git.repository.config.save()
+
+            val source = root.resolve("src/App.kt")
+            source.parentFile.mkdirs()
+            source.writeText("class App")
+            git.add().addFilepattern("src/App.kt").call()
+            git.commit().setMessage("initial fixture").setAuthor("VCORE CI", "ci@example.com").call()
+
+            source.writeText("class App { fun changed() = true }")
+
+            val plan = EngineeringPlan(
+                changeSummary = "test change",
+                repository = root.canonicalPath,
+                affectedComponents = listOf("src/App.kt"),
+                plannedPaths = emptyList(),
+                concerns = emptyList(),
+                riskLevel = com.vericore.core.planner.RiskLevel.MEDIUM,
+                steps = emptyList(),
+                verificationCommands = emptyList(),
+                evidenceIds = emptyList(),
+                uncertainties = emptyList()
+            )
+            val payload = Json { encodeDefaults = true }
+                .encodeToJsonElement(EngineeringPlan.serializer(), plan)
+                .jsonObject
+
+            val result = EngineeringContextGateway.changeSafety(root.path, payload)
+            assertEquals("FAIL", result["status"]?.jsonPrimitive?.content)
+            assertTrue(result["unexpectedPaths"]?.toString()?.contains("src/App.kt") == true)
+        } finally {
+            git.close()
+            root.deleteRecursively()
+        }
+    }
     @Test
     fun `change contract gateway returns persisted artifact without regeneration`() {
         val root = Files.createTempDirectory("gateway-contract").toFile()

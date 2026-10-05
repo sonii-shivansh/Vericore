@@ -1,0 +1,41 @@
+name: VCORE-004 Validation
+
+on:
+  pull_request:
+    paths:
+      - "src/main/kotlin/com/vericore/cli/VerifyCommand.kt"
+      - "src/main/kotlin/com/vericore/core/workflow/ChangeSafety.kt"
+      - "src/main/kotlin/com/vericore/core/workflow/EngineeringVerification.kt"
+      - "src/main/kotlin/com/vericore/mcp/EngineeringContextGateway.kt"
+      - "src/test/kotlin/com/vericore/core/workflow/ChangeSafetyAnalyzerTest.kt"
+      - "src/test/kotlin/com/vericore/core/workflow/ChangeSafetyTest.kt"
+      - "src/test/kotlin/com/vericore/mcp/EngineeringContextGatewayTest.kt"
+      - ".github/workflows/vcore-004-validation.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  vcore-004-mutation-scope:
+    name: VCORE-004 mutation-scope validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          java-version: 21
+          distribution: temurin
+          cache: gradle
+      - name: Run VCORE-004 regression suite
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon test \
+            --tests com.vericore.core.workflow.ChangeSafetyAnalyzerTest \
+            --tests com.vericore.core.workflow.ChangeSafetyTest \
+            --tests com.vericore.mcp.EngineeringContextGatewayTest
