@@ -30,6 +30,7 @@ data class ParsedFile(
         val file: File,
         val packageName: String,
         val imports: List<String>,
+        val referencedTypes: List<String> = emptyList(),
         var gitMetadata: GitMetadata = GitMetadata(),
         val description: String = "",
         val parseWarning: String? = null
