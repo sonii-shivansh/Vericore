@@ -12,7 +12,7 @@
     ".next"
   ],
   "maxFilesAnalyze": 50000,
-  "gitCommitLimit": 1000,
+  "gitCommitLimit": 250,
   "enableCache": true,
   "enableParallel": true,
   "hotspotCount": 15,
