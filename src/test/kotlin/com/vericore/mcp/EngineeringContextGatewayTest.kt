@@ -35,7 +35,7 @@ class EngineeringContextGatewayTest {
     }
 
     @Test
-    fun `change safety never widens empty planned scope to affected components`() {
+    fun `change safety fails closed when planned scope is empty`() {
         val root = Files.createTempDirectory("gateway-safety-scope").toFile()
         try {
             root.resolve("src/App.kt").apply { parentFile.mkdirs(); writeText("class App") }
@@ -65,7 +65,7 @@ class EngineeringContextGatewayTest {
             ).jsonObject
             val result = EngineeringContextGateway.changeSafety(root.path, plan)
             val status = result["status"]?.toString()?.trim('"')
-            assertEquals("REVIEW_REQUIRED", status)
+            assertEquals("FAIL", status)
         } finally { root.deleteRecursively() }
     }
 
