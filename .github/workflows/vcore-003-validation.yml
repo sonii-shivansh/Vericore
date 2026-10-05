@@ -1,0 +1,143 @@
+name: VCORE-003 Validation
+
+on:
+  push:
+    branches:
+      - fix/vcore-003-verify-execution
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  vcore-003:
+    name: VCORE-003 verification execution
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          java-version: "21"
+          distribution: temurin
+          cache: gradle
+
+      - name: Build and test Vericore
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon clean test installDist
+
+      - name: Validate verification executes declared commands
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLI="$PWD/build/install/vericore/bin/vericore"
+          fixture="$(mktemp -d)"
+          trap 'rm -rf "$fixture"' EXIT
+
+          mkdir -p "$fixture/src/main/java" "$fixture/output"
+          cat > "$fixture/pom.xml" <<'EOF'
+          <project xmlns="http://maven.apache.org/POM/4.0.0">
+            <modelVersion>4.0.0</modelVersion>
+            <groupId>test</groupId>
+            <artifactId>verify-fixture</artifactId>
+            <version>1.0</version>
+          </project>
+          EOF
+
+          cat > "$fixture/mvnw" <<'EOF'
+          #!/bin/sh
+          printf '%s\n' "$*" >> verification-executed.log
+          exit 0
+          EOF
+          chmod +x "$fixture/mvnw"
+
+          cat > "$fixture/src/main/java/Service.java" <<'EOF'
+          class Service {
+              String value() { return "before"; }
+          }
+          EOF
+
+          git -C "$fixture" init -q
+          git -C "$fixture" config user.email "ci@example.com"
+          git -C "$fixture" config user.name "VCORE CI"
+          git -C "$fixture" add .
+          git -C "$fixture" commit -qm "initial fixture"
+
+          cat > "$fixture/src/main/java/Service.java" <<'EOF'
+          class Service {
+              String value() { return "after"; }
+          }
+          EOF
+
+          "$CLI" prepare "Verify the service change" \
+            --path "$fixture" \
+            --plan-output "$fixture/output/engineering-plan.json" \
+            --contract-output "$fixture/output/agent-change-contract.json" \
+            --output "$fixture/output/engineering-context.json"
+
+          "$CLI" verify \
+            --path "$fixture" \
+            --plan "$fixture/output/engineering-plan.json" \
+            --contract "$fixture/output/agent-change-contract.json" \
+            --output "$fixture/output/verification.json"
+
+          python3 - "$fixture/output/verification.json" "$fixture/verification-executed.log" <<'PY'
+          import json, sys
+          report=json.load(open(sys.argv[1]))
+          executed=open(sys.argv[2]).read().splitlines()
+          assert report['status']=='PASS', report
+          verification=report['verification']
+          assert verification['commandsDeclared'] == 2, verification
+          assert verification['commandsExecuted'] == 2, verification
+          assert verification['allCommandsExecuted'] is True, verification
+          assert verification['allCommandsPassed'] is True, verification
+          assert verification['executionComplete'] is True, verification
+          assert len(executed) == 2, executed
+          for result in verification['commands']:
+              assert result['executed'] is True, result
+              assert result['timedOut'] is False, result
+              assert result['exitCode'] == 0, result
+              assert result['durationMillis'] >= 0, result
+          PY
+
+      - name: Validate verification fails on non-zero command
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLI="$PWD/build/install/vericore/bin/vericore"
+          fixture="$(mktemp -d)"
+          trap 'rm -rf "$fixture"' EXIT
+          mkdir -p "$fixture/src/main/java" "$fixture/output"
+          printf '%s\n' '<project xmlns="http://maven.apache.org/POM/4.0.0"><modelVersion>4.0.0</modelVersion><groupId>test</groupId><artifactId>negative</artifactId><version>1.0</version></project>' > "$fixture/pom.xml"
+          printf '%s\n' '#!/bin/sh' 'exit 9' > "$fixture/mvnw"
+          chmod +x "$fixture/mvnw"
+          printf '%s\n' 'class Service { String value() { return "before"; } }' > "$fixture/src/main/java/Service.java"
+          git -C "$fixture" init -q
+          git -C "$fixture" config user.email "ci@example.com"
+          git -C "$fixture" config user.name "VCORE CI"
+          git -C "$fixture" add .
+          git -C "$fixture" commit -qm "initial fixture"
+          printf '%s\n' 'class Service { String value() { return "after"; } }' > "$fixture/src/main/java/Service.java"
+          "$CLI" prepare "Verify the failing service change" --path "$fixture" --plan-output "$fixture/output/plan.json" --contract-output "$fixture/output/contract.json" --output "$fixture/output/context.json"
+          set +e
+          "$CLI" verify --path "$fixture" --plan "$fixture/output/plan.json" --contract "$fixture/output/contract.json" --output "$fixture/output/verification.json"
+          rc=$?
+          set -e
+          test "$rc" -ne 0
+          python3 - "$fixture/output/verification.json" <<'PY'
+          import json, sys
+          report=json.load(open(sys.argv[1]))
+          assert report['status']=='FAIL', report
+          verification=report['verification']
+          assert verification['commandsExecuted'] == 2, verification
+          assert verification['allCommandsExecuted'] is True, verification
+          assert verification['allCommandsPassed'] is False, verification
+          assert any(item['exitCode'] == 9 for item in verification['commands']), verification
+          PY

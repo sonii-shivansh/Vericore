@@ -6,6 +6,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import java.io.File
 import java.nio.file.Files
 
 class EngineeringPlannerTest {
@@ -35,7 +36,114 @@ class EngineeringPlannerTest {
     }
 
     @Test
-    fun `plan records canonical repository and verification commands`() {
+    fun `Maven repository gets Maven commands and never Gradle commands`() {
+        val repo = Files.createTempDirectory("vericore-maven-test").toFile()
+        try {
+            File(repo, "pom.xml").writeText("<project/>\n")
+            val plan = planner.plan(
+                EngineeringPlanRequest(
+                    changeSummary = "Update payment validation",
+                    changedPaths = listOf("src/PaymentService.java"),
+                    evidence = GroundedEvidence(citations = emptyList()),
+                    repositoryPath = repo.path
+                )
+            )
+            assertEquals(BuildSystem.MAVEN, plan.buildSystem)
+            assertTrue(plan.verificationCommands.all { it.contains("mvn") })
+            assertTrue(plan.verificationCommands.none { it.contains("gradle") })
+            assertTrue(plan.verificationCommands.any { it.contains(" test") })
+        } finally {
+            repo.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `nested Maven module gets commands scoped to that module`() {
+        val repo = Files.createTempDirectory("vericore-nested-maven-test").toFile()
+        try {
+            val module = File(repo, "java").apply { mkdirs() }
+            File(module, "pom.xml").writeText("<project/>\n")
+            val plan = planner.plan(
+                EngineeringPlanRequest(
+                    changeSummary = "Update PDF processing",
+                    changedPaths = listOf("java/src/main/java/App.java"),
+                    evidence = GroundedEvidence(citations = emptyList()),
+                    repositoryPath = repo.path
+                )
+            )
+            assertEquals(BuildSystem.MAVEN, plan.buildSystem)
+            assertTrue(plan.verificationCommands.all { it.contains("cd '${repo.canonicalPath}/java'") })
+            assertTrue(plan.verificationCommands.all { it.contains("mvn") })
+            assertTrue(plan.verificationCommands.none { it.contains("gradle") })
+        } finally {
+            repo.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `Gradle repository gets Gradle commands and never Maven commands`() {
+        val repo = Files.createTempDirectory("vericore-gradle-test").toFile()
+        try {
+            File(repo, "build.gradle.kts").writeText("plugins {}\n")
+            val plan = planner.plan(
+                EngineeringPlanRequest(
+                    changeSummary = "Update payment validation",
+                    changedPaths = listOf("src/PaymentService.kt"),
+                    evidence = GroundedEvidence(citations = emptyList()),
+                    repositoryPath = repo.path
+                )
+            )
+            assertEquals(BuildSystem.GRADLE, plan.buildSystem)
+            assertTrue(plan.verificationCommands.all { it.contains("gradle") })
+            assertTrue(plan.verificationCommands.none { it.contains("mvn") })
+        } finally {
+            repo.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `executable Maven wrapper is preferred`() {
+        val repo = Files.createTempDirectory("vericore-mvnw-test").toFile()
+        try {
+            File(repo, "pom.xml").writeText("<project/>\n")
+            val wrapper = File(repo, "mvnw")
+            wrapper.writeText("#!/bin/sh\nexit 0\n")
+            wrapper.setExecutable(true)
+            val plan = planner.plan(
+                EngineeringPlanRequest(
+                    changeSummary = "Update payment validation",
+                    evidence = GroundedEvidence(citations = emptyList()),
+                    repositoryPath = repo.path
+                )
+            )
+            assertEquals(BuildSystem.MAVEN, plan.buildSystem)
+            assertTrue(plan.verificationCommands.all { it.contains("./mvnw") })
+        } finally {
+            repo.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `unknown repository does not receive fabricated build commands`() {
+        val repo = Files.createTempDirectory("vericore-unknown-build-test").toFile()
+        try {
+            val plan = planner.plan(
+                EngineeringPlanRequest(
+                    changeSummary = "Update payment validation",
+                    evidence = GroundedEvidence(citations = emptyList()),
+                    repositoryPath = repo.path
+                )
+            )
+            assertEquals(BuildSystem.UNKNOWN, plan.buildSystem)
+            assertTrue(plan.verificationCommands.isEmpty())
+            assertTrue(plan.uncertainties.any { it.contains("build system") })
+        } finally {
+            repo.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `plan records canonical repository`() {
         val repo = Files.createTempDirectory("vericore-plan-test").toFile()
         try {
             val plan = planner.plan(
@@ -47,7 +155,6 @@ class EngineeringPlannerTest {
                 )
             )
             assertEquals(repo.canonicalPath, plan.repository)
-            assertTrue(plan.verificationCommands.all { it.contains(repo.canonicalPath) })
             assertEquals(repo.canonicalPath, com.vericore.core.workflow.AgentChangeContract.fromPlan(plan).repository)
         } finally {
             repo.deleteRecursively()

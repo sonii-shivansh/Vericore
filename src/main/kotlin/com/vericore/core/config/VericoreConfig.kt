@@ -13,8 +13,22 @@ data class VericoreConfig(
     val excludePaths: List<String> = listOf(
         ".git", ".idea", ".gradle", "build", "target", "node_modules", ".vscode", "out", "dist", ".next"
     ),
-    val maxFilesAnalyze: Int = 5000,
-    val gitCommitLimit: Int = 1000,
+    /**
+     * Maximum number of Kotlin/Java source files processed by a repository analysis.
+     *
+     * The default is intentionally sized for large real-world repositories. Projects
+     * can raise or lower this per repository in .vericore.json when their hardware and
+     * analysis requirements justify it.
+     */
+    val maxFilesAnalyze: Int = 50_000,
+    /**
+     * Maximum Git commits inspected for file-history metadata by default.
+     *
+     * History analysis performs a tree diff for each inspected commit. A bounded
+     * default keeps large repositories predictable while remaining configurable for
+     * users who need deeper historical coverage.
+     */
+    val gitCommitLimit: Int = 250,
     val enableCache: Boolean = true,
     val enableParallel: Boolean = true,
     val hotspotCount: Int = 15,

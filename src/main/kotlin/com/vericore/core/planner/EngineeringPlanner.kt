@@ -34,7 +34,8 @@ data class EngineeringPlan(
     val verificationCommands: List<String>,
     val evidenceIds: List<String>,
     val uncertainties: List<String>,
-    val contractFingerprint: String = ""
+    val contractFingerprint: String = "",
+    val buildSystem: BuildSystem = BuildSystem.UNKNOWN
 )
 
 @Serializable
@@ -42,6 +43,8 @@ enum class RiskLevel { LOW, MEDIUM, HIGH, UNKNOWN }
 
 /** Builds a bounded, repository-scoped, evidence-backed implementation plan without requiring an AI provider. */
 class EngineeringPlanner {
+    private val buildSystemDetector = BuildSystemDetector()
+
     fun plan(request: EngineeringPlanRequest): EngineeringPlan {
         require(request.changeSummary.isNotBlank()) { "changeSummary must not be blank" }
         require(request.changeSummary.length <= 4000) { "changeSummary must not exceed 4000 characters" }
@@ -50,12 +53,12 @@ class EngineeringPlanner {
         val root = File(request.repositoryPath).canonicalFile
         require(root.isDirectory) { "Repository path is not a directory: ${request.repositoryPath}" }
         val repository = root.path
+        val build = buildSystemDetector.detect(root)
 
         val citations = request.evidence.citations.sortedBy { it.id }
         val plannedPaths = request.changedPaths.map(::normalizePath).filter { it.isNotEmpty() && !it.startsWith("<outside-") && !isGeneratedPath(it) }.distinct().sorted().take(100)
         require(plannedPaths.all(::isRepositoryRelative)) { "changedPaths must be repository-relative paths without '..' traversal" }
         val evidencePaths = citations.mapNotNull { it.path }.map(::normalizePath).filter { it.isNotEmpty() && !it.startsWith("<outside-") && !isGeneratedPath(it) }.distinct().sorted()
-        // Explicit planned paths are the authoritative mutation scope. Evidence is supporting context.
         val affected = (if (plannedPaths.isNotEmpty()) plannedPaths else evidencePaths).take(100)
         val architecture = citations.filter { it.type.contains("architecture") }
         val hotspots = citations.filter { it.type.contains("hotspot") }
@@ -63,6 +66,9 @@ class EngineeringPlanner {
             if (architecture.isNotEmpty()) add("Review architecture evidence before implementation.")
             if (hotspots.isNotEmpty()) add("Changed or related components include dependency-centrality hotspots.")
             if (plannedPaths.isNotEmpty() && evidencePaths.any { it !in plannedPaths }) add("Repository evidence references additional files; treat them as context, not planned mutation scope.")
+            if (build.system == BuildSystem.UNKNOWN) add("No supported Maven or Gradle build descriptor was detected; verification commands cannot be generated safely.")
+            if (build.source == "pom.xml" || build.source == "Gradle build files") add("Repository build tool was inferred from its build descriptor; verify the system tool is installed when no executable wrapper is present.")
+            if (build.workingDirectory.isNotEmpty()) add("Build commands are scoped to the detected repository module '${build.workingDirectory}'.")
         }
         val risk = when {
             citations.any { it.type.contains("critical") } -> RiskLevel.HIGH
@@ -80,8 +86,21 @@ class EngineeringPlanner {
         val uncertainties = buildList {
             if (citations.isEmpty()) add("No repository evidence was supplied; implementation-specific conclusions cannot be established.")
             if (plannedPaths.isEmpty()) add("No explicit planned paths were supplied; change-scope safety can only evaluate evidence-derived context.")
+            if (build.system == BuildSystem.UNKNOWN) add("Verification commands were intentionally omitted because the repository build system could not be identified safely.")
         }
         val shellRoot = repository.replace("'", "'\\''")
+        val workingRoot = if (build.workingDirectory.isEmpty()) shellRoot else "$shellRoot/${build.workingDirectory.replace("'", "'\\''")}"
+        val verificationCommands = when (build.system) {
+            BuildSystem.MAVEN -> listOf(
+                "cd '$workingRoot' && ${build.executable} -B test",
+                "cd '$workingRoot' && ${build.executable} -B package -DskipTests"
+            )
+            BuildSystem.GRADLE -> listOf(
+                "cd '$workingRoot' && ${build.executable} --no-daemon clean test",
+                "cd '$workingRoot' && ${build.executable} --no-daemon build"
+            )
+            BuildSystem.UNKNOWN -> emptyList()
+        }
         val provisional = EngineeringPlan(
             changeSummary = request.changeSummary.trim(),
             repository = repository,
@@ -90,9 +109,10 @@ class EngineeringPlanner {
             concerns = concerns.sorted(),
             riskLevel = risk,
             steps = steps,
-            verificationCommands = listOf("cd '$shellRoot' && ./gradlew --no-daemon clean test", "cd '$shellRoot' && ./gradlew --no-daemon build installDist"),
+            verificationCommands = verificationCommands,
             evidenceIds = evidenceIds,
-            uncertainties = uncertainties
+            uncertainties = uncertainties,
+            buildSystem = build.system
         )
         return provisional.copy(contractFingerprint = com.vericore.core.workflow.AgentChangeContract.fingerprintFor(provisional))
     }

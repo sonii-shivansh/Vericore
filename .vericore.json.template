@@ -11,8 +11,8 @@
     "dist",
     ".next"
   ],
-  "maxFilesAnalyze": 5000,
-  "gitCommitLimit": 1000,
+  "maxFilesAnalyze": 50000,
+  "gitCommitLimit": 250,
   "enableCache": true,
   "enableParallel": true,
   "hotspotCount": 15,

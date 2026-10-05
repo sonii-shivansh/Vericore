@@ -7,22 +7,56 @@ run(){ echo "==> $*"; "$@"; }
 run "$APP" --version
 run "$APP" --help
 for command in analyze impact architecture architecture-drift architecture-contract context-snapshot context-diff reality pr-intelligence repo-qa plan prepare verify ask evolution server mcp setup doctor; do run "$APP" "$command" --help >/dev/null; done
-run "$APP" analyze "$REPO" >/dev/null
-run "$APP" reality "$REPO" --json >/dev/null
-run "$APP" architecture "$REPO" --json >/dev/null
-run "$APP" context-snapshot "$REPO" --json >/dev/null
-run "$APP" evolution >/dev/null
-rm -rf output
-run "$APP" prepare "audit release workflow" --path "$REPO" >/dev/null
-[[ -s output/engineering-context.json && -s output/engineering-plan.json && -s output/agent-change-contract.json ]]
-run "$APP" verify --path "$REPO" --plan output/engineering-plan.json --contract output/agent-change-contract.json --output output/verification.json >/dev/null
-[[ -s output/verification.json ]]
-# Release-candidate regressions for the historical 0.8.1 audit findings.
+# Run one real-repository analysis, then use a tiny Maven Git fixture for commands that
+# perform history-backed analysis and verification. This keeps the release smoke test
+# deterministic without repeatedly scanning Vericore's full 250-commit history.
+audit_fixture="$(mktemp -d)"
 doctor_fixture="$(mktemp -d)"
 contract_fixture="$(mktemp -d)"
 qa_fixture="$(mktemp -d)"
 drift_fixture="$(mktemp -d)"
-trap 'rm -rf "$doctor_fixture" "$contract_fixture" "$qa_fixture" "$drift_fixture"' EXIT
+trap 'rm -rf "$audit_fixture" "$doctor_fixture" "$contract_fixture" "$qa_fixture" "$drift_fixture"' EXIT
+(
+  cd "$audit_fixture"
+  git init -q
+  git config user.name "Vericore Audit"
+  git config user.email "audit@example.invalid"
+  cat > pom.xml <<'EOF'
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>fixture</groupId>
+  <artifactId>audit-fixture</artifactId>
+  <version>1.0</version>
+</project>
+EOF
+  cat > mvnw <<'EOF'
+#!/bin/sh
+printf '%s\n' "$*" >> verification-executed.log
+exit 0
+EOF
+  chmod +x mvnw
+  printf '%s\n' 'package fixture' 'class Target' > Target.kt
+  printf '%s\n' 'package fixture' 'import fixture.Target' 'class Dependent' > Dependent.kt
+  git add .
+  git commit -qm 'initial fixture'
+  printf '%s\n' 'package fixture' 'class Target' 'class Added' > Target.kt
+  git add Target.kt
+  git commit -qm 'second fixture revision'
+  # Leave an intentional working-tree change so prepare/verify have a real scope.
+  printf '%s\n' 'package fixture' 'class Target' 'class Added' 'class PendingChange' > Target.kt
+)
+run "$APP" analyze "$REPO" >/dev/null
+run "$APP" analyze "$audit_fixture" >/dev/null
+run "$APP" reality "$audit_fixture" --json >/dev/null
+run "$APP" architecture "$audit_fixture" --json >/dev/null
+run "$APP" context-snapshot "$audit_fixture" --json >/dev/null
+run "$APP" evolution "$audit_fixture" --months 1 --interval 30 >/dev/null
+rm -rf "$audit_fixture/output"
+run "$APP" prepare "audit release workflow" --path "$audit_fixture" >/dev/null
+[[ -s "$audit_fixture/output/engineering-context.json" && -s "$audit_fixture/output/engineering-plan.json" && -s "$audit_fixture/output/agent-change-contract.json" ]]
+run "$APP" verify --path "$audit_fixture" --plan "$audit_fixture/output/engineering-plan.json" --contract "$audit_fixture/output/agent-change-contract.json" --output "$audit_fixture/output/verification.json" >/dev/null
+[[ -s "$audit_fixture/output/verification.json" ]]
+# Release-candidate regressions for the historical 0.8.1 audit findings.
 
 if (cd "$doctor_fixture" && "$REPO/$APP" doctor > doctor.log 2>&1); then
   echo "doctor unexpectedly succeeded outside a Git repository" >&2
@@ -95,5 +129,4 @@ grep -q "EDGE_ADDED: A.kt|C.kt" "$drift_fixture/drift.log"
 grep -q "EDGE_REMOVED: A.kt|B.kt" "$drift_fixture/drift.log"
 
 echo "Historical 0.8.1 regression audit: PASS"
-
 echo "CLI audit: PASS"

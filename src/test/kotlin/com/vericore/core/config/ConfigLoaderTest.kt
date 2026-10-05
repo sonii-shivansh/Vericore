@@ -29,6 +29,27 @@ class ConfigLoaderTest {
     }
 
     @Test
+    fun `default analysis capacity supports large repositories`() {
+        val config = VericoreConfig()
+        assertEquals(50_000, config.maxFilesAnalyze)
+    }
+
+    @Test
+    fun `repository can configure analysis capacity above default`() {
+        val repository = Files.createTempDirectory("vericore-large-repo-config").toFile()
+        try {
+            repository.resolve(".vericore.json").writeText(
+                """{"maxFilesAnalyze":100000,"hotspotCount":3}"""
+            )
+            val config = ConfigLoader.loadForRepository(repository.path)
+            assertEquals(100_000, config.maxFilesAnalyze)
+            assertEquals(3, config.hotspotCount)
+        } finally {
+            repository.deleteRecursively()
+        }
+    }
+
+    @Test
     fun `effective config uses user credential without creating project config`() {
         UserConfigStore.saveAi("gemini", "user-key", "gemini-2.5-flash")
         val project = Files.createTempFile("vericore-project", ".json")

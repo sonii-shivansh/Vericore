@@ -32,7 +32,8 @@ data class ParsedFile(
         val imports: List<String>,
         var gitMetadata: GitMetadata = GitMetadata(),
         val description: String = "",
-        val parseWarning: String? = null
+        val parseWarning: String? = null,
+        val referencedTypes: List<String> = emptyList()
 )
 
 interface LanguageParser {

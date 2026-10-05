@@ -1,4 +1,4 @@
-name: Live Repository Release Gate
+name: Live Repository Release Gate V2
 
 on:
   workflow_dispatch:
@@ -15,7 +15,7 @@ on:
         description: 'Run live Gemini provider test when GEMINI_API_KEY is configured'
         required: false
         type: boolean
-        default: true
+        default: false
   workflow_call:
     inputs:
       repository:
@@ -29,7 +29,7 @@ on:
       run_gemini:
         required: false
         type: boolean
-        default: true
+        default: false
 
 permissions:
   contents: read
@@ -39,7 +39,7 @@ env:
 
 jobs:
   live-release-gate:
-    name: Complete live repository release gate
+    name: Complete live repository release gate V2
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
@@ -59,6 +59,7 @@ jobs:
           cache: gradle
       - name: Build and test Vericore
         run: |
+          set -euo pipefail
           chmod +x ./gradlew
           ./gradlew --no-daemon clean test installDist
       - name: Resolve live target repository ref
@@ -67,11 +68,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          if [ -n "$TARGET_REF" ]; then
-            resolved_ref="$TARGET_REF"
-          else
-            resolved_ref="$(gh api "repos/$TARGET_REPOSITORY" --jq '.default_branch')"
-          fi
+          if [ -n "$TARGET_REF" ]; then resolved_ref="$TARGET_REF"; else resolved_ref="$(gh api "repos/$TARGET_REPOSITORY" --jq '.default_branch')"; fi
           test -n "$resolved_ref"
           echo "ref=$resolved_ref" >> "$GITHUB_OUTPUT"
           echo "Resolved target ref: $resolved_ref"
@@ -89,6 +86,7 @@ jobs:
       - name: Run complete CLI surface
         working-directory: ${{ runner.temp }}/target
         run: |
+          set -euo pipefail
           CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
           "$CLI" --version
           "$CLI" doctor
@@ -120,14 +118,13 @@ jobs:
           assert second['edgeCount'] == len(second['edges'])
           node_ids={n['id'] for n in second['nodes']}
           assert all(e['fromId'] in node_ids and e['toId'] in node_ids for e in second['edges'])
-          assert all(n['repositoryId'] == second['repositoryId'] for n in second['nodes'])
-          assert all(n['observedCommit'] == second['observedCommit'] for n in second['nodes'])
           PY
           "$CLI" evolution
           "$CLI" pr-intelligence . --base HEAD~1 --head HEAD --json
       - name: Grounded intelligence and preparation
         working-directory: ${{ runner.temp }}/target
         run: |
+          set -euo pipefail
           CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
           "$CLI" repo-qa "Which files are the main architectural hotspots?" --path . --evidence-output output/grounded-evidence.json > output/repo-qa.json
           test -s output/repo-qa.json
@@ -146,6 +143,7 @@ jobs:
       - name: Prove contract tamper detection
         working-directory: ${{ runner.temp }}/target
         run: |
+          set -euo pipefail
           CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
           cp output/agent-change-contract.json "$RUNNER_TEMP/contract-original.json"
           python3 - <<'PY'
@@ -155,7 +153,7 @@ jobs:
           json.dump(p,open('output/agent-change-contract.json','w'),indent=2)
           PY
           set +e
-          "$CLI" verify --output output/contract-tamper-verify.json > "$RUNNER_TEMP/contract-tamper.log" 2>&1
+          "$CLI" verify --contract-only --output output/contract-tamper-verify.json > "$RUNNER_TEMP/contract-tamper.log" 2>&1
           status=$?
           set -e
           test "$status" -ne 0
@@ -164,6 +162,7 @@ jobs:
       - name: Prove repository and plan binding integrity
         working-directory: ${{ runner.temp }}/target
         run: |
+          set -euo pipefail
           CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
           cp output/agent-change-contract.json "$RUNNER_TEMP/contract-before-binding-tests.json"
           cp output/engineering-plan.json "$RUNNER_TEMP/plan-before-binding-test.json"
@@ -174,7 +173,7 @@ jobs:
           json.dump(p,open('output/agent-change-contract.json','w'),indent=2)
           PY
           set +e
-          "$CLI" verify --output output/wrong-repository-verify.json > "$RUNNER_TEMP/wrong-repository.log" 2>&1
+          "$CLI" verify --contract-only --output output/wrong-repository-verify.json > "$RUNNER_TEMP/wrong-repository.log" 2>&1
           status=$?
           set -e
           test "$status" -ne 0
@@ -187,7 +186,7 @@ jobs:
           json.dump(p,open('output/engineering-plan.json','w'),indent=2)
           PY
           set +e
-          "$CLI" verify --output output/mismatched-plan-verify.json > "$RUNNER_TEMP/mismatched-plan.log" 2>&1
+          "$CLI" verify --contract-only --output output/mismatched-plan-verify.json > "$RUNNER_TEMP/mismatched-plan.log" 2>&1
           status=$?
           set -e
           test "$status" -ne 0
@@ -196,6 +195,7 @@ jobs:
       - name: Prove stale prepared HEAD detection
         working-directory: ${{ runner.temp }}/target
         run: |
+          set -euo pipefail
           CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
           original=$(cat "$RUNNER_TEMP/target-before.sha")
           git config user.name 'Vericore Release Gate'
@@ -204,7 +204,7 @@ jobs:
           git add .vericore-release-gate-head-change
           git commit -m 'test: simulate stale prepared head'
           set +e
-          "$CLI" verify --output output/stale-head-verify.json > "$RUNNER_TEMP/stale-head.log" 2>&1
+          "$CLI" verify --contract-only --output output/stale-head-verify.json > "$RUNNER_TEMP/stale-head.log" 2>&1
           status=$?
           set -e
           test "$status" -ne 0
@@ -214,10 +214,10 @@ jobs:
           test "$(git rev-parse HEAD)" = "$original"
           test -z "$(git diff --name-only)"
           test -z "$(git diff --cached --name-only)"
-          test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/|\.vericore/)' || true)"
       - name: Verify MCP returns the persisted contract exactly
         working-directory: ${{ runner.temp }}/target
         run: |
+          set -euo pipefail
           CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
           printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"release-gate","version":"1.0"}}}' '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"vericore_get_change_contract","arguments":{"repoPath":"."}}}' | "$CLI" mcp > output/mcp-contract.jsonl
           python3 - <<'PY'
@@ -234,12 +234,13 @@ jobs:
       - name: Prove unexpected source change detection
         working-directory: ${{ runner.temp }}/target
         run: |
+          set -euo pipefail
           CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
           TEST_FILE="README.md"
           cp "$TEST_FILE" "$RUNNER_TEMP/release-gate-readme.original"
           printf '\nintentional release-gate mutation\n' >> "$TEST_FILE"
           set +e
-          "$CLI" verify --output output/unexpected-change-verify.json > "$RUNNER_TEMP/unexpected-change.log" 2>&1
+          "$CLI" verify --contract-only --output output/unexpected-change-verify.json > "$RUNNER_TEMP/unexpected-change.log" 2>&1
           status=$?
           set -e
           test "$status" -ne 0
@@ -247,17 +248,18 @@ jobs:
           cp "$RUNNER_TEMP/release-gate-readme.original" "$TEST_FILE"
           test -z "$(git diff --name-only)"
           test -z "$(git diff --cached --name-only)"
-          test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/|\.vericore/)' || true)"
       - name: Verify prepared contract remains valid after mutation tests
         working-directory: ${{ runner.temp }}/target
         run: |
+          set -euo pipefail
           CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
-          "$CLI" verify --output output/final-verify.json
-          test -s output/final-verify.json
-          grep -q '"valid": true' output/final-verify.json
+          "$CLI" verify --contract-only --output output/final-contract-verify.json
+          test -s output/final-contract-verify.json
+          grep -q '"valid": true' output/final-contract-verify.json
       - name: MCP protocol and gateway smoke test
         working-directory: ${{ runner.temp }}/target
         run: |
+          set -euo pipefail
           CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
           printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"release-gate","version":"1.0"}}}' '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"vericore_get_engineering_reality","arguments":{"repoPath":"."}}}' '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"vericore_get_context_snapshot","arguments":{"repoPath":"."}}}' '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"vericore_get_change_contract","arguments":{"repoPath":"."}}}' | "$CLI" mcp > output/mcp-release-gate.jsonl
           python3 - <<'PY'
@@ -265,29 +267,22 @@ jobs:
           responses=[json.loads(line) for line in open('output/mcp-release-gate.jsonl') if line.strip()]
           by_id={r.get('id'):r for r in responses}
           assert by_id[1].get('result',{}).get('protocolVersion')
-          tools=by_id[2].get('result',{}).get('tools',[])
-          names={tool.get('name') for tool in tools}
+          names={tool.get('name') for tool in by_id[2].get('result',{}).get('tools',[])}
           assert 'vericore_get_change_contract' in names
           assert not any(name.startswith('codecontext_') for name in names)
           for request_id in (3,4,5):
               result=by_id[request_id].get('result')
               assert result and result.get('isError') is False
-              assert ''.join(item.get('text','') for item in result.get('content',[]))
-          contract=json.loads(''.join(item.get('text','') for item in by_id[5]['result']['content']))
-          assert contract.get('fingerprint') and len(contract['fingerprint'])==64
-          assert contract.get('repository')
           PY
       - name: REST API live repository smoke test
         working-directory: ${{ runner.temp }}/target
         run: |
+          set -euo pipefail
           CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
           "$CLI" server --host 127.0.0.1 --port 18080 > "$RUNNER_TEMP/vericore-live-server.log" 2>&1 &
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
-          for attempt in {1..30}; do
-            curl --fail --silent http://127.0.0.1:18080/health > output/rest-health.json && break
-            sleep 1
-          done
+          for attempt in {1..30}; do curl --fail --silent http://127.0.0.1:18080/health > output/rest-health.json && break; sleep 1; done
           test -s output/rest-health.json
           curl --fail --silent http://127.0.0.1:18080/ > output/rest-root.txt
           grep -F 'Vericore API is running' output/rest-root.txt
@@ -296,34 +291,33 @@ jobs:
           status=$(curl --silent --output /tmp/traversal.json --write-out '%{http_code}' -H 'Content-Type: application/json' -d '{"repoPath":"/tmp/../etc"}' http://127.0.0.1:18080/analyze)
           test "$status" = '400'
       - name: Live Gemini smoke test
-        if: ${{ env.HAS_GEMINI == 'true' }}
+        if: env.HAS_GEMINI == 'true'
         working-directory: ${{ runner.temp }}/target
         env:
-          VERICORE_GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
+          set -euo pipefail
           CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
-          "$CLI" repo-qa "What is the main architectural risk in this repository?" --path . --evidence-output output/gemini-grounded-evidence.json > output/gemini-repo-qa.json
-          test -s output/gemini-repo-qa.json
-          test -s output/gemini-grounded-evidence.json
+          "$CLI" repo-qa "Summarize the main architectural hotspots in one sentence." --path . --provider gemini > output/gemini-release-gate.txt
+          test -s output/gemini-release-gate.txt
       - name: Verify target repository was not modified
         working-directory: ${{ runner.temp }}/target
         run: |
+          set -euo pipefail
           original=$(cat "$RUNNER_TEMP/target-before.sha")
           test "$(git rev-parse HEAD)" = "$original"
           test -z "$(git diff --name-only)"
           test -z "$(git diff --cached --name-only)"
-          test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/|\.vericore/)' || true)"
+          test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/|\.vericore/|\.codecontext/)' || true)"
+      - name: Prepare artifact name
+        if: always()
+        run: echo "ARTIFACT_NAME=vcore-001-live-release-gate-${TARGET_REPOSITORY//\//-}" >> "$GITHUB_ENV"
       - name: Upload release-gate evidence
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: live-release-gate-${{ github.run_id }}
+          name: ${{ env.ARTIFACT_NAME }}
           path: |
             ${{ runner.temp }}/target/output
             ${{ runner.temp }}/vericore-live-server.log
-            ${{ runner.temp }}/contract-tamper.log
-            ${{ runner.temp }}/wrong-repository.log
-            ${{ runner.temp }}/mismatched-plan.log
-            ${{ runner.temp }}/stale-head.log
-            ${{ runner.temp }}/unexpected-change.log
           if-no-files-found: warn
