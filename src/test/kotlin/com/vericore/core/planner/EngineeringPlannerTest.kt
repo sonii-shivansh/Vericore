@@ -58,6 +58,29 @@ class EngineeringPlannerTest {
     }
 
     @Test
+    fun `nested Maven module gets commands scoped to that module`() {
+        val repo = Files.createTempDirectory("vericore-nested-maven-test").toFile()
+        try {
+            val module = File(repo, "java").apply { mkdirs() }
+            File(module, "pom.xml").writeText("<project/>\n")
+            val plan = planner.plan(
+                EngineeringPlanRequest(
+                    changeSummary = "Update PDF processing",
+                    changedPaths = listOf("java/src/main/java/App.java"),
+                    evidence = GroundedEvidence(citations = emptyList()),
+                    repositoryPath = repo.path
+                )
+            )
+            assertEquals(BuildSystem.MAVEN, plan.buildSystem)
+            assertTrue(plan.verificationCommands.all { it.contains("cd '${repo.canonicalPath}/java'") })
+            assertTrue(plan.verificationCommands.all { it.contains("mvn") })
+            assertTrue(plan.verificationCommands.none { it.contains("gradle") })
+        } finally {
+            repo.deleteRecursively()
+        }
+    }
+
+    @Test
     fun `Gradle repository gets Gradle commands and never Maven commands`() {
         val repo = Files.createTempDirectory("vericore-gradle-test").toFile()
         try {
