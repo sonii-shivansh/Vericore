@@ -38,6 +38,18 @@ class RobustDependencyGraph {
                         classMap[imported]?.let { target -> addEdgeSafely(source.file.absolutePath, target) }
                     }
                 }
+
+                source.referencedTypes.forEach { referencedType ->
+                    val normalizedType = referencedType.removePrefix(".")
+                    val samePackageFqcn = if (source.packageName.isNotEmpty() && !normalizedType.contains('.')) {
+                        "${source.packageName}.$normalizedType"
+                    } else {
+                        normalizedType
+                    }
+                    classMap[samePackageFqcn]?.let { target ->
+                        addEdgeSafely(source.file.absolutePath, target)
+                    }
+                }
             }
 
             if (graph.vertexSet().isNotEmpty()) {
