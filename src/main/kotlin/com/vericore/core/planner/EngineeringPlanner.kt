@@ -68,6 +68,7 @@ class EngineeringPlanner {
             if (plannedPaths.isNotEmpty() && evidencePaths.any { it !in plannedPaths }) add("Repository evidence references additional files; treat them as context, not planned mutation scope.")
             if (build.system == BuildSystem.UNKNOWN) add("No supported Maven or Gradle build descriptor was detected; verification commands cannot be generated safely.")
             if (build.source == "pom.xml" || build.source == "Gradle build files") add("Repository build tool was inferred from its build descriptor; verify the system tool is installed when no executable wrapper is present.")
+            if (build.workingDirectory.isNotEmpty()) add("Build commands are scoped to the detected repository module '${build.workingDirectory}'.")
         }
         val risk = when {
             citations.any { it.type.contains("critical") } -> RiskLevel.HIGH
@@ -88,14 +89,15 @@ class EngineeringPlanner {
             if (build.system == BuildSystem.UNKNOWN) add("Verification commands were intentionally omitted because the repository build system could not be identified safely.")
         }
         val shellRoot = repository.replace("'", "'\\''")
+        val workingRoot = if (build.workingDirectory.isEmpty()) shellRoot else "$shellRoot/${build.workingDirectory.replace("'", "'\\''")}"
         val verificationCommands = when (build.system) {
             BuildSystem.MAVEN -> listOf(
-                "cd '$shellRoot' && ${build.executable} -B test",
-                "cd '$shellRoot' && ${build.executable} -B package -DskipTests"
+                "cd '$workingRoot' && ${build.executable} -B test",
+                "cd '$workingRoot' && ${build.executable} -B package -DskipTests"
             )
             BuildSystem.GRADLE -> listOf(
-                "cd '$shellRoot' && ${build.executable} --no-daemon clean test",
-                "cd '$shellRoot' && ${build.executable} --no-daemon build"
+                "cd '$workingRoot' && ${build.executable} --no-daemon clean test",
+                "cd '$workingRoot' && ${build.executable} --no-daemon build"
             )
             BuildSystem.UNKNOWN -> emptyList()
         }
