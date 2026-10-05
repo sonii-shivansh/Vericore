@@ -43,9 +43,8 @@ jobs:
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/vericore"
           cd "$RUNNER_TEMP/vericore"
-          curl -fsSL -o SHA256SUMS https://github.com/sonii-shivansh/Vericore/releases/download/v0.8.2/SHA256SUMS
           curl -fsSL -o vericore.tar.gz https://github.com/sonii-shivansh/Vericore/releases/download/v0.8.2/vericore-0.8.2-linux-x64.tar.gz
-          grep 'vericore-0.8.2-linux-x64.tar.gz' SHA256SUMS | sha256sum -c -
+          echo '79eb015d605ba724f3ef7ff9f7c649e709ba37534bc08b7d9b30712c1c3db64e  vericore.tar.gz' | sha256sum -c -
           tar -xzf vericore.tar.gz
           VERICORE_BIN="$(find . -type f -path '*/bin/vericore' -print -quit)"
           test -n "$VERICORE_BIN"
@@ -90,7 +89,6 @@ jobs:
           mkdir -p ../audit-output/${{ matrix.name }}
           REPORT="../audit-output/${{ matrix.name }}/command-results.tsv"
           : > "$REPORT"
-
           run_case() {
             label="$1"; shift
             echo "===== $label =====" | tee -a "$REPORT"
@@ -98,11 +96,9 @@ jobs:
             timeout 180s "$@" >"../audit-output/${{ matrix.name }}/$(echo "$label" | tr '/ ' '__').stdout" 2>"../audit-output/${{ matrix.name }}/$(echo "$label" | tr '/ ' '__').stderr"
             rc=$?
             end=$(date +%s%3N)
-            ms=$((end-start))
-            printf '%s\t%s\t%s\n' "$label" "$rc" "$ms" >> "$REPORT"
-            echo "exit=$rc duration_ms=$ms"
+            printf '%s\t%s\t%s\n' "$label" "$rc" "$((end-start))" >> "$REPORT"
+            echo "exit=$rc duration_ms=$((end-start))"
           }
-
           V="$VERICORE_BIN"
           run_case help "$V" --help
           run_case version "$V" --version
@@ -122,45 +118,27 @@ jobs:
           run_case architecture-drift "$V" architecture-drift . --baseline output/architecture.json --json
           run_case architecture-contract "$V" architecture-contract . --json
           run_case evolution "$V" evolution . --months 1 --interval 30
-
-          # Negative CLI validation
           run_case invalid-command "$V" definitely-not-a-command
           run_case invalid-impact "$V" impact . does/not/exist.java --json
           run_case invalid-contract "$V" architecture-contract . --contract /tmp/does-not-exist.json --json
           run_case invalid-setup-provider "$V" setup --provider definitely-invalid
-
-          # Server health and malformed request behavior.
           timeout 20s "$V" server --host 127.0.0.1 --port 18080 >../audit-output/${{ matrix.name }}/server.stdout 2>../audit-output/${{ matrix.name }}/server.stderr &
           SERVER_PID=$!
           sleep 3
           curl -sS -D ../audit-output/${{ matrix.name }}/health.headers http://127.0.0.1:18080/health -o ../audit-output/${{ matrix.name }}/health.body || true
           curl -sS -D ../audit-output/${{ matrix.name }}/bad-request.headers -H 'Content-Type: application/json' -X POST http://127.0.0.1:18080/api/does-not-exist -d '{bad-json' -o ../audit-output/${{ matrix.name }}/bad-request.body || true
           kill "$SERVER_PID" 2>/dev/null || true
-
-          # MCP initialize + tools/list over stdio; must not hang.
           printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"live-audit","version":"1.0"}}}' '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' | timeout 20s "$V" mcp >../audit-output/${{ matrix.name }}/mcp.stdout 2>../audit-output/${{ matrix.name }}/mcp.stderr || true
-
-          # Noninteractive AI command must terminate rather than waiting for input.
           timeout 20s "$V" ask "What is the main architecture risk?" >../audit-output/${{ matrix.name }}/ask.stdout 2>../audit-output/${{ matrix.name }}/ask.stderr || true
-
-          # Inspect every JSON artifact emitted by the command matrix.
-          find output -type f -name '*.json' -print0 2>/dev/null | while IFS= read -r -d '' f; do
-            jq empty "$f" >/dev/null 2>&1 || echo "INVALID_JSON\t$f" >> "$REPORT"
-          done
-
-          # Detect unexpected working-tree mutations attributable to Vericore.
+          find output -type f -name '*.json' -print0 2>/dev/null | while IFS= read -r -d '' f; do jq empty "$f" >/dev/null 2>&1 || echo "INVALID_JSON\t$f" >> "$REPORT"; done
           git status --porcelain=v1 > ../git-after.txt
           diff -u ../git-before.txt ../git-after.txt > ../git-mutation.diff || true
-
-          # Native build/test: independently verify Vericore's claims against the repository's real build system.
           echo "===== native-build =====" | tee -a "$REPORT"
           start=$(date +%s%3N)
           timeout 1200s bash -lc "$NATIVE_BUILD" >../audit-output/${{ matrix.name }}/native-build.stdout 2>../audit-output/${{ matrix.name }}/native-build.stderr
           rc=$?
           end=$(date +%s%3N)
           printf '%s\t%s\t%s\n' native-build "$rc" "$((end-start))" >> "$REPORT"
-
-          # Determinism: rerun architecture JSON and compare semantic content excluding volatile fields if present.
           cp output/architecture.json ../audit-output/${{ matrix.name }}/architecture.first.json 2>/dev/null || true
           timeout 180s "$V" architecture . --json >../audit-output/${{ matrix.name }}/architecture-rerun.stdout 2>../audit-output/${{ matrix.name }}/architecture-rerun.stderr || true
           cp output/architecture.json ../audit-output/${{ matrix.name }}/architecture.second.json 2>/dev/null || true
@@ -169,7 +147,6 @@ jobs:
             jq -S . ../audit-output/${{ matrix.name }}/architecture.second.json > /tmp/a2.json
             cmp -s /tmp/a1.json /tmp/a2.json || echo "NON_DETERMINISTIC\tarchitecture.json" >> "$REPORT"
           fi
-
           echo "===== COMPLETE =====" | tee -a "$REPORT"
 
       - name: Run synthetic adversarial dependency fixture
