@@ -42,14 +42,16 @@ class RepositoryQACommand : CliktCommand(name = "repo-qa", help = "Retrieve grou
         val json = Json { prettyPrint = true; encodeDefaults = true; ignoreUnknownKeys = true }
         val cachedEvidence = loadReusableGroundedEvidence(root, json)
         if (cachedEvidence != null) {
-            val result = RepositoryEvidenceRetriever().retrieve(parsedQuestion, cachedEvidence, maxResults)
-            if (evidenceOutput != null) {
-                val output = File(evidenceOutput!!)
-                output.parentFile?.mkdirs()
-                output.writeText(json.encodeToString(cachedEvidence))
-            }
-            echo(json.encodeToString(result))
-            return
+            return emitResult(root, parsedQuestion, cachedEvidence, json)
+        }
+
+        // The live release gate already ran `analyze` immediately before `repo-qa`.
+        // Reuse that immutable snapshot when HEAD is unchanged and only generated
+        // output files are dirty. This avoids reparsing a 20k+ file repository.
+        val reusableSnapshot = loadReusableAnalysisSnapshot(root, json)
+        if (reusableSnapshot != null) {
+            val grounded = GroundedEvidenceBuilder.fromSnapshot(reusableSnapshot)
+            return emitResult(root, parsedQuestion, grounded, json)
         }
 
         val files = RepositoryScanner().scan(root.path)
@@ -92,8 +94,16 @@ class RepositoryQACommand : CliktCommand(name = "repo-qa", help = "Retrieve grou
             sourcePath to DependencyPaths(dependents = dependents, dependencies = dependencies)
         }
         val grounded = GroundedEvidenceBuilder.fromSnapshot(snapshot, dependencyPaths = dependencyPaths)
-        val result = RepositoryEvidenceRetriever().retrieve(parsedQuestion, grounded, maxResults)
+        emitResult(root, parsedQuestion, grounded, json)
+    }
 
+    private fun emitResult(
+        root: File,
+        parsedQuestion: com.vericore.core.qa.RepositoryQuestion,
+        grounded: GroundedEvidence,
+        json: Json
+    ) {
+        val result = RepositoryEvidenceRetriever().retrieve(parsedQuestion, grounded, maxResults)
         if (evidenceOutput != null) {
             val output = File(evidenceOutput!!)
             output.parentFile?.mkdirs()
@@ -108,18 +118,34 @@ class RepositoryQACommand : CliktCommand(name = "repo-qa", help = "Retrieve grou
         if (!snapshotFile.isFile || !evidenceFile.isFile) return null
         return runCatching {
             val snapshot = json.decodeFromString<AnalysisSnapshot>(snapshotFile.readText())
-            val currentState = Git.open(root).use { git ->
-                val commit = git.repository.resolve("HEAD")?.name
-                val status = git.status().call()
-                val changedPaths = status.modified + status.changed + status.added + status.untracked + status.removed + status.missing
-                commit to changedPaths
-            }
+            val currentState = currentRepositoryState(root)
             require(currentState.second.all { it.startsWith("output/") || it == "output" }) {
                 "Repository has source changes outside generated output"
             }
             require(snapshot.repository.repositoryCommit == currentState.first) { "Cached analysis snapshot is stale" }
             json.decodeFromString<GroundedEvidence>(evidenceFile.readText())
         }.getOrNull()
+    }
+
+    private fun loadReusableAnalysisSnapshot(root: File, json: Json): AnalysisSnapshot? {
+        val snapshotFile = root.resolve("output/analysis-snapshot.json")
+        if (!snapshotFile.isFile) return null
+        return runCatching {
+            val snapshot = json.decodeFromString<AnalysisSnapshot>(snapshotFile.readText())
+            val currentState = currentRepositoryState(root)
+            require(currentState.second.all { it.startsWith("output/") || it == "output" }) {
+                "Repository has source changes outside generated output"
+            }
+            require(snapshot.repository.repositoryCommit == currentState.first) { "Cached analysis snapshot is stale" }
+            snapshot
+        }.getOrNull()
+    }
+
+    private fun currentRepositoryState(root: File): Pair<String?, Set<String>> = Git.open(root).use { git ->
+        val commit = git.repository.resolve("HEAD")?.name
+        val status = git.status().call()
+        val changedPaths = status.modified + status.changed + status.added + status.untracked + status.removed + status.missing
+        commit to changedPaths
     }
 
     private fun loadReusableRepositoryState(root: File, json: Json): EngineeringContextSnapshot? {
