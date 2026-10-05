@@ -1,6 +1,9 @@
 name: VCORE-001 Quarkus Grounded Diagnostics
 
 on:
+  push:
+    branches:
+      - fix/vcore-001-same-package-dependencies
   workflow_dispatch:
     inputs:
       repository:
