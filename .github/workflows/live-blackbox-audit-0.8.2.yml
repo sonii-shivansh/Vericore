@@ -1,0 +1,214 @@
+name: Live Vericore 0.8.2 Black-Box Audit
+
+on:
+  push:
+    branches:
+      - audit/live-0.8.2-blackbox
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Audit ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: spring-petclinic
+            repo: spring-projects/spring-petclinic
+            build: './mvnw -B -DskipTests=false test'
+          - name: opendataloader-pdf
+            repo: opendataloader-project/opendataloader-pdf
+            build: 'cd java && ../mvnw -B -DskipTests=false test'
+          - name: runelite
+            repo: runelite/runelite
+            build: './gradlew --no-daemon test'
+          - name: quarkus
+            repo: quarkusio/quarkus
+            build: './mvnw -B -DskipTests=false -DskipITs -Dquickly'
+
+    steps:
+      - name: Checkout Vericore audit harness
+        uses: actions/checkout@v6
+        with:
+          path: vericore-repo
+
+      - name: Download and verify Vericore 0.8.2 Linux release
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/vericore"
+          cd "$RUNNER_TEMP/vericore"
+          curl -fsSL -o SHA256SUMS https://github.com/sonii-shivansh/Vericore/releases/download/v0.8.2/SHA256SUMS
+          curl -fsSL -o vericore.tar.gz https://github.com/sonii-shivansh/Vericore/releases/download/v0.8.2/vericore-0.8.2-linux-x64.tar.gz
+          grep 'vericore-0.8.2-linux-x64.tar.gz' SHA256SUMS | sha256sum -c -
+          tar -xzf vericore.tar.gz
+          VERICORE_BIN="$(find . -type f -path '*/bin/vericore' -print -quit)"
+          test -n "$VERICORE_BIN"
+          chmod +x "$VERICORE_BIN"
+          echo "VERICORE_BIN=$PWD/$VERICORE_BIN" >> "$GITHUB_ENV"
+          "$PWD/$VERICORE_BIN" --version
+
+      - name: Clone target repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth=1 "https://github.com/${{ matrix.repo }}.git" target
+          cd target
+          git status --short
+          git rev-parse HEAD | tee ../target-commit.txt
+
+      - name: Capture target build system and baseline filesystem
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd target
+          {
+            echo "TARGET=${{ matrix.repo }}"
+            echo "COMMIT=$(git rev-parse HEAD)"
+            echo "JAVA=$(java -version 2>&1 | head -1)"
+            echo "MAVEN=$(command -v mvn || true)"
+            echo "GRADLE=$(command -v gradle || true)"
+            echo "WRAPPERS:"
+            find . -maxdepth 3 -type f \( -name 'mvnw' -o -name 'gradlew' \) -print | sort
+            echo "BUILD_FILES:"
+            find . -maxdepth 4 -type f \( -name 'pom.xml' -o -name 'build.gradle' -o -name 'build.gradle.kts' -o -name 'settings.gradle' -o -name 'settings.gradle.kts' \) -print | sort | head -100
+          } | tee ../build-system.txt
+          git status --porcelain=v1 > ../git-before.txt
+
+      - name: Execute complete CLI matrix and adversarial checks
+        shell: bash
+        env:
+          NATIVE_BUILD: ${{ matrix.build }}
+        run: |
+          set +e
+          cd target
+          mkdir -p ../audit-output/${{ matrix.name }}
+          REPORT="../audit-output/${{ matrix.name }}/command-results.tsv"
+          : > "$REPORT"
+
+          run_case() {
+            label="$1"; shift
+            echo "===== $label =====" | tee -a "$REPORT"
+            start=$(date +%s%3N)
+            timeout 180s "$@" >"../audit-output/${{ matrix.name }}/$(echo "$label" | tr '/ ' '__').stdout" 2>"../audit-output/${{ matrix.name }}/$(echo "$label" | tr '/ ' '__').stderr"
+            rc=$?
+            end=$(date +%s%3N)
+            ms=$((end-start))
+            printf '%s\t%s\t%s\n' "$label" "$rc" "$ms" >> "$REPORT"
+            echo "exit=$rc duration_ms=$ms"
+          }
+
+          V="$VERICORE_BIN"
+          run_case help "$V" --help
+          run_case version "$V" --version
+          run_case doctor "$V" doctor
+          run_case analyze "$V" analyze .
+          run_case analyze-no-cache "$V" analyze . --no-cache
+          run_case analyze-no-snapshot "$V" analyze . --no-snapshot
+          run_case architecture "$V" architecture . --json
+          run_case evidence-graph "$V" evidence-graph . --json
+          run_case reality "$V" reality . --json
+          run_case impact "$V" impact . README.md --json
+          run_case pr-intelligence "$V" pr-intelligence . --json
+          run_case repo-qa "$V" repo-qa "Where is the main application entry point?" --path . --max-results 8 --evidence-output output/grounded-evidence.json
+          run_case plan "$V" plan "inspect the main application entry point" --repository . --evidence output/grounded-evidence.json --output output/engineering-plan.json
+          run_case prepare "$V" prepare "inspect the main application entry point" --path .
+          run_case verify "$V" verify --path .
+          run_case architecture-drift "$V" architecture-drift . --baseline output/architecture.json --json
+          run_case architecture-contract "$V" architecture-contract . --json
+          run_case evolution "$V" evolution . --months 1 --interval 30
+
+          # Negative CLI validation
+          run_case invalid-command "$V" definitely-not-a-command
+          run_case invalid-impact "$V" impact . does/not/exist.java --json
+          run_case invalid-contract "$V" architecture-contract . --contract /tmp/does-not-exist.json --json
+          run_case invalid-setup-provider "$V" setup --provider definitely-invalid
+
+          # Server health and malformed request behavior.
+          timeout 20s "$V" server --host 127.0.0.1 --port 18080 >../audit-output/${{ matrix.name }}/server.stdout 2>../audit-output/${{ matrix.name }}/server.stderr &
+          SERVER_PID=$!
+          sleep 3
+          curl -sS -D ../audit-output/${{ matrix.name }}/health.headers http://127.0.0.1:18080/health -o ../audit-output/${{ matrix.name }}/health.body || true
+          curl -sS -D ../audit-output/${{ matrix.name }}/bad-request.headers -H 'Content-Type: application/json' -X POST http://127.0.0.1:18080/api/does-not-exist -d '{bad-json' -o ../audit-output/${{ matrix.name }}/bad-request.body || true
+          kill "$SERVER_PID" 2>/dev/null || true
+
+          # MCP initialize + tools/list over stdio; must not hang.
+          printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"live-audit","version":"1.0"}}}' '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' | timeout 20s "$V" mcp >../audit-output/${{ matrix.name }}/mcp.stdout 2>../audit-output/${{ matrix.name }}/mcp.stderr || true
+
+          # Noninteractive AI command must terminate rather than waiting for input.
+          timeout 20s "$V" ask "What is the main architecture risk?" >../audit-output/${{ matrix.name }}/ask.stdout 2>../audit-output/${{ matrix.name }}/ask.stderr || true
+
+          # Inspect every JSON artifact emitted by the command matrix.
+          find output -type f -name '*.json' -print0 2>/dev/null | while IFS= read -r -d '' f; do
+            jq empty "$f" >/dev/null 2>&1 || echo "INVALID_JSON\t$f" >> "$REPORT"
+          done
+
+          # Detect unexpected working-tree mutations attributable to Vericore.
+          git status --porcelain=v1 > ../git-after.txt
+          diff -u ../git-before.txt ../git-after.txt > ../git-mutation.diff || true
+
+          # Native build/test: independently verify Vericore's claims against the repository's real build system.
+          echo "===== native-build =====" | tee -a "$REPORT"
+          start=$(date +%s%3N)
+          timeout 1200s bash -lc "$NATIVE_BUILD" >../audit-output/${{ matrix.name }}/native-build.stdout 2>../audit-output/${{ matrix.name }}/native-build.stderr
+          rc=$?
+          end=$(date +%s%3N)
+          printf '%s\t%s\t%s\n' native-build "$rc" "$((end-start))" >> "$REPORT"
+
+          # Determinism: rerun architecture JSON and compare semantic content excluding volatile fields if present.
+          cp output/architecture.json ../audit-output/${{ matrix.name }}/architecture.first.json 2>/dev/null || true
+          timeout 180s "$V" architecture . --json >../audit-output/${{ matrix.name }}/architecture-rerun.stdout 2>../audit-output/${{ matrix.name }}/architecture-rerun.stderr || true
+          cp output/architecture.json ../audit-output/${{ matrix.name }}/architecture.second.json 2>/dev/null || true
+          if [ -f ../audit-output/${{ matrix.name }}/architecture.first.json ] && [ -f ../audit-output/${{ matrix.name }}/architecture.second.json ]; then
+            jq -S . ../audit-output/${{ matrix.name }}/architecture.first.json > /tmp/a1.json
+            jq -S . ../audit-output/${{ matrix.name }}/architecture.second.json > /tmp/a2.json
+            cmp -s /tmp/a1.json /tmp/a2.json || echo "NON_DETERMINISTIC\tarchitecture.json" >> "$REPORT"
+          fi
+
+          echo "===== COMPLETE =====" | tee -a "$REPORT"
+
+      - name: Run synthetic adversarial dependency fixture
+        shell: bash
+        run: |
+          set +e
+          rm -rf fixture
+          mkdir -p fixture/src/main/java/com/example
+          cat > fixture/src/main/java/com/example/A.java <<'EOF'
+          package com.example;
+          class A { B b; }
+          EOF
+          cat > fixture/src/main/java/com/example/B.java <<'EOF'
+          package com.example;
+          class B { A a; }
+          EOF
+          git -C fixture init -q
+          git -C fixture config user.email audit@example.invalid
+          git -C fixture config user.name audit
+          git -C fixture add .
+          git -C fixture commit -qm baseline
+          mkdir -p audit-output/${{ matrix.name }}/fixture
+          "$VERICORE_BIN" analyze fixture >audit-output/${{ matrix.name }}/fixture/analyze.stdout 2>audit-output/${{ matrix.name }}/fixture/analyze.stderr || true
+          "$VERICORE_BIN" architecture fixture --json >audit-output/${{ matrix.name }}/fixture/architecture.stdout 2>audit-output/${{ matrix.name }}/fixture/architecture.stderr || true
+          "$VERICORE_BIN" impact fixture src/main/java/com/example/B.java --json >audit-output/${{ matrix.name }}/fixture/impact.stdout 2>audit-output/${{ matrix.name }}/fixture/impact.stderr || true
+          cp fixture/output/architecture.json audit-output/${{ matrix.name }}/fixture/architecture.json 2>/dev/null || true
+          cp fixture/output/change-impact.json audit-output/${{ matrix.name }}/fixture/change-impact.json 2>/dev/null || true
+
+      - name: Upload complete audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vericore-0.8.2-audit-${{ matrix.name }}
+          path: |
+            audit-output/${{ matrix.name }}/
+            build-system.txt
+            target-commit.txt
+            git-before.txt
+            git-after.txt
+            git-mutation.diff
+          if-no-files-found: warn
+          retention-days: 14
