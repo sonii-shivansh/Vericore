@@ -10,6 +10,7 @@ import org.eclipse.jgit.lib.Repository
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder
 import org.eclipse.jgit.treewalk.CanonicalTreeParser
 import org.eclipse.jgit.treewalk.TreeWalk
+import org.eclipse.jgit.treewalk.filter.PathFilterGroup
 
 class OptimizedGitAnalyzer {
     fun analyze(repoPath: String, files: List<ParsedFile>): List<ParsedFile> {
@@ -25,19 +26,26 @@ class OptimizedGitAnalyzer {
             val git = Git(repository)
             val fileStats = mutableMapOf<String, FileChangeStats>()
             val config = ConfigLoader.loadForRepository(repoPath)
-            val commitLimit = config.gitCommitLimit
-            val commits = git.log().call().take(commitLimit).toList()
-            val totalCommits = commits.size
+            val commitLimit = config.gitCommitLimit.coerceAtLeast(1)
+            val relevantPaths = files
+                    .map { getRelativePath(File(repoPath), it.file) }
+                    .map { it.replace("\\", "/") }
+                    .toSet()
+            val commits = git.log().call().take(commitLimit + 1).toList()
+            val truncated = commits.size > commitLimit
+            val commitsToAnalyze = commits.take(commitLimit)
+            val totalCommits = commitsToAnalyze.size
 
             System.err.println("🔍 Analyzing $totalCommits commits (limit: $commitLimit)...")
 
-            if (totalCommits == commitLimit) {
+            if (truncated) {
                 System.err.println(
-                        "⚠️  Reached commit limit. Consider increasing gitCommitLimit in config for complete history."
+                        "⚠️  Reached commit limit. History analysis is bounded at $commitLimit commits; " +
+                                "increase gitCommitLimit in config for deeper history."
                 )
             }
 
-            commits.forEachIndexed { index, commit ->
+            commitsToAnalyze.forEachIndexed { index, commit ->
                 if (index % 100 == 0 && index > 0) {
                     val progress = (index * 100) / totalCommits
                     System.err.println("   Progress: $progress% ($index/$totalCommits commits)")
@@ -47,17 +55,22 @@ class OptimizedGitAnalyzer {
                 if (parent != null) {
                     val oldTree = parent.tree
                     val newTree = commit.tree
-                    val diffs =
+                    val diffCommand =
                             git.diff()
                                     .setOldTree(prepareTreeParser(repository, oldTree))
                                     .setNewTree(prepareTreeParser(repository, newTree))
-                                    .call()
+                    if (relevantPaths.isNotEmpty()) {
+                        diffCommand.setPathFilter(PathFilterGroup.createFromStrings(relevantPaths))
+                    }
+                    val diffs = diffCommand.call()
 
                     diffs.forEach { diff ->
                         val path =
                                 if (diff.changeType == DiffEntry.ChangeType.DELETE) diff.oldPath
                                 else diff.newPath
-                        val stats = fileStats.getOrPut(path) { FileChangeStats() }
+                        val normalizedPath = path.replace("\\", "/")
+                        if (normalizedPath !in relevantPaths) return@forEach
+                        val stats = fileStats.getOrPut(normalizedPath) { FileChangeStats() }
                         stats.changes++
                         stats.lastModified = maxOf(stats.lastModified, commit.commitTime.toLong() * 1000)
                         stats.authors.add(commit.authorIdent.name)
