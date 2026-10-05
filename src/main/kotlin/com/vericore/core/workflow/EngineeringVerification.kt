@@ -55,7 +55,7 @@ object EngineeringVerification {
         graph.analyze().getOrThrow()
 
         val changeSet = GitChangeSetBuilder.fromWorkingTree(root.path)
-        val plannedPaths = if (plan.plannedPaths.isNotEmpty()) plan.plannedPaths else plan.affectedComponents
+        val plannedPaths = plan.plannedPaths
         val safety = ChangeSafetyAnalyzer.verify(changeSet.files, plannedPaths)
         val packageByPath = enriched.associate { file -> root.toPath().relativize(file.file.toPath().toAbsolutePath().normalize()).toString().replace('\\', '/') to file.packageName }
         val absoluteByRelative = enriched.associate { file -> root.toPath().relativize(file.file.toPath().toAbsolutePath().normalize()).toString().replace('\\', '/') to file.file.absolutePath.replace('\\', '/') }

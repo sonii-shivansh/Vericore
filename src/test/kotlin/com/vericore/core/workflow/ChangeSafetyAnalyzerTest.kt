@@ -28,4 +28,19 @@ class ChangeSafetyAnalyzerTest {
         val result = ChangeSafetyAnalyzer.verify(listOf(ChangedFile("src/App.kt", ChangeType.DELETED)), listOf("src/App.kt"))
         assertEquals(SafetyStatus.REVIEW_REQUIRED, result.status)
     }
+
+    @Test
+    fun `requires review when source changes exist without explicit planned paths`() {
+        val result = ChangeSafetyAnalyzer.verify(changeSet("src/Unplanned.kt"), emptyList())
+        assertEquals(SafetyStatus.REVIEW_REQUIRED, result.status)
+        assertTrue(result.plannedPaths.isEmpty())
+        assertTrue(result.unexpectedPaths.contains("src/Unplanned.kt"))
+    }
+
+    @Test
+    fun `allows a clean tree without explicit planned paths`() {
+        val result = ChangeSafetyAnalyzer.verify(emptyList(), emptyList())
+        assertEquals(SafetyStatus.PASS, result.status)
+        assertTrue(result.changedPaths.isEmpty())
+    }
 }
