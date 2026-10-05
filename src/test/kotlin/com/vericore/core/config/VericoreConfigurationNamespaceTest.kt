@@ -33,6 +33,13 @@ class VericoreConfigurationNamespaceTest {
     }
 
     @Test
+    fun `default config uses large repository file capacity and bounded git history`() {
+        val config = VericoreConfig()
+        assertEquals(50_000, config.maxFilesAnalyze)
+        assertEquals(250, config.gitCommitLimit)
+    }
+
+    @Test
     fun `canonical repository config is preferred and legacy config is fallback`() {
         val repository = Files.createTempDirectory("vericore-target-repo").toFile()
         try {
