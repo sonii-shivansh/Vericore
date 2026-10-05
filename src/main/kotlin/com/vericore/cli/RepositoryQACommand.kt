@@ -111,9 +111,12 @@ class RepositoryQACommand : CliktCommand(name = "repo-qa", help = "Retrieve grou
             val currentState = Git.open(root).use { git ->
                 val commit = git.repository.resolve("HEAD")?.name
                 val status = git.status().call()
-                commit to status.isClean
+                val changedPaths = status.modified + status.changed + status.added + status.untracked + status.removed + status.missing
+                commit to changedPaths
             }
-            require(currentState.second) { "Repository working tree is dirty" }
+            require(currentState.second.all { it.startsWith("output/") || it == "output" }) {
+                "Repository has source changes outside generated output"
+            }
             require(snapshot.repository.repositoryCommit == currentState.first) { "Cached analysis snapshot is stale" }
             json.decodeFromString<GroundedEvidence>(evidenceFile.readText())
         }.getOrNull()
