@@ -10,7 +10,7 @@ data class BuildSystemInfo(
     val source: String
 )
 
-/** Detects the repository's declared build system and selects a usable wrapper when available. */
+/** Detects repository build descriptors first, preferring an executable repository wrapper. */
 class BuildSystemDetector {
     fun detect(root: File): BuildSystemInfo {
         require(root.isDirectory) { "Repository path is not a directory: ${root.path}" }
