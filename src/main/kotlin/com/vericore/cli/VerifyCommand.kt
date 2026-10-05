@@ -1,6 +1,7 @@
 package com.vericore.cli
 
-import com.vericore.core.intelligence.GitChangeSetBuilder
+import com.vericore.core.intelligence.ChangeType
+import com.vericore.core.intelligence.ChangedFile
 import com.vericore.core.planner.EngineeringPlan
 import com.vericore.core.workflow.AgentChangeContract
 import com.vericore.core.workflow.ChangeSafetyAnalyzer
@@ -61,28 +62,20 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
     private fun verifyContractOnly(root: File, plan: EngineeringPlan, contract: AgentChangeContract, json: Json) {
         val reasons = buildList {
             val expectedContractFingerprint = AgentChangeContract.fingerprintFor(contract)
-            if (contract.fingerprint != expectedContractFingerprint) {
-                add("The persisted agent change contract fingerprint is invalid or tampered.")
-            }
-            if (contract.repository != root.path) {
-                add("The contract belongs to a different repository: ${contract.repository}")
-            }
-            if (plan.contractFingerprint != contract.fingerprint) {
-                add("The engineering plan is not bound to the persisted contract fingerprint.")
-            }
+            if (contract.fingerprint != expectedContractFingerprint) add("The persisted agent change contract fingerprint is invalid or tampered.")
+            if (contract.repository != root.path) add("The contract belongs to a different repository: ${contract.repository}")
+            if (plan.contractFingerprint != contract.fingerprint) add("The engineering plan is not bound to the persisted contract fingerprint.")
             val expectedPlanFingerprint = AgentChangeContract.fromPlan(plan, root.path, contract.preparedHead).fingerprint
-            if (expectedPlanFingerprint != contract.fingerprint) {
-                add("The supplied plan does not match the persisted contract contents.")
-            }
+            if (expectedPlanFingerprint != contract.fingerprint) add("The supplied plan does not match the persisted contract contents.")
             val currentHead = RepositoryState.head(root.path).orEmpty()
             if (contract.preparedHead.isNotBlank() && currentHead.isNotBlank() && contract.preparedHead != currentHead) {
                 add("The repository HEAD changed after prepare (${contract.preparedHead} -> $currentHead); the contract is stale.")
             }
         }
 
-        val changeSet = GitChangeSetBuilder.fromWorkingTree(root.path)
+        val changes = collectContractOnlyChanges(root)
         val plannedPaths = if (plan.plannedPaths.isNotEmpty()) plan.plannedPaths else plan.affectedComponents
-        val safety = ChangeSafetyAnalyzer.verify(changeSet.files, plannedPaths)
+        val safety = ChangeSafetyAnalyzer.verify(changes, plannedPaths)
         val allReasons = reasons + safety.reasons.filter { it != "No source working-tree changes were detected." }
         val status = when {
             reasons.isNotEmpty() || safety.status == com.vericore.core.workflow.SafetyStatus.FAIL -> com.vericore.core.workflow.SafetyStatus.FAIL
@@ -101,6 +94,43 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
         if (status == com.vericore.core.workflow.SafetyStatus.FAIL) {
             throw IllegalStateException("Change verification failed: the prepared contract or change scope is invalid")
         }
+    }
+
+    private fun collectContractOnlyChanges(root: File): List<ChangedFile> {
+        val changes = mutableListOf<ChangedFile>()
+        parseGitNameStatus(root, listOf("diff", "--cached", "--name-status", "--diff-filter=ACDMRT")).forEach { changes += it }
+        parseGitNameStatus(root, listOf("diff", "--name-status", "--diff-filter=ACDMRT")).forEach { changes += it }
+        runGit(root, listOf("ls-files", "--others", "--exclude-standard")).lineSequence()
+            .map(String::trim)
+            .filter(String::isNotBlank)
+            .forEach { path -> changes += ChangedFile(path.replace('\\', '/'), ChangeType.ADDED) }
+        return changes.distinctBy { Triple(it.path, it.changeType, it.oldPath) }
+    }
+
+    private fun parseGitNameStatus(root: File, args: List<String>): List<ChangedFile> =
+        runGit(root, args).lineSequence().mapNotNull { line ->
+            val parts = line.split('\t')
+            if (parts.size < 2) return@mapNotNull null
+            val status = parts[0].firstOrNull() ?: return@mapNotNull null
+            when (status) {
+                'A' -> ChangedFile(parts.last().replace('\\', '/'), ChangeType.ADDED)
+                'M' -> ChangedFile(parts.last().replace('\\', '/'), ChangeType.MODIFIED)
+                'D' -> ChangedFile(parts.last().replace('\\', '/'), ChangeType.DELETED)
+                'R' -> ChangedFile(parts.last().replace('\\', '/'), ChangeType.RENAMED, oldPath = parts[1].replace('\\', '/'))
+                'C' -> ChangedFile(parts.last().replace('\\', '/'), ChangeType.COPIED, oldPath = parts[1].replace('\\', '/'))
+                else -> null
+            }
+        }.toList()
+
+    private fun runGit(root: File, args: List<String>): String {
+        val process = ProcessBuilder(listOf("git") + args)
+            .directory(root)
+            .redirectErrorStream(true)
+            .start()
+        val output = process.inputStream.bufferedReader().readText()
+        val status = process.waitFor()
+        require(status == 0) { "git ${args.joinToString(" ")} failed: $output" }
+        return output
     }
 
     private fun writeOutput(encoded: String) {
