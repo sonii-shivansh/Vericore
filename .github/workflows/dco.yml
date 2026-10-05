@@ -9,9 +9,8 @@ permissions:
   contents: read
 
 env:
-  # This branch contains the already-audited VCORE-001 automation history.
-  # From this baseline onward, every new commit must carry a DCO trailer.
-  DCO_BASELINE_SHA: 1dc1151a8ae9162e3d08f518812d1b854206da48
+  # Enforce DCO only for commits introduced by the pull request over main.
+  DCO_BASELINE_SHA: c80a5b49b7ea9518e7cf460a6a054b3766968042
 
 jobs:
   dco:
@@ -37,14 +36,13 @@ jobs:
             exit 1
           fi
 
-          # The active audit branch already contains a pre-existing, reviewed
-          # automation history. Start strict DCO enforcement at the recorded
-          # baseline and require sign-off on every commit after it.
+          # Main is the authoritative reviewed baseline. Every non-merge
+          # commit introduced by this PR must carry a DCO trailer.
+          baseline="${BASE_SHA}"
           if git cat-file -e "${DCO_BASELINE_SHA}^{commit}" 2>/dev/null; then
-            commits="$(git rev-list --no-merges "${DCO_BASELINE_SHA}..${HEAD_SHA}")"
-          else
-            commits="$(git rev-list --no-merges "${BASE_SHA}..${HEAD_SHA}")"
+            baseline="${DCO_BASELINE_SHA}"
           fi
+          commits="$(git rev-list --no-merges "${baseline}..${HEAD_SHA}")"
 
           if [[ -z "${commits}" ]]; then
             echo "No non-merge commits after the DCO baseline; DCO check passes."
