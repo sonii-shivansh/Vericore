@@ -11,8 +11,24 @@ run "$APP" analyze "$REPO" >/dev/null
 run "$APP" reality "$REPO" --json >/dev/null
 run "$APP" architecture "$REPO" --json >/dev/null
 run "$APP" context-snapshot "$REPO" --json >/dev/null
-# Keep release audit evolution bounded so CI exercises the command without scanning unnecessary history.
-run "$APP" evolution "$REPO" --months 1 --interval 30 >/dev/null
+# Exercise evolution against a tiny deterministic Git fixture. Running it over the
+# Vericore checkout would scan the configured 250-commit history and make this
+# release smoke test unnecessarily expensive while providing no extra coverage.
+evolution_fixture="$(mktemp -d)"
+trap 'rm -rf "$evolution_fixture" "$doctor_fixture" "$contract_fixture" "$qa_fixture" "$drift_fixture"' EXIT
+(
+  cd "$evolution_fixture"
+  git init -q
+  git config user.name "Vericore Audit"
+  git config user.email "audit@example.invalid"
+  printf '%s\n' 'class Fixture { }' > Fixture.kt
+  git add Fixture.kt
+  git commit -qm 'initial fixture'
+  printf '%s\n' 'class Fixture { val version = 2 }' > Fixture.kt
+  git add Fixture.kt
+  git commit -qm 'second fixture revision'
+)
+run "$APP" evolution "$evolution_fixture" --months 1 --interval 30 >/dev/null
 rm -rf output
 run "$APP" prepare "audit release workflow" --path "$REPO" >/dev/null
 [[ -s output/engineering-context.json && -s output/engineering-plan.json && -s output/agent-change-contract.json ]]
@@ -23,7 +39,6 @@ doctor_fixture="$(mktemp -d)"
 contract_fixture="$(mktemp -d)"
 qa_fixture="$(mktemp -d)"
 drift_fixture="$(mktemp -d)"
-trap 'rm -rf "$doctor_fixture" "$contract_fixture" "$qa_fixture" "$drift_fixture"' EXIT
 
 if (cd "$doctor_fixture" && "$REPO/$APP" doctor > doctor.log 2>&1); then
   echo "doctor unexpectedly succeeded outside a Git repository" >&2
