@@ -1,0 +1,30 @@
+name: VCORE-001 Validation
+
+on:
+  push:
+    branches:
+      - fix/vcore-001-same-package-dependencies
+  workflow_dispatch:
+
+jobs:
+  vcore-001:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+
+      - name: Run VCORE-001 regression matrix
+        run: ./gradlew test --tests com.vericore.core.graph.DependencyGraphTest
+
+      - name: Run full test suite
+        run: ./gradlew test
+
+      - name: Verify clean working tree
+        run: git status --short
