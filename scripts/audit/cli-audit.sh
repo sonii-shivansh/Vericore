@@ -7,9 +7,9 @@ run(){ echo "==> $*"; "$@"; }
 run "$APP" --version
 run "$APP" --help
 for command in analyze impact architecture architecture-drift architecture-contract context-snapshot context-diff reality pr-intelligence repo-qa plan prepare verify ask evolution server mcp setup doctor; do run "$APP" "$command" --help >/dev/null; done
-# Run one real-repository analysis, then use a tiny Git fixture for commands that
-# perform history-backed analysis. This keeps the release smoke test deterministic
-# without repeatedly scanning Vericore's full 250-commit bounded history.
+# Run one real-repository analysis, then use a tiny Maven Git fixture for commands that
+# perform history-backed analysis and verification. This keeps the release smoke test
+# deterministic without repeatedly scanning Vericore's full 250-commit history.
 audit_fixture="$(mktemp -d)"
 doctor_fixture="$(mktemp -d)"
 contract_fixture="$(mktemp -d)"
@@ -21,6 +21,20 @@ trap 'rm -rf "$audit_fixture" "$doctor_fixture" "$contract_fixture" "$qa_fixture
   git init -q
   git config user.name "Vericore Audit"
   git config user.email "audit@example.invalid"
+  cat > pom.xml <<'EOF'
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>fixture</groupId>
+  <artifactId>audit-fixture</artifactId>
+  <version>1.0</version>
+</project>
+EOF
+  cat > mvnw <<'EOF'
+#!/bin/sh
+printf '%s\n' "$*" >> verification-executed.log
+exit 0
+EOF
+  chmod +x mvnw
   printf '%s\n' 'package fixture' 'class Target' > Target.kt
   printf '%s\n' 'package fixture' 'import fixture.Target' 'class Dependent' > Dependent.kt
   git add .
