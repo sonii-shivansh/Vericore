@@ -124,11 +124,11 @@ jobs:
           CLI="$PWD/build/install/vericore/bin/vericore"
           fixture="$(mktemp -d)"
           trap 'rm -rf "$fixture"' EXIT
-          mkdir -p "$fixture/java/output" "$fixture/java/src/main/java"
+          mkdir -p "$fixture/java/output" "$fixture/java/src/main/java" "$fixture/output"
           printf '%s\n' '<project/>' > "$fixture/java/pom.xml"
-          printf '%s\n' '{"schemaVersion":"1.0","citations":[]}' > "$fixture/java/output/grounded-evidence.json"
-          "$CLI" plan "Fix PDF processing" --repository "$fixture" --changed java/src/main/java/App.java --output "$fixture/java/output/plan.json"
-          python3 - "$fixture/java/output/plan.json" <<'PY'
+          printf '%s\n' '{"schemaVersion":"1.0","citations":[]}' > "$fixture/output/grounded-evidence.json"
+          "$CLI" plan "Fix PDF processing" --repository "$fixture" --changed java/src/main/java/App.java --output "$fixture/output/plan.json"
+          python3 - "$fixture/output/plan.json" <<'PY'
           import json, sys
           plan=json.load(open(sys.argv[1]))
           assert plan['buildSystem']=='MAVEN', plan
