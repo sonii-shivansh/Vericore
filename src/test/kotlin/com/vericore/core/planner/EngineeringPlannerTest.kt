@@ -6,6 +6,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
+import java.io.File
 import java.nio.file.Files
 
 class EngineeringPlannerTest {
