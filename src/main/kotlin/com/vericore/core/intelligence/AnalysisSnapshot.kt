@@ -81,16 +81,17 @@ object AnalysisSnapshotBuilder {
         graph: org.jgrapht.graph.DefaultDirectedGraph<String, org.jgrapht.graph.DefaultEdge>,
         pageRankScores: Map<String, Double>,
         hasCycles: Boolean,
-        parseFailures: Int = 0
+        parseFailures: Int = 0,
+        repositoryState: EngineeringContextSnapshot? = null
     ): AnalysisSnapshot {
         val packageNames = parsedFiles.map { it.packageName }.filter { it.isNotBlank() }.toSet()
         val fileByPath = parsedFiles.associateBy { it.file.absolutePath }
         val orderedFiles = parsedFiles.sortedBy { it.file.absolutePath }
 
-        // Bind the analysis to the exact repository state it observed. This lets the
-        // Engineering Reality layer reject a stale analysis instead of combining it
-        // with a newer working tree or commit.
-        val repositoryState = runCatching {
+        // Bind the analysis to the exact repository state it observed. Callers that
+        // already computed the engineering context can supply it to avoid rescanning
+        // and re-hashing every repository file a second time.
+        val observedRepositoryState = repositoryState ?: runCatching {
             EngineeringContextEngine.snapshot(File(repositoryPath).canonicalFile, RepositoryScanner())
         }.getOrNull()
 
@@ -147,8 +148,8 @@ object AnalysisSnapshotBuilder {
                 path = repositoryPath,
                 analyzedAtEpochMillis = System.currentTimeMillis(),
                 languages = languages,
-                repositoryCommit = repositoryState?.repositoryCommit,
-                repositoryStateDigest = repositoryState?.snapshotDigest
+                repositoryCommit = observedRepositoryState?.repositoryCommit,
+                repositoryStateDigest = observedRepositoryState?.snapshotDigest
             ),
             metrics = AnalysisMetrics(
                 totalFiles = orderedFiles.size,
