@@ -1,10 +1,10 @@
 # Getting Started
 
-> From a fresh checkout to a useful Vericore analysis in a few steps.
+> From a fresh checkout to a useful Vericore analysis, grounded evidence, and a safe change workflow.
 
 ## Prerequisites
 
-For a source build:
+For a source build, use JDK 21 or newer:
 
 - JDK 21+
 - Git
@@ -65,7 +65,7 @@ vericore evidence-graph /path/to/repository --json
 vericore reality /path/to/repository --json
 ```
 
-`evidence-graph` and `reality` consume the analysis snapshot produced by `analyze`, so keep the artifacts from the same repository state.
+`evidence-graph` and `reality` consume the analysis snapshot produced by `analyze`, so keep the artifacts from the same repository state. `evidence-graph` binds its graph to a Git commit when one is available.
 
 ## 4. Review impact and architecture
 

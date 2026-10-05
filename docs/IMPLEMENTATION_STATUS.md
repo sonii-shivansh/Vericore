@@ -144,10 +144,12 @@ The planner is read-only.
 
 ### AI integration
 
-- optional AI provider abstraction
-- configured Gemini/Anthropic provider support in the existing assistant flow
+- optional provider-aware AI analyzer
+- Gemini and Anthropic/Claude provider paths in `AICodeAnalyzer`
+- Gemini-first interactive setup flow and CLI assistant path
 - canonical Gemini 3.8 request configuration without legacy sampling controls
-- bounded grounded evidence as model context
+- bounded repository-derived context for model calls
+- a separate `GroundedAIService` path that can enforce evidence-ID citations
 - explicit separation between deterministic repository facts and model reasoning
 - semantic evidence graph identity available to grounded Engineering Reality
 
@@ -164,7 +166,7 @@ AI is disabled unless configured.
 - rejection of remote repository URLs
 - persisted change-contract retrieval for the verification boundary
 
-The MCP server is a trusted local integration without authentication or tenant isolation.
+The MCP server is a trusted local integration without authentication or tenant isolation. Legacy `codecontext_*` names remain as compatibility aliases and emit deprecation warnings.
 
 ### Local REST API
 
@@ -209,7 +211,7 @@ GitHub Actions is the authoritative automated execution environment for release 
 
 ## Current release line
 
-`v0.8.1` is the **latest published Vericore release**. `v0.8.2` is the current release-preparation branch and is not considered released until the exact candidate passes final release certification and the resulting artifacts are published successfully. Earlier public releases were published under the former project name.
+`v0.8.2` is the **latest published Vericore release**, published on 2026-10-04. The current `main` branch is 15 commits ahead of the `v0.8.2` tag and contains post-release hardening and VCORE validation workflows. Those changes are development work and must not be described as part of the published `v0.8.2` artifact set. Earlier public releases were published under the former project name.
 
 ## Current limitations
 

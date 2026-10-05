@@ -18,6 +18,6 @@ Use Git's sign-off option when creating commits:
 git commit -s -m "Describe the change"
 ```
 
-The DCO check is enforced by CI for pull requests. If a commit is missing the trailer, amend it with `git commit --amend -s` and push the updated branch.
+The DCO check is enforced independently by CI for pull requests targeting `main`. If a commit is missing the trailer, amend it with `git commit --amend -s` and push the updated branch.
 
 See the official [Developer Certificate of Origin](https://developercertificate.org/) for the full text.

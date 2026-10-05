@@ -53,7 +53,7 @@ Request:
 }
 ```
 
-The endpoint rejects remote repository URLs. The path must resolve to a readable directory within a configured allowed root.
+The endpoint rejects remote repository URLs. The path must resolve to a readable directory within a configured allowed root. Keep `VERICORE_ALLOWED_PATHS` narrow; the default allowed roots are the server working directory and the JVM temporary directory when the variable is not configured.
 
 Response shape:
 

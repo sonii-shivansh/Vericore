@@ -1,6 +1,6 @@
 # Vericore Repository Governance
 
-This document is the version-controlled source of truth for the GitHub repository's intended governance. It deliberately separates repository-file controls from GitHub UI controls that are not represented in the source tree.
+This document is the version-controlled source of truth for the GitHub repository's intended governance. It describes intended GitHub settings as well as repository-file controls; it does not claim that every UI setting is currently enforced unless the repository configuration confirms it. It deliberately separates repository-file controls from GitHub UI controls that are not represented in the source tree.
 
 ## Repository identity
 
@@ -10,8 +10,8 @@ This document is the version-controlled source of truth for the GitHub repositor
 - **Visibility:** Public
 - **Homepage:** `https://sonii-shivansh.github.io/Vericore-Website/`
 - **Canonical icon:** `docs/images/vericore-icon.svg`
-- **Current published release:** `v0.8.0`
-- **Current release candidate:** `v0.8.1`
+- **Current published release:** `v0.8.2`
+- **Current development line:** `main` (15 commits ahead of `v0.8.2` as of the current audit)
 
 The website favicon SVG is the canonical project icon. Do not create a second logo variant in the repository unless the website branding is intentionally changed first.
 
@@ -22,6 +22,7 @@ These controls live in Git and should be reviewed like code:
 - DCO verification runs independently on pull requests targeting `main`.
 - The `Release Audit` is the authoritative PR release-certification workflow for `main` and composes the reusable CI, verification, platform, onboarding, regression, and live-repository workflows.
 - `ci.yml`, `verification.yml`, `platform.yml`, `onboarding-e2e.yml`, `phase1-regression.yml`, `phase4-regression.yml`, `live-repository-gate.yml`, and `live-output-quality.yml` are reusable workflows and are not independent PR-triggered merge gates.
+- The VCORE-001 through VCORE-004 validation workflows and the newer live black-box/audit workflows are additional hardening and regression coverage on `main`; they are not part of the published `v0.8.2` artifact set unless a future release explicitly includes them.
 - Dependabot configuration covers Gradle and GitHub Actions.
 - Security vulnerability reporting remains governed by `SECURITY.md`; vulnerabilities should not be disclosed through public issues.
 - Issue templates and the pull-request template are the contribution intake contract.
@@ -77,9 +78,9 @@ Do **not** require CodeQL yet. CodeQL is currently managed by GitHub's dynamic c
 
 ### Releases
 
-- Do not rewrite the published `v0.7.0` or `v0.8.0` tags or their artifacts.
-- `v0.8.0` remains the current published release until `v0.8.1` completes the full release workflow.
-- `v0.8.1` is the current release candidate and must originate from the exact candidate certified by the final release audit.
+- Do not rewrite published release tags or their artifacts.
+- `v0.8.2` is the current published release.
+- `main` contains post-`v0.8.2` development work and is not automatically a release candidate.
 - Future releases should originate from the repository's release workflow after the normal verification gates pass.
 - Release artifacts must remain reproducible and accompanied by checksums where the release workflow provides them.
 

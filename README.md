@@ -14,7 +14,7 @@ Vericore is a Kotlin/JVM CLI and local REST application for Java and Kotlin repo
 
 ## Current status
 
-Vericore `0.8.1` is the latest **published** release. `0.8.2` is the current release-preparation branch and must pass complete release certification and fresh artifact validation before publication.
+Vericore `0.8.2` is the latest **published** release (October 4, 2026). The `main` branch is currently 15 commits ahead of the `v0.8.2` release tag and contains post-release hardening that is not yet assigned a new release version.
 
 ## What Vericore does
 
@@ -63,7 +63,7 @@ vericore reality /path/to/repository --json
 
 The HTML report is written to `output/index.html`. Machine-readable artifacts are written under the analyzed repository's `output/` directory when the relevant command requests them.
 
-### Ask a grounded repository question
+### Ask a deterministic repository question
 
 ```bash
 vericore repo-qa "Why is PaymentService risky?" --path /path/to/repository
@@ -98,7 +98,7 @@ See [MCP](docs/MCP.md) for the tool contract.
 
 ## CLI reference
 
-The complete command reference is maintained separately so the README stays concise:
+The complete command reference is maintained separately so this README stays focused on product behavior and the fastest path to first use:
 
 **[→ Complete CLI Reference](docs/CLI.md)**
 
@@ -170,7 +170,7 @@ vericore doctor
 
 The canonical project configuration file is `.vericore.json`. `VERICORE_ALLOWED_PATHS` controls server workspace boundaries. API keys must never be committed.
 
-Vericore is local-first. Deterministic analysis does not require an external service. AI is opt-in and sends bounded repository-derived context to the configured provider when invoked.
+Vericore is local-first. Deterministic analysis does not require an external service. AI is opt-in. Provider-backed features send only the bounded repository-derived context required by the invoked operation.
 
 See [Data & Privacy](docs/DATA_PRIVACY.md).
 
@@ -183,7 +183,7 @@ See [Data & Privacy](docs/DATA_PRIVACY.md).
 
 GitHub Actions is the authoritative clean-environment verification path for the product. It validates builds, tests, CLI flows, generated artifacts, intelligence features, safety contracts, REST/MCP boundaries, and cross-platform/live-repository behavior.
 
-See [Contributing](CONTRIBUTING.md) and [Development](docs/DEVELOPMENT.md).
+See [Contributing](CONTRIBUTING.md) and [Development](docs/DEVELOPMENT.md). For the current release history, see [CHANGELOG.md](CHANGELOG.md).
 
 ## Documentation
 
@@ -201,9 +201,9 @@ See [Contributing](CONTRIBUTING.md) and [Development](docs/DEVELOPMENT.md).
 | Data & Privacy | [Data & Privacy](docs/DATA_PRIVACY.md) |
 | Development | [Development](docs/DEVELOPMENT.md) |
 | Implementation status | [Implementation Status](docs/IMPLEMENTATION_STATUS.md) |
-| Release preparation | [0.8.2 Release Readiness](docs/RELEASE_READINESS_0.8.2.md) |
-| Published release record | [0.8.1 Release Readiness](docs/RELEASE_READINESS_0.8.1.md) |
-| Previous release record | [0.8.0 Release Readiness](docs/RELEASE_READINESS_0.8.0.md) |
+| Latest published release record | [0.8.2 Release Readiness](docs/RELEASE_READINESS_0.8.2.md) |
+| Previous release record | [0.8.1 Release Readiness](docs/RELEASE_READINESS_0.8.1.md) |
+| Earlier release record | [0.8.0 Release Readiness](docs/RELEASE_READINESS_0.8.0.md) |
 | Contributing | [Contributing](CONTRIBUTING.md) |
 | Security | [Security](SECURITY.md) |
 

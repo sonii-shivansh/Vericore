@@ -113,7 +113,7 @@ The command validates that the analysis still belongs to the current repository 
 output/engineering-reality.json
 ```
 
-If the repository changed after analysis, rerun `vericore analyze` before generating reality.
+If the repository changed after analysis, rerun `vericore analyze` before generating reality. When Git metadata is unavailable, the reality artifact can still represent deterministic source/context state, but commit-bound evidence-graph identity is omitted.
 
 The command is read-only: it does not modify source code, Git state, commits, or branches.
 

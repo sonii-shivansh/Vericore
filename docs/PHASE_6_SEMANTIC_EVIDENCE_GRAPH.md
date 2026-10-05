@@ -1,6 +1,6 @@
 # Phase 6 — Semantic Evidence Graph Foundation
 
-> **Status:** Implemented and integrated into the current 0.8.2 release-preparation line. This document records the original Phase 6 design foundation; the follow-up phases listed below are now represented by the shipped implementation.
+> **Status:** Implemented. This document is a historical design-and-delivery record for the Phase 6 semantic evidence graph foundation. The capability is present on `main` and was already included in the published `v0.8.2` release.
 
 ## Goal
 

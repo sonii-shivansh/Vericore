@@ -6,7 +6,17 @@ All notable changes to Vericore are documented here. The format follows [Keep a 
 
 ## [Unreleased]
 
-Changes after `0.8.2` only. Keep this section for work that is intentionally outside the published `0.8.2` release.
+Changes after the published `0.8.2` release only. The current `main` branch is ahead of `v0.8.2` with post-release hardening that is intentionally not part of the published artifact set.
+
+### Post-release hardening currently on `main`
+
+- Added dedicated live/black-box validation workflows for the VCORE-001 through VCORE-004 remediation tracks.
+- Strengthened repository analysis and dependency-graph handling, including same-package dependency coverage and parser robustness.
+- Added explicit build-system detection and safer verification-command execution for the prepare → verify workflow.
+- Tightened engineering-plan scope handling and working-tree mutation checks.
+- Expanded live-repository, onboarding, MCP, and regression validation around these boundaries.
+
+These changes remain unreleased until a new version is tagged and published.
 
 ## [0.8.2] — 2026-10-04
 

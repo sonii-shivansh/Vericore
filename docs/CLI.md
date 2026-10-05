@@ -1,6 +1,6 @@
 # CLI Reference
 
-> Complete reference for the Vericore command-line interface. Examples below describe the current 0.8.1 command surface.
+> Complete reference for the Vericore command-line interface. Examples below describe the current 0.8.2 command surface and the post-0.8.2 changes currently present on `main`.
 
 ## Global syntax
 
@@ -452,7 +452,7 @@ Verify the current working tree against the original persisted engineering plan 
 ### Syntax
 
 ```bash
-vericore verify [--path <repository>] [--plan <file>] [--contract <file>] [--output <file>]
+vericore verify [--path <repository>] [--plan <file>] [--contract <file>] [--output <file>] [--contract-only]
 ```
 
 ### Example
@@ -470,6 +470,7 @@ vericore verify --path . --plan output/engineering-plan.json --contract output/a
 | `--plan <file>` | `output/engineering-plan.json` | Persisted engineering plan. |
 | `--contract <file>` | `output/agent-change-contract.json` | Original immutable Agent Change Contract. Required to exist. |
 | `--output <file>` | stdout | Optional verification artifact. |
+| `--contract-only` | off | Validate contract identity, prepared `HEAD`, and mutation scope without rebuilding the full analysis graph. |
 
 Verification fails when the contract is missing, tampered, stale, cross-repository, inconsistent with the plan, or when changes fall outside the prepared boundary. `PASS` and `REVIEW_REQUIRED` are not substitutes for tests or human review.
 
@@ -499,7 +500,7 @@ vericore doctor
 vericore ask "Explain the main architectural hotspots."
 ```
 
-The current assistant command uses the effective local configuration and currently supports the Gemini provider path. If the provider is unavailable or rate-limited, the command reports a sanitized provider failure.
+The current interactive setup path provisions Gemini. The underlying `AICodeAnalyzer` also contains an Anthropic/Claude provider path for explicitly configured integrations. If the provider is unavailable or rate-limited, the command reports a sanitized provider failure.
 
 ---
 

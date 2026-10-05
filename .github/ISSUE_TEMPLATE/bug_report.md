@@ -34,7 +34,7 @@ Paste sanitized output here
 
 ## 🖥️ Environment
 
-- **Vericore version:** [e.g., 0.8.1]
+- **Vericore version:** [e.g., 0.8.2]
 - **OS:** [e.g., Windows 11, macOS 14, Ubuntu 24.04]
 - **JDK version:** [e.g., JDK 21]
 - **Repository size:** [e.g., 100 files, 10k LOC]

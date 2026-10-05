@@ -150,7 +150,7 @@ The MCP server is a trusted local integration. It uses the same path-safety boun
 
 ### AI
 
-AI is opt-in. Provider calls receive bounded repository-derived context. Credentials belong in configuration or environment variables and must never appear in evidence artifacts or source control.
+AI is opt-in. Provider calls receive bounded repository-derived context. `repo-qa` is deterministic retrieval; the separate `GroundedAIService` adds explicit evidence-citation prompting for provider-backed reasoning. Credentials belong in configuration or environment variables and must never appear in evidence artifacts or source control.
 
 ## Determinism rules
 
