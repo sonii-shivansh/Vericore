@@ -73,9 +73,11 @@ jobs:
             echo "MAVEN=$(command -v mvn || true)"
             echo "GRADLE=$(command -v gradle || true)"
             echo "WRAPPERS:"
-            find . -maxdepth 3 -type f \( -name 'mvnw' -o -name 'gradlew' \) -print | sort
+            find . -maxdepth 3 -type f \( -name 'mvnw' -o -name 'gradlew' \) -print | sort -o ../wrappers.txt
+            cat ../wrappers.txt
             echo "BUILD_FILES:"
-            find . -maxdepth 4 -type f \( -name 'pom.xml' -o -name 'build.gradle' -o -name 'build.gradle.kts' -o -name 'settings.gradle' -o -name 'settings.gradle.kts' \) -print | sort | head -100
+            find . -maxdepth 4 -type f \( -name 'pom.xml' -o -name 'build.gradle' -o -name 'build.gradle.kts' -o -name 'settings.gradle' -o -name 'settings.gradle.kts' \) -print | sort -o ../buildfiles.txt
+            head -100 ../buildfiles.txt
           } | tee ../build-system.txt
           git status --porcelain=v1 > ../git-before.txt
 
