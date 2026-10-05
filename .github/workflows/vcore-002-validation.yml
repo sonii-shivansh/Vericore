@@ -123,9 +123,10 @@ jobs:
             name="${repo#*/}"
             rm -rf "$RUNNER_TEMP/$name"
             git clone --depth 1 "https://github.com/$repo.git" "$RUNNER_TEMP/$name"
-            printf '%s\n' '{"schemaVersion":"1.0","citations":[]}' > "$RUNNER_TEMP/$name/grounded-evidence.json"
-            "$CLI" plan "Validate repository build commands" --repository "$RUNNER_TEMP/$name" --output "$RUNNER_TEMP/$name/plan.json"
-            python3 - "$RUNNER_TEMP/$name/plan.json" "$name" <<'PY'
+            mkdir -p "$RUNNER_TEMP/$name/output"
+            printf '%s\n' '{"schemaVersion":"1.0","citations":[]}' > "$RUNNER_TEMP/$name/output/grounded-evidence.json"
+            "$CLI" plan "Validate repository build commands" --repository "$RUNNER_TEMP/$name" --output "$RUNNER_TEMP/$name/output/plan.json"
+            python3 - "$RUNNER_TEMP/$name/output/plan.json" "$name" <<'PY'
           import json, sys
           plan=json.load(open(sys.argv[1]))
           name=sys.argv[2]
