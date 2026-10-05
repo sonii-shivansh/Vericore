@@ -1,0 +1,26 @@
+name: VCORE-001 Live Repository Validation
+
+on:
+  push:
+    branches:
+      - fix/vcore-001-same-package-dependencies
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - repository: runelite/runelite
+            ref: ''
+          - repository: quarkusio/quarkus
+            ref: main
+    uses: ./.github/workflows/live-repository-gate.yml
+    with:
+      repository: ${{ matrix.repository }}
+      ref: ${{ matrix.ref }}
+      run_gemini: false
