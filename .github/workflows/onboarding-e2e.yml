@@ -60,6 +60,20 @@ jobs:
           git init -q
           git config user.name "Vericore E2E"
           git config user.email "e2e@example.com"
+          cat > pom.xml <<'XML'
+          <project xmlns="http://maven.apache.org/POM/4.0.0">
+            <modelVersion>4.0.0</modelVersion>
+            <groupId>example</groupId>
+            <artifactId>vericore-e2e-fixture</artifactId>
+            <version>1.0.0</version>
+          </project>
+          XML
+          cat > mvnw <<'SH'
+          #!/bin/sh
+          printf '%s\n' "$*" >> verification-executed.log
+          exit 0
+          SH
+          chmod +x mvnw
           cat > src/main/java/example/Service.java <<'JAVA'
           package example;
           public class Service {
