@@ -114,6 +114,27 @@ jobs:
           assert any('build system' in item.lower() for item in plan['uncertainties']), plan
           PY
 
+      - name: Validate nested Maven module
+        shell: bash
+        run: |
+          set -euo pipefail
+          CLI="$PWD/build/install/vericore/bin/vericore"
+          fixture="$(mktemp -d)"
+          trap 'rm -rf "$fixture"' EXIT
+          mkdir -p "$fixture/java/output" "$fixture/java/src/main/java"
+          printf '%s\n' '<project/>' > "$fixture/java/pom.xml"
+          printf '%s\n' '{"schemaVersion":"1.0","citations":[]}' > "$fixture/java/output/grounded-evidence.json"
+          "$CLI" plan "Fix PDF processing" --repository "$fixture" --changed java/src/main/java/App.java --output "$fixture/java/output/plan.json"
+          python3 - "$fixture/java/output/plan.json" "$fixture" <<'PY'
+          import json, sys
+          plan=json.load(open(sys.argv[1]))
+          root=sys.argv[2]
+          assert plan['buildSystem']=='MAVEN', plan
+          assert all('/java' in c for c in plan['verificationCommands']), plan
+          assert all('mvn' in c for c in plan['verificationCommands']), plan
+          assert all('gradle' not in c.lower() for c in plan['verificationCommands']), plan
+          PY
+
       - name: Validate real repository build layouts
         shell: bash
         run: |
