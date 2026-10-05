@@ -13,7 +13,14 @@ data class VericoreConfig(
     val excludePaths: List<String> = listOf(
         ".git", ".idea", ".gradle", "build", "target", "node_modules", ".vscode", "out", "dist", ".next"
     ),
-    val maxFilesAnalyze: Int = 5000,
+    /**
+     * Maximum number of Kotlin/Java source files processed by a repository analysis.
+     *
+     * The default is intentionally sized for large real-world repositories. Projects
+     * can raise or lower this per repository in .vericore.json when their hardware and
+     * analysis requirements justify it.
+     */
+    val maxFilesAnalyze: Int = 50_000,
     val gitCommitLimit: Int = 1000,
     val enableCache: Boolean = true,
     val enableParallel: Boolean = true,
