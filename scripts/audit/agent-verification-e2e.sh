@@ -26,7 +26,9 @@ app = sys.argv[1]
 root = pathlib.Path.cwd().resolve()
 
 def mcp(requests):
-    payload = "\n".join(json.dumps(r) for r in requests) + "\n"
+    payload = "
+".join(json.dumps(r) for r in requests) + "
+"
     p = subprocess.run([app, "mcp"], input=payload, text=True, capture_output=True, check=True)
     return [json.loads(line) for line in p.stdout.splitlines() if line.strip()]
 
@@ -44,12 +46,16 @@ prepare = mcp([{
 result = next(r["result"] for r in prepare if r.get("id")==2)
 assert result["isError"] is False, result
 prepared = json.loads(next(x["text"] for x in result["content"]))
-assert prepared["contract"]["fingerprint"]\nassert prepared["plan"]["plannedPaths"] == ["src/main/kotlin/Target.kt"]
+assert prepared["contract"]["fingerprint"]
+assert prepared["plan"]["plannedPaths"] == ["src/main/kotlin/Target.kt"]
 assert (root/"output/agent-change-contract.json").is_file()
 assert (root/"output/engineering-plan.json").is_file()
 
 plan = prepared["plan"]
-(root/"src/main/kotlin/Target.kt").write_text('class Target {\n    fun value(): String = "after"\n}\n')
+(root/"src/main/kotlin/Target.kt").write_text('class Target {
+    fun value(): String = "after"
+}
+')
 
 verify = mcp([{
     "jsonrpc":"2.0","id":3,"method":"initialize",
