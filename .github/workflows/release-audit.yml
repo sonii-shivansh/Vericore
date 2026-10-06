@@ -40,6 +40,11 @@ jobs:
           version="$(./gradlew -q properties | awk -F': ' '$1 == "version" {print $2; exit}')"
           test -n "$version"
           echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Validate installer contracts
+        run: |
+          bash -n scripts/install.sh
+          bash scripts/test-installers.sh
+
       - name: Run CLI audit
         run: bash scripts/audit/cli-audit.sh
       - name: Run MCP audit

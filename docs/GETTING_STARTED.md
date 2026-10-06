@@ -82,7 +82,25 @@ Windows:      bin\vericore.bat --version
 Linux/macOS:  ./bin/vericore --version
 ~~~
 
-## 2. Build from source
+## 2. Install with one command
+
+### Linux x64 / macOS
+
+~~~bash
+curl -fsSL https://raw.githubusercontent.com/sonii-shivansh/Vericore/main/scripts/install.sh | bash
+~~~
+
+### Windows PowerShell (x64)
+
+~~~powershell
+irm https://raw.githubusercontent.com/sonii-shivansh/Vericore/main/scripts/install.ps1 | iex
+~~~
+
+The installer downloads the latest published platform archive, verifies its SHA-256 checksum from SHA256SUMS, installs the bundled Java runtime, and avoids requiring a separate JDK.
+
+Supported targets: Linux x64, macOS x64, macOS arm64, and Windows x64. After installation, open a new shell if PATH was updated.
+
+## 3. Build from source
 
 If you are developing Vericore itself:
 
@@ -108,7 +126,7 @@ Verify it:
 
 For every command, option, default, output artifact, and failure behavior, use the **[CLI Reference](CLI.md)**.
 
-## 3. Check the local installation
+## 4. Check the local installation
 
 From a Git repository:
 
@@ -118,7 +136,7 @@ vericore doctor
 
 doctor checks the Java runtime, Git repository context, effective AI configuration, credentials when configured, and Gemini reachability when applicable. Missing AI credentials are a warning rather than a failure because deterministic repository analysis does not require AI.
 
-## 4. Go deeper
+## 5. Go deeper
 
 | Goal | Read |
 |---|---|
