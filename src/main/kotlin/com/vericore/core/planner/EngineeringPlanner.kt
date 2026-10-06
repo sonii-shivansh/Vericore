@@ -121,11 +121,10 @@ class EngineeringPlanner {
         if (windowsPlatform) {
             "cd /d \"${root.canonicalPath.replace(\"\"\", \"\\\\\\\"\")}\" && $executable $arguments"
         } else {
-            "cd '${root.canonicalPath.replace(\"'\", \"'\\\\''\")} ' && $executable $arguments".replace("' &&", "' &&")
+            "cd '${root.canonicalPath.replace(\"'\", \"'\\\\''\")}' && $executable $arguments"
         }
 
     private fun isWindows(): Boolean = System.getProperty("os.name").lowercase().contains("win")
-
     private fun normalizePath(path: String): String = path.replace('\\', '/').trim().removePrefix("./")
     private fun isRepositoryRelative(path: String): Boolean = path.isNotEmpty() && !path.startsWith('/') && !path.contains(":/") && path != ".." && !path.startsWith("../") && !path.contains("/../")
     private fun isGeneratedPath(path: String): Boolean {
