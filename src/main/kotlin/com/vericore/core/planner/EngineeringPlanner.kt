@@ -45,7 +45,7 @@ enum class RiskLevel { LOW, MEDIUM, HIGH, UNKNOWN }
 class EngineeringPlanner {
     private val buildSystemDetector = BuildSystemDetector()
 
-    fun plan(request: EngineeringPlanRequest): EngineeringPlan {
+    fun plan(request: EngineeringPlanRequest, windowsPlatform: Boolean = isWindows()): EngineeringPlan {
         require(request.changeSummary.isNotBlank()) { "changeSummary must not be blank" }
         require(request.changeSummary.length <= 4000) { "changeSummary must not exceed 4000 characters" }
         require(request.changedPaths.size <= 500) { "changedPaths must not exceed 500 entries" }
