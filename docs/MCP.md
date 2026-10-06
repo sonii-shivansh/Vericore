@@ -130,6 +130,10 @@ Tests / human review
 
 The contract binds repository identity and prepared Git `HEAD` to planned paths, expected components, verification commands, evidence IDs, architecture expectations, and a SHA-256 fingerprint.
 
+### Agent workflow guarantee
+
+`vericore_prepare_change` is the agent-facing preparation boundary. It returns the plan and contract and persists the same contract to `output/agent-change-contract.json` (plus the preparation and plan artifacts). An agent can therefore call MCP `prepare`, modify the repository, then call MCP `get_change_contract` and `verify` without falling back to the CLI to establish the verification boundary.
+
 ### Contract retrieval vs. contract preparation
 
 These operations have intentionally different responsibilities:
