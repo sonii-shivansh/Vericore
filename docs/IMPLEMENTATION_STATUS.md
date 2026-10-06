@@ -6,7 +6,7 @@
 
 - **V2-004 cross-platform verification hardening**: Windows Maven/Gradle wrapper detection, native `cmd` verification command generation, safe executor validation, and Windows prepare→verify CI coverage are implemented.
 
-- **V3-001 Agent Verification flagship flow**: MCP `prepare` now persists the same repository-scoped preparation, plan, and Agent Change Contract artifacts used by the CLI, with a dedicated end-to-end gate covering MCP prepare → repository modification → contract retrieval → MCP verify.
+- **V3-001 Agent Verification flagship flow**: MCP `prepare` now persists the same repository-scoped preparation, plan, and Agent Change Contract artifacts used by the CLI; agents can declare `plannedPaths` before editing, with a dedicated end-to-end gate covering MCP prepare → repository modification → contract retrieval → MCP verify.
 
 - **V2-005 documentation parity**: CI now builds the CLI and verifies that the runtime command surface is represented in `docs/CLI.md`.
 
