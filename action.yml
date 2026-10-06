@@ -74,4 +74,11 @@ runs:
           *) echo "::error::Unsupported Vericore command '$VERICORE_COMMAND'."; exit 1 ;;
         esac
         read -r -a extra_args <<< "$VERICORE_ARGS"
-        vericore "$VERICORE_COMMAND" "$VERICORE_PATH" "\${extra_args[@]}"
+        case "$VERICORE_COMMAND" in
+          verify)
+            vericore verify --path "$VERICORE_PATH" "\${extra_args[@]}"
+            ;;
+          analyze|pr-intelligence|architecture-contract)
+            vericore "$VERICORE_COMMAND" "$VERICORE_PATH" "\${extra_args[@]}"
+            ;;
+        esac
