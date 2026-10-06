@@ -42,6 +42,26 @@ Windows:      bin\vericore.bat --version
 Linux/macOS:  ./bin/vericore --version
 ~~~
 
+### Install with one command
+
+For end users, V2 adds installers that select the published platform archive and verify its SHA-256 checksum before installation.
+
+**Linux x64 / macOS Intel / macOS Apple Silicon:**
+
+~~~bash
+curl -fsSL https://raw.githubusercontent.com/sonii-shivansh/Vericore/main/scripts/install.sh | bash
+~~~
+
+**Windows PowerShell (x64):**
+
+~~~powershell
+irm https://raw.githubusercontent.com/sonii-shivansh/Vericore/main/scripts/install.ps1 | iex
+~~~
+
+The installers use the latest published GitHub Release, verify SHA256SUMS, and install without requiring a separate JDK. The Unix installer uses a user-local directory by default; the Windows installer adds its user-local bin directory to the user PATH. Open a new shell after installation so PATH changes are picked up.
+
+Supported V2 installer targets are Linux x64, macOS x64, macOS arm64, and Windows x64.
+
 ### Build from source
 
 ~~~bash
