@@ -428,7 +428,7 @@ vericore prepare <change-summary> [--path <repository>] [--output <file>] [--pla
 ### Examples
 
 ```bash
-vericore prepare "add payment validation"
+vericore prepare "add payment validation" --planned-path src/main/java/com/example/PaymentService.java
 vericore prepare "add payment validation" --path /workspace/repository
 vericore prepare "add payment validation" --plan-output output/payment-plan.json --contract-output output/payment-contract.json
 ```
