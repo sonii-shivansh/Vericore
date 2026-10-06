@@ -53,7 +53,13 @@ vericore architecture /path/to/repository --json
 
 ### I want to let an AI agent use Vericore
 
-Start the local MCP server:
+Generate a client-ready MCP configuration:
+
+~~~bash
+vericore mcp-config
+~~~
+
+Then start the local MCP server through the generated client configuration, or run it directly:
 
 ~~~bash
 vericore mcp

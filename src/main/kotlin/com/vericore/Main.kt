@@ -15,6 +15,7 @@ import com.vericore.cli.ImprovedAnalyzeCommand
 import com.vericore.cli.ImpactCommand
 import com.vericore.cli.MainCommand
 import com.vericore.cli.McpCommand
+import com.vericore.cli.McpConfigCommand
 import com.vericore.cli.PRIntelligenceCommand
 import com.vericore.cli.PrepareCommand
 import com.vericore.cli.RealityCommand
@@ -47,6 +48,7 @@ fun main(args: Array<String>) {
                 EvolutionCommand(),
                 ServerCommand(),
                 McpCommand(),
+                McpConfigCommand(),
                 SetupCommand(),
                 DoctorCommand()
             )
