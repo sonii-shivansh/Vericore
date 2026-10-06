@@ -2,6 +2,8 @@
 
 > This document distinguishes what Vericore implements today from explicit future work.
 
+- **V2-004 cross-platform verification hardening**: Windows Maven/Gradle wrapper detection, native `cmd` verification command generation, safe executor validation, and Windows prepare→verify CI coverage are implemented.
+
 ## How to read this document
 
 - **Implemented** — present in the repository and covered by tests, CI, or release-gate validation.
