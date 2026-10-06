@@ -4,30 +4,92 @@
 
 # Vericore
 
-**Understand the codebase. Plan the change. Verify the result.**
+**The verification layer for AI coding agents.**
 
-**Evidence-grounded engineering intelligence for Java and Kotlin repositories.**
+**AI can change your repository in seconds. Vericore verifies that it changed what you actually intended.**
 
-Vericore is a local-first Kotlin/JVM tool that turns repository source, dependency structure, Git state, architecture signals, and grounded evidence into deterministic engineering context. It then uses that context to support repository Q&A, impact analysis, engineering plans, and a repository-bound **prepare → change → verify** workflow.
+[![Push on main](https://github.com/sonii-shivansh/Vericore/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/sonii-shivansh/Vericore/actions/workflows/ci.yml)
+[![Release Audit](https://github.com/sonii-shivansh/Vericore/actions/workflows/release-audit.yml/badge.svg?branch=main)](https://github.com/sonii-shivansh/Vericore/actions/workflows/release-audit.yml)
+[![Documentation Parity](https://github.com/sonii-shivansh/Vericore/actions/workflows/docs-parity.yml/badge.svg?branch=main)](https://github.com/sonii-shivansh/Vericore/actions/workflows/docs-parity.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![GitHub release](https://img.shields.io/github/v/release/sonii-shivansh/Vericore)](https://github.com/sonii-shivansh/Vericore/releases)
+
+Vericore is a local-first engineering verification tool for Java and Kotlin repositories. It builds deterministic repository evidence, creates a repository-bound **Agent Change Contract** before a code change, and verifies the actual repository state against that original contract afterward.
+
+~~~text
+                  ┌─────────────────────┐
+                  │   Developer / Agent │
+                  └──────────┬──────────┘
+                             │
+                             │ "Add payment validation"
+                             ▼
+                    ┌────────────────────┐
+                    │      PREPARE       │
+                    │ evidence + plan +  │
+                    │ change contract    │
+                    └─────────┬──────────┘
+                              │
+                              ▼
+                       AI agent edits code
+                              │
+                              ▼
+                    ┌────────────────────┐
+                    │       VERIFY       │
+                    │ compare repository  │
+                    │ state with original │
+                    │ change boundary     │
+                    └─────────┬──────────┘
+                              │
+                       PASS / REVIEW / FAIL
+~~~
+
+### The core idea
+
+AI coding agents are good at making changes. Vericore focuses on a different question:
+
+> **Did the repository change stay inside the boundary that was prepared before the edit?**
+
+The workflow is:
+
+~~~text
+prepare → agent changes → verify
+~~~
+
+The `prepare` step establishes the evidence and verification boundary. The persisted Agent Change Contract binds the intended change to repository identity and the prepared Git state, including planned paths and verification expectations. The `verify` step checks that original contract rather than silently replacing it with a new one derived from the mutated repository.
+
+### Why Vericore
+
+| Without a verification boundary | With Vericore |
+|---|---|
+| Agent edits code | Agent edits code |
+| Review the final diff and infer intent | Verify against a pre-change contract |
+| Repository facts may be spread across tools | Deterministic repository evidence is captured first |
+| AI context can drift from repository state | Evidence remains bound to the observed repository state |
+| Scope expansion can be easy to miss | Unexpected mutations become explicit verification findings |
+
+Vericore is **not** the coding agent and does **not** autonomously modify source code. It is the evidence, planning, and verification layer around the change.
+
+## 30-second example
+
+Prepare the change before editing:
+
+~~~bash
+vericore prepare "add payment validation" \
+  --path /path/to/repository \
+  --planned-path src/main/kotlin/com/example/PaymentService.kt
+~~~
+
+Let your normal coding workflow or AI agent make the change. Then verify the original boundary:
+
+~~~bash
+vericore verify --path /path/to/repository
+~~~
+
+Vericore checks the persisted contract, repository identity, prepared Git state, planned-path scope, dependency/architecture signals, and declared verification commands.
+
+**Think of it as a pre-change contract for AI-assisted software changes.**
 
 > **Core principle:** deterministic repository evidence first; optional AI reasoning second.
-
-## Why Vericore
-
-Most code-change workflows answer two different questions:
-
-1. **What is true about this repository?**
-2. **Did the change stay inside the boundary we intended to make?**
-
-Vericore keeps those questions connected.
-
-| Stage | What Vericore provides |
-|---|---|
-| **Understand** | Source parsing, dependency graphs, cycles, PageRank hotspots, Git signals, architecture findings, Engineering Reality, and grounded evidence |
-| **Plan** | Repository questions, change-impact signals, deterministic PR Intelligence, evidence-backed engineering plans, and a persisted Agent Change Contract |
-| **Verify** | Repository identity, prepared Git HEAD, planned-path scope, change impact, architecture signals, and declared verification commands |
-
-The planner is read-only. The persisted Agent Change Contract becomes the verification boundary used after the change.
 
 ## Quick start
 

@@ -2,6 +2,22 @@
 
 > From a fresh install to repository understanding and a verified code change.
 
+## Recommended path for AI-agent changes
+
+When an AI coding agent is about to modify a repository, establish the verification boundary before the edit:
+
+~~~bash
+vericore prepare "describe the intended change" --path /path/to/repository
+~~~
+
+Then let the agent or developer make the change and verify the original persisted contract:
+
+~~~bash
+vericore verify --path /path/to/repository
+~~~
+
+This prepare → change → verify workflow is Vericore's primary agent-safety path. The verification step evaluates the persisted Agent Change Contract created before the edit.
+
 ## Choose your path
 
 ### I want to understand a repository
