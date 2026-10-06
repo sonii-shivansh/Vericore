@@ -74,7 +74,7 @@ class EngineeringPlannerTest {
                 windowsPlatform = false
             )
             assertEquals(BuildSystem.MAVEN, plan.buildSystem)
-            assertTrue(plan.verificationCommands.all { it.contains("cd '${repo.canonicalPath}/java'") })
+            assertTrue(plan.verificationCommands.all { it.contains(module.canonicalPath) })
             assertTrue(plan.verificationCommands.all { it.contains("mvn") })
             assertTrue(plan.verificationCommands.none { it.contains("gradle") })
         } finally {
