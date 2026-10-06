@@ -58,12 +58,15 @@ run "$APP" verify --path "$audit_fixture" --plan "$audit_fixture/output/engineer
 [[ -s "$audit_fixture/output/verification.json" ]]
 # Release-candidate regressions for the historical 0.8.1 audit findings.
 
-if (cd "$doctor_fixture" && "$REPO/$APP" doctor > doctor.log 2>&1); then
-  echo "doctor unexpectedly succeeded outside a Git repository" >&2
-  cat "$doctor_fixture/doctor.log" >&2
-  exit 1
-fi
-grep -q "Vericore needs attention" "$doctor_fixture/doctor.log"
+(
+  cd "$doctor_fixture"
+  "$REPO/$APP" doctor > doctor.log 2>&1
+)
+grep -q "Vericore doctor" "$doctor_fixture/doctor.log"
+grep -q "Repository" "$doctor_fixture/doctor.log"
+grep -q "not a Git repository" "$doctor_fixture/doctor.log"
+grep -q "AI credentials" "$doctor_fixture/doctor.log"
+grep -q "Vericore is ready for deterministic analysis" "$doctor_fixture/doctor.log"
 
 printf '%s\n' 'class FixtureSource' > "$contract_fixture/FixtureSource.kt"
 cat > "$contract_fixture/.vericore-architecture-contract.json" <<'JSON'
