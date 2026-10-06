@@ -118,7 +118,7 @@ class EngineeringContextGatewayTest {
             git.add().addFilepattern("src/Target.kt").call()
             git.commit().setMessage("initial fixture").setAuthor("VCORE CI", "ci@example.com").call()
 
-            val prepared = EngineeringContextGateway.prepare(root.path, "Update Target safely")
+            val prepared = EngineeringContextGateway.prepare(root.path, "Update Target safely", listOf("src/Target.kt"))
             assertTrue(root.resolve("output/engineering-context.json").isFile)
             assertTrue(root.resolve("output/engineering-plan.json").isFile)
             assertTrue(root.resolve("output/agent-change-contract.json").isFile)
