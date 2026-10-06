@@ -11,6 +11,8 @@ grep -q 'default: latest' "$action_file"
 grep -q 'SHA256SUMS' "$action_file"
 grep -q 'Unsupported Vericore command' "$action_file"
 grep -q 'Unsupported runner' "$action_file"
+grep -q 'vericore verify --path' "$action_file"
+grep -q 'vericore "$VERICORE_COMMAND" "$VERICORE_PATH"' "$action_file"
 
 for input in command path version args; do
   grep -q "^  $input:" "$action_file"
