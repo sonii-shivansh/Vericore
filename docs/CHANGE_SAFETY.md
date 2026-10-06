@@ -110,6 +110,8 @@ The goal is to fail closed when the prepared verification boundary is no longer 
 
 ## AI-agent workflow
 
+An MCP-compatible agent can use the same boundary. MCP `prepare` persists the exact artifacts required by subsequent `get_change_contract` and `verify` calls; the agent does not need to switch to the CLI between preparation and verification.
+
 An MCP-compatible agent can use the same boundary:
 
 ```text
