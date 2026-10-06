@@ -199,6 +199,23 @@ For a faster boundary check, use:
 vericore verify --path /path/to/repository --contract-only
 ~~~
 
+## GitHub Action
+
+Run Vericore in GitHub Actions without installing Java or wiring the CLI manually:
+
+~~~yaml
+- uses: actions/checkout@v7
+- uses: sonii-shivansh/Vericore@main
+  with:
+    command: analyze
+~~~
+
+The reusable action downloads a published Vericore archive, verifies its SHA-256 checksum, and runs the selected command. Supported commands are `analyze`, `verify`, `pr-intelligence`, and `architecture-contract`.
+
+For stable consumer workflows, pin the action to a release tag or immutable commit.
+
+See [GitHub Action](docs/GITHUB_ACTION.md) for inputs, supported runners, and verification semantics.
+
 ## AI-agent integration
 
 Vericore exposes a local MCP stdio server for AI-agent workflows:
