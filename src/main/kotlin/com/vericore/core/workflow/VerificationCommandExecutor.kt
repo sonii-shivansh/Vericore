@@ -77,15 +77,15 @@ object VerificationCommandExecutor {
         val normalized = command.trim()
         val root = repository.canonicalPath
         val prefix = if (isWindows()) {
-            "cd /d \"${root.replace(\"\"\", \"\\\\\\\"\")}\" && "
+            "cd /d \"" + root + "\" && "
         } else {
-            "cd '${root.replace(\"'\", \"'\\\\''\")}' && "
+            "cd '" + root.replace("'", "'\\''") + "' && "
         }
         if (!normalized.startsWith(prefix)) return false
         val actual = normalized.removePrefix(prefix).trim()
         if (actual.isEmpty()) return false
         if (actual.contains(';') || actual.contains("&&") || actual.contains("||") || actual.contains('|') ||
-            actual.contains('`') || actual.contains("\${'$'}(") || actual.contains('>') || actual.contains('<')) return false
+            actual.contains('`') || actual.contains("\$(") || actual.contains('>') || actual.contains('<')) return false
         val executable = actual.substringBefore(' ').trim()
         val allowed = if (isWindows()) {
             setOf("mvnw.cmd", "gradlew.bat", "mvn", "gradle")
