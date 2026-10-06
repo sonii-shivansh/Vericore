@@ -6,12 +6,13 @@
 
 | Need | Read |
 |---|---|
+| **Understand Vericore quickly** | **[README](../README.md)** |
 | Install and run Vericore | [Getting Started](GETTING_STARTED.md) |
 | **Use a command** | **[CLI Reference](CLI.md)** |
 | Understand the system | [Architecture](ARCHITECTURE.md) |
 | Analyze or review a change | [Change Safety](CHANGE_SAFETY.md) |
-| Integrate REST | [API](API.md) |
 | Integrate an AI agent | [MCP](MCP.md) |
+| Integrate REST | [API](API.md) |
 | Understand repository identity | [Engineering Reality](ENGINEERING_REALITY.md) |
 | Understand deterministic PR review | [PR Intelligence](PR_INTELLIGENCE.md) |
 | Review data handling | [Data & Privacy](DATA_PRIVACY.md) |
@@ -25,59 +26,61 @@
 
 ### New user
 
-```text
+~~~text
+README
+   ↓
 Getting Started
-      ↓
+   ↓
 CLI Reference
-      ↓
-Architecture
-```
+~~~
 
 ### Developer
 
-```text
+~~~text
+README
+   ↓
 Getting Started
-      ↓
+   ↓
 CLI Reference
-      ↓
+   ↓
 Architecture
-      ↓
+   ↓
 Development
-```
+~~~
 
 ### Safe code-change workflow
 
-```text
-CLI Reference
-      ↓
+~~~text
+README
+   ↓
 Engineering Reality
-      ↓
+   ↓
 Change Safety
-      ↓
+   ↓
 prepare → change → verify
-```
+~~~
 
 ### AI-agent integration
 
-```text
+~~~text
+README
+   ↓
 Architecture
-      ↓
-Engineering Reality
-      ↓
+   ↓
 MCP
-      ↓
+   ↓
 Change Safety
-```
+~~~
 
 ### Release review
 
-```text
+~~~text
 Release Readiness / Release Record
       ↓
 Release certification
       ↓
 Release workflow
-```
+~~~
 
 ## Documentation rules
 
@@ -88,7 +91,7 @@ The documentation set has four purposes:
 3. **Release documentation** — release certification evidence and the current release record.
 4. **Project policy** — contribution, security, DCO, conduct, licensing, and trademarks at the repository root.
 
-Historical implementation notes may explain a design decision, but they must not be presented as current product instructions. The `main` branch may contain unreleased hardening after the latest published tag.
+Historical implementation notes may explain a design decision, but they must not be presented as current product instructions. The main branch may contain unreleased hardening after the latest published tag.
 
 ### Source of truth
 
@@ -108,7 +111,7 @@ Every user-facing CLI command must have its syntax, options, defaults, outputs, 
 
 ### Avoid duplication
 
-- Keep the README concise and link to the CLI reference instead of duplicating every command.
+- Keep the README focused on product behavior and the fastest path to first use.
 - Keep Getting Started task-oriented; do not turn it into a second command reference.
 - Keep API and MCP documents focused on their respective protocols.
 - Prefer links to authoritative contracts instead of copying the same rules into multiple documents.
