@@ -96,7 +96,7 @@ Both revisions must be supplied together.
 ```json
 {
   "repoPath":"/absolute/path/to/repository",
-  "changeSummary":"Add payment retry validation"
+  "changeSummary":"Add payment retry validation",\n  "plannedPaths":["src/main/kotlin/com/example/PaymentService.kt"]
 }
 ```
 
@@ -128,7 +128,7 @@ Verify ORIGINAL persisted contract
 Tests / human review
 ```
 
-The contract binds repository identity and prepared Git `HEAD` to planned paths, expected components, verification commands, evidence IDs, architecture expectations, and a SHA-256 fingerprint.
+The contract binds repository identity and prepared Git `HEAD` to planned paths. Agents may supply explicit `plannedPaths` during MCP/CLI preparation so the verification scope can be declared before source edits exist., expected components, verification commands, evidence IDs, architecture expectations, and a SHA-256 fingerprint.
 
 ### Agent workflow guarantee
 
