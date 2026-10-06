@@ -4,6 +4,11 @@
 
 - Added a CI-enforced CLI documentation parity audit so runtime command changes cannot silently leave `docs/CLI.md` stale.
 
+## V2-003 — First-run onboarding
+
+- Formalized the existing `setup` + `doctor` first-run onboarding contract in the implementation roadmap.
+- Clean-environment onboarding E2E validates that the installed CLI exposes both onboarding commands.
+
 ## V2-004 — Cross-platform installation and verification hardening
 
 - Added platform-aware Maven/Gradle wrapper detection for Windows (`mvnw.cmd`, `gradlew.bat`).
