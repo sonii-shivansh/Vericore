@@ -43,5 +43,5 @@ jobs:
           ./gradlew --no-daemon clean test installDist
       - name: Run V3-001 agent verification E2E
         env:
-          APP: \${{ github.workspace }}/build/install/vericore/bin/vericore
+          APP: ${{ github.workspace }}/build/install/vericore/bin/vericore
         run: bash scripts/audit/agent-verification-e2e.sh
