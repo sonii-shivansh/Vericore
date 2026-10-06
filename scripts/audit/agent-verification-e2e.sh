@@ -6,6 +6,19 @@ FIXTURE="$(mktemp -d)"
 trap 'rm -rf "$FIXTURE"' EXIT
 
 mkdir -p "$FIXTURE/src/main/kotlin"
+cat > "$FIXTURE/pom.xml" <<'EOF'
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.vericore</groupId>
+  <artifactId>v3-e2e-fixture</artifactId>
+  <version>1.0-SNAPSHOT</version>
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+  </properties>
+</project>
+EOF
 cat > "$FIXTURE/src/main/kotlin/Target.kt" <<'EOF'
 class Target {
     fun value(): String = "before"
