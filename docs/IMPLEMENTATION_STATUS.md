@@ -48,7 +48,17 @@
 - idempotent contract decision history persistence via `--record`
 - architecture artifact schema `1.1` with persisted dependency edges
 
-### Engineering context and Reality
+### Installation and first-run onboarding
+
+- one-command installers for Linux x64, macOS x64, macOS arm64, and Windows x64;
+- SHA-256 verification against published release checksums before installation;
+- bundled Java runtime for released platform archives, avoiding a separate JDK for normal end-user execution;
+- first-run `doctor` diagnostics that work outside a Git repository;
+- `doctor --path <directory>` for explicit repository diagnostics;
+- warning-versus-failure semantics for missing optional AI credentials and Git repository context;
+- clean-environment onboarding E2E coverage and release-audit regression coverage for the installation/Doctor contract.
+
+## Engineering context and Reality
 
 - versioned deterministic engineering-context snapshots
 - repository-relative file fingerprints

@@ -62,6 +62,22 @@ The installers use the latest published GitHub Release, verify SHA256SUMS, and i
 
 Supported V2 installer targets are Linux x64, macOS x64, macOS arm64, and Windows x64.
 
+### First-run Doctor
+
+After installation, verify the local runtime immediately. You do **not** need to be inside a Git repository:
+
+~~~bash
+vericore doctor
+~~~
+
+To diagnose a specific repository, pass its path explicitly:
+
+~~~bash
+vericore doctor --path /path/to/repository
+~~~
+
+Doctor treats missing Git repository context and optional AI credentials as warnings; invalid diagnostic paths and runtime/configuration failures remain actionable failures.
+
 ### Build from source
 
 ~~~bash

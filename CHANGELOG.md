@@ -8,6 +8,12 @@ All notable changes to Vericore are documented here. The format follows [Keep a 
 
 Changes after the published `0.8.2` release only. The current `main` branch is ahead of `v0.8.2` with post-release hardening that is intentionally not part of the published artifact set.
 
+### V2 product hardening currently on `main`
+
+- Added one-command installers for Linux x64, macOS x64, macOS arm64, and Windows x64 with SHA-256 verification and bundled-runtime installation.
+- Added first-run Doctor behavior that works immediately after installation, supports `--path`, distinguishes warnings from actionable failures, and is covered by clean-environment onboarding E2E validation.
+- Updated CLI, Getting Started, and release-audit contracts so documentation and automated behavior match the V2 installation/onboarding surface.
+
 ### Post-release hardening currently on `main`
 
 - Added dedicated live/black-box validation workflows for the VCORE-001 through VCORE-004 remediation tracks.
