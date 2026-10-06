@@ -37,14 +37,14 @@ prepare = mcp([{
     "jsonrpc":"2.0","id":2,"method":"tools/call",
     "params":{"name":"vericore_prepare_change","arguments":{
         "repoPath":str(root),
-        "changeSummary":"Update Target value safely"
+        "changeSummary":"Update Target value safely","plannedPaths":["src/main/kotlin/Target.kt"]
     }}
 }])
 
 result = next(r["result"] for r in prepare if r.get("id")==2)
 assert result["isError"] is False, result
 prepared = json.loads(next(x["text"] for x in result["content"]))
-assert prepared["contract"]["fingerprint"]
+assert prepared["contract"]["fingerprint"]\nassert prepared["plan"]["plannedPaths"] == ["src/main/kotlin/Target.kt"]
 assert (root/"output/agent-change-contract.json").is_file()
 assert (root/"output/engineering-plan.json").is_file()
 
