@@ -115,3 +115,7 @@ Every user-facing CLI command must have its syntax, options, defaults, outputs, 
 - Keep Getting Started task-oriented; do not turn it into a second command reference.
 - Keep API and MCP documents focused on their respective protocols.
 - Prefer links to authoritative contracts instead of copying the same rules into multiple documents.
+
+### Automated parity
+
+The CI workflow in `.github/workflows/docs-parity.yml` builds the CLI and compares its runtime `--help` command surface with the command headings in [CLI Reference](CLI.md). A newly added or removed user-facing CLI command therefore fails CI until the reference is updated in the same change.
