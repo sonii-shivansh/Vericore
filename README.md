@@ -204,8 +204,10 @@ vericore verify --path /path/to/repository --contract-only
 Vericore exposes a local MCP stdio server for AI-agent workflows:
 
 ~~~bash
-vericore mcp
+vericore mcp-config
 ~~~
+
+This prints a client-ready `mcpServers.vericore` configuration using the installed `vericore` executable. Start the server directly with `vericore mcp` when needed.
 
 The intended pattern is:
 

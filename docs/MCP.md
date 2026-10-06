@@ -21,8 +21,23 @@ The process uses newline-delimited JSON-RPC over stdin/stdout. stdout is reserve
 Client configuration uses the stable executable boundary:
 
 ```text
-command: /absolute/path/to/vericore
-args: ["mcp"]
+vericore mcp-config
+```
+
+This prints:
+
+```json
+{
+  "mcpServers": {
+    "vericore": {
+      "command": "vericore",
+      "args": ["mcp"]
+    }
+  }
+}
+```
+
+The generated configuration intentionally uses the `vericore` executable from `PATH`, so it remains portable across machines. If your MCP client requires an absolute executable path, replace `command` with the installed Vericore path while keeping `args` as `["mcp"]`.
 ```
 
 For the complete CLI command contract, see [CLI Reference](CLI.md).

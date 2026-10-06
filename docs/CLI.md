@@ -578,7 +578,21 @@ The command takes no CLI options. It uses stdin/stdout for the MCP protocol. See
 
 ---
 
-## 19. `setup`
+## 19. `mcp-config`
+
+Print a client-ready MCP stdio configuration using the installed `vericore` command.
+
+### Syntax
+
+```bash
+vericore mcp-config
+```
+
+The output is JSON in the common `mcpServers` configuration shape and can be copied into an MCP client configuration. It intentionally references `vericore` from `PATH` rather than embedding a machine-specific absolute path.
+
+---
+
+## 20. `setup`
 
 Configure AI credentials for the current user.
 
@@ -610,7 +624,7 @@ Never commit a real API key to `.vericore.json` or source control.
 
 ---
 
-## 20. `doctor`
+## 21. `doctor`
 
 Check the local Vericore installation, repository context, AI configuration, and provider reachability when credentials are configured.
 
