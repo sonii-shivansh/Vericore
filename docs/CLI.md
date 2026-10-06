@@ -617,14 +617,17 @@ Check the local Vericore installation, repository context, AI configuration, and
 ### Syntax
 
 ```bash
-vericore doctor
+vericore doctor [--path <directory>]
 ```
+
+`--path` defaults to the current directory. The command is safe to run immediately after installation, even outside a Git repository.
 
 ### What it checks
 
 - Vericore version;
 - Java runtime (21+ required);
-- current directory is a Git repository;
+- diagnostic path exists;
+- Git repository context when the diagnostic path is a repository;
 - effective AI provider configuration;
 - AI credentials when configured;
 - Gemini API reachability when Gemini credentials are available;

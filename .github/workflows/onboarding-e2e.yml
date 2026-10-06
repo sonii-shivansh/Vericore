@@ -41,6 +41,21 @@ jobs:
           "$CLI" setup --help
           "$CLI" doctor --help
 
+      - name: Verify first-run diagnostics outside a Git repository
+        shell: bash
+        run: |
+          CLI=./build/install/vericore/bin/vericore
+          FIRST_RUN_DIR="$RUNNER_TEMP/vericore-first-run"
+          rm -rf "$FIRST_RUN_DIR"
+          mkdir -p "$FIRST_RUN_DIR"
+          cd "$FIRST_RUN_DIR"
+          "$GITHUB_WORKSPACE/build/install/vericore/bin/vericore" doctor | tee first-run-doctor.txt
+          grep -q "Vericore doctor" first-run-doctor.txt
+          grep -q "Java runtime" first-run-doctor.txt
+          grep -q "Repository" first-run-doctor.txt
+          grep -q "not a Git repository" first-run-doctor.txt
+          grep -q "AI credentials" first-run-doctor.txt
+
       - name: Verify clean checkout diagnostics
         shell: bash
         run: |
