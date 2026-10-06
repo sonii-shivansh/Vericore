@@ -46,7 +46,8 @@ class EngineeringPlannerTest {
                     changedPaths = listOf("src/PaymentService.java"),
                     evidence = GroundedEvidence(citations = emptyList()),
                     repositoryPath = repo.path
-                )
+                ),
+                windowsPlatform = false
             )
             assertEquals(BuildSystem.MAVEN, plan.buildSystem)
             assertTrue(plan.verificationCommands.all { it.contains("mvn") })
@@ -114,7 +115,8 @@ class EngineeringPlannerTest {
                     changeSummary = "Update payment validation",
                     evidence = GroundedEvidence(citations = emptyList()),
                     repositoryPath = repo.path
-                )
+                ),
+                windowsPlatform = false
             )
             assertEquals(BuildSystem.MAVEN, plan.buildSystem)
             assertTrue(plan.verificationCommands.all { it.contains("./mvnw") })
