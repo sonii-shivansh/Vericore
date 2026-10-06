@@ -13,17 +13,17 @@ data class BuildSystemInfo(
 
 /** Detects repository build descriptors, preferring executable wrappers and explicit root descriptors. */
 class BuildSystemDetector {
-    fun detect(root: File): BuildSystemInfo {
+    fun detect(root: File, windowsPlatform: Boolean = isWindows()): BuildSystemInfo {
         require(root.isDirectory) { "Repository path is not a directory: ${root.path}" }
 
-        val mvnw = File(root, "mvnw")
-        if (mvnw.isFile && mvnw.canExecute()) {
-            return BuildSystemInfo(BuildSystem.MAVEN, "./mvnw", "mvnw")
+        val mvnw = File(root, if (windowsPlatform) "mvnw.cmd" else "mvnw")
+        if (mvnw.isFile && (windowsPlatform || mvnw.canExecute())) {
+            return BuildSystemInfo(BuildSystem.MAVEN, if (windowsPlatform) "mvnw.cmd" else "./mvnw", mvnw.name)
         }
 
-        val gradlew = File(root, "gradlew")
-        if (gradlew.isFile && gradlew.canExecute()) {
-            return BuildSystemInfo(BuildSystem.GRADLE, "./gradlew", "gradlew")
+        val gradlew = File(root, if (windowsPlatform) "gradlew.bat" else "gradlew")
+        if (gradlew.isFile && (windowsPlatform || gradlew.canExecute())) {
+            return BuildSystemInfo(BuildSystem.GRADLE, if (windowsPlatform) "gradlew.bat" else "./gradlew", gradlew.name)
         }
 
         if (File(root, "pom.xml").isFile) {
@@ -35,20 +35,16 @@ class BuildSystemDetector {
             return BuildSystemInfo(BuildSystem.GRADLE, "gradle", "Gradle build files")
         }
 
-        // Some real repositories are polyglot monorepos whose primary Java build lives
-        // one directory below the repository root (for example java/pom.xml). Only
-        // accept a nested build when exactly one supported build root exists; this
-        // avoids guessing between unrelated modules.
         val nested = root.listFiles()
             ?.filter { it.isDirectory && !it.name.startsWith(".") }
             ?.flatMap { child ->
                 val candidates = mutableListOf<BuildSystemInfo>()
-                val childMvnw = File(child, "mvnw")
-                val childGradlew = File(child, "gradlew")
-                if (childMvnw.isFile && childMvnw.canExecute()) {
-                    candidates += BuildSystemInfo(BuildSystem.MAVEN, "./mvnw", "${child.name}/mvnw", child.name)
-                } else if (childGradlew.isFile && childGradlew.canExecute()) {
-                    candidates += BuildSystemInfo(BuildSystem.GRADLE, "./gradlew", "${child.name}/gradlew", child.name)
+                val childMvnw = File(child, if (windowsPlatform) "mvnw.cmd" else "mvnw")
+                val childGradlew = File(child, if (windowsPlatform) "gradlew.bat" else "gradlew")
+                if (childMvnw.isFile && (windowsPlatform || childMvnw.canExecute())) {
+                    candidates += BuildSystemInfo(BuildSystem.MAVEN, if (windowsPlatform) "mvnw.cmd" else "./mvnw", "${child.name}/${childMvnw.name}", child.name)
+                } else if (childGradlew.isFile && (windowsPlatform || childGradlew.canExecute())) {
+                    candidates += BuildSystemInfo(BuildSystem.GRADLE, if (windowsPlatform) "gradlew.bat" else "./gradlew", "${child.name}/${childGradlew.name}", child.name)
                 } else if (File(child, "pom.xml").isFile) {
                     candidates += BuildSystemInfo(BuildSystem.MAVEN, "mvn", "${child.name}/pom.xml", child.name)
                 } else if (File(child, "build.gradle").isFile || File(child, "build.gradle.kts").isFile ||
@@ -63,4 +59,6 @@ class BuildSystemDetector {
         return if (nested.size == 1) nested.single()
         else BuildSystemInfo(BuildSystem.UNKNOWN, null, "no recognized build descriptor")
     }
+
+    private fun isWindows(): Boolean = System.getProperty("os.name").lowercase().contains("win")
 }
