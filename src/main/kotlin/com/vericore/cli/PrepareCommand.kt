@@ -4,6 +4,7 @@ import com.vericore.core.workflow.EngineeringPreparation
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.default
+import com.github.ajalt.clikt.parameters.options.multiple
 import com.github.ajalt.clikt.parameters.options.option
 import java.io.File
 import kotlinx.coroutines.runBlocking
@@ -17,10 +18,11 @@ class PrepareCommand : CliktCommand(name = "prepare", help = "Prepare an evidenc
     private val output by option("--output", help = "Preparation artifact path")
     private val planOutput by option("--plan-output", help = "Engineering plan artifact path")
     private val contractOutput by option("--contract-output", help = "Agent change contract artifact path")
+    private val plannedPaths by option("--planned-path", help = "Repository-relative path the agent expects to modify").multiple()
 
     override fun run() {
         val root = File(path).canonicalFile
-        val result = runBlocking { EngineeringPreparation.prepare(root.path, changeSummary) }
+        val result = runBlocking { EngineeringPreparation.prepare(root.path, changeSummary, plannedPaths) }
         val json = Json { prettyPrint = true; encodeDefaults = true }
         val artifactPath = output ?: root.resolve("output/engineering-context.json").path
         val artifact = File(artifactPath).let { if (it.isAbsolute) it else root.resolve(it.path) }.apply { parentFile?.mkdirs() }

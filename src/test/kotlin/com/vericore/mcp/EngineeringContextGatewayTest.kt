@@ -103,4 +103,41 @@ class EngineeringContextGatewayTest {
             assertEquals(contract, decoded)
         } finally { root.deleteRecursively() }
     }
+    @Test
+    fun `prepare persists the agent verification artifacts for MCP callers`() {
+        val root = Files.createTempDirectory("gateway-prepare").toFile()
+        val git = Git.init().setDirectory(root).call()
+        try {
+            git.repository.config.setString("user", null, "name", "VCORE CI")
+            git.repository.config.setString("user", null, "email", "ci@example.com")
+            git.repository.config.save()
+
+            val source = root.resolve("src/Target.kt")
+            source.parentFile.mkdirs()
+            source.writeText("class Target { fun value() = \"before\" }")
+            git.add().addFilepattern("src/Target.kt").call()
+            git.commit().setMessage("initial fixture").setAuthor("VCORE CI", "ci@example.com").call()
+
+            val prepared = EngineeringContextGateway.prepare(root.path, "Update Target safely", listOf("src/Target.kt"))
+            assertTrue(root.resolve("output/engineering-context.json").isFile)
+            assertTrue(root.resolve("output/engineering-plan.json").isFile)
+            assertTrue(root.resolve("output/agent-change-contract.json").isFile)
+
+            val returned = Json.decodeFromJsonElement(
+                com.vericore.core.workflow.EngineeringPreparationResult.serializer(),
+                prepared
+            )
+            assertEquals(returned.contract.fingerprint, returned.plan.contractFingerprint)
+            val persisted = EngineeringContextGateway.changeContract(root.path)
+            assertEquals(
+                returned.contract,
+                Json.decodeFromJsonElement(AgentChangeContract.serializer(), persisted)
+            )
+        } finally {
+            git.close()
+            root.deleteRecursively()
+        }
+    }
+
 }
+

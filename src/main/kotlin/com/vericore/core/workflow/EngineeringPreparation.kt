@@ -38,7 +38,7 @@ data class EngineeringPreparationResult(
 object EngineeringPreparation {
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
-    suspend fun prepare(repoPath: String, changeSummary: String): EngineeringPreparationResult {
+    suspend fun prepare(repoPath: String, changeSummary: String, plannedPaths: List<String> = emptyList()): EngineeringPreparationResult {
         val root = File(repoPath).canonicalFile
         require(root.isDirectory) { "Repository path is not a directory: $repoPath" }
         val config = ConfigLoader.loadForRepository(root.path)
@@ -75,7 +75,7 @@ object EngineeringPreparation {
         val initialPlan = EngineeringPlanner().plan(
             EngineeringPlanRequest(
                 changeSummary = changeSummary,
-                changedPaths = changeSet.files.map { it.path },
+                changedPaths = plannedPaths.ifEmpty { changeSet.files.map { it.path } },
                 evidence = evidence,
                 repositoryPath = root.path
             )

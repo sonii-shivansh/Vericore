@@ -23,6 +23,13 @@ All notable changes to Vericore are documented here. The format follows [Keep a 
 
 ## [Unreleased]
 
+### V3 — Agent Verification
+
+- MCP `vericore_prepare_change` now persists the same preparation, plan, and Agent Change Contract artifacts as the CLI.
+- MCP/CLI preparation accepts explicit planned paths before source edits, making prepare → change → verify a bounded agent workflow.
+- Added a dedicated V3-001 end-to-end gate covering MCP preparation, repository modification, contract retrieval, and verification.
+
+
 Changes after the published `0.8.2` release only. The current `main` branch is ahead of `v0.8.2` with post-release hardening that is intentionally not part of the published artifact set.
 
 ### V2 product hardening currently on `main`
