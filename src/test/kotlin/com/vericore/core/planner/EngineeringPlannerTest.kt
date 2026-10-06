@@ -269,7 +269,7 @@ class EngineeringPlannerTest {
             )
 
             assertEquals(BuildSystem.MAVEN, plan.buildSystem)
-            assertTrue(plan.verificationCommands.all { it.contains("${module.canonicalPath.replace("\\", "\\\\")}") })
+            assertTrue(plan.verificationCommands.all { it.contains(module.canonicalPath) })
             assertTrue(plan.verificationCommands.all { it.contains("mvnw.cmd") })
         } finally {
             repo.deleteRecursively()
