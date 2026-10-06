@@ -4,6 +4,8 @@
 
 - **V2-004 cross-platform verification hardening**: Windows Maven/Gradle wrapper detection, native `cmd` verification command generation, safe executor validation, and Windows prepare→verify CI coverage are implemented.
 
+- **V2-005 documentation parity**: CI now builds the CLI and verifies that the runtime command surface is represented in `docs/CLI.md`.
+
 ## How to read this document
 
 - **Implemented** — present in the repository and covered by tests, CI, or release-gate validation.
