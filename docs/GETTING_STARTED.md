@@ -128,13 +128,19 @@ For every command, option, default, output artifact, and failure behavior, use t
 
 ## 4. Check the local installation
 
-From a Git repository:
+Run Doctor immediately after installation; you do not need to be inside a Git repository:
 
 ~~~bash
 vericore doctor
 ~~~
 
-doctor checks the Java runtime, Git repository context, effective AI configuration, credentials when configured, and Gemini reachability when applicable. Missing AI credentials are a warning rather than a failure because deterministic repository analysis does not require AI.
+For a specific repository, provide its path:
+
+~~~bash
+vericore doctor --path /path/to/repository
+~~~
+
+Doctor checks the Java runtime, diagnostic path, Git repository context when available, effective AI configuration, credentials when configured, and Gemini reachability when applicable. Being outside a Git repository is a warning—not a failure—because Doctor is also an installation and configuration diagnostic. Missing AI credentials are a warning rather than a failure because deterministic repository analysis does not require AI.
 
 ## 5. Go deeper
 

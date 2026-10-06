@@ -3,16 +3,23 @@ package com.vericore.cli
 import com.vericore.core.Version
 import com.vericore.core.ai.AISetup
 import com.vericore.core.ai.AISetupResult
-import com.vericore.core.exceptions.ConfigurationException
 import com.vericore.core.config.ConfigLoader
 import com.vericore.core.config.UserConfigStore
+import com.vericore.core.exceptions.ConfigurationException
 import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.parameters.options.default
+import com.github.ajalt.clikt.parameters.options.option
 import java.io.File
 
-class DoctorCommand(private val repositoryRoot: () -> File = { File(".").absoluteFile }) : CliktCommand(
+class DoctorCommand : CliktCommand(
     name = "doctor",
     help = "Check the local Vericore installation and configuration"
 ) {
+    private val path by option(
+        "--path",
+        help = "Repository path to inspect; defaults to the current directory"
+    ).default(".")
+
     override fun run() {
         var failures = 0
         var warnings = 0
@@ -35,15 +42,30 @@ class DoctorCommand(private val repositoryRoot: () -> File = { File(".").absolut
         echo("")
 
         val javaMajor = Runtime.version().feature()
-        check("Java runtime", javaMajor >= 21, "Java $javaMajor${if (javaMajor >= 21) " (supported)" else " (requires 21+)"}")
+        check(
+            "Java runtime",
+            javaMajor >= 21,
+            "Java $javaMajor${if (javaMajor >= 21) " (supported)" else " (requires 21+)"}"
+        )
 
-        val root = repositoryRoot().canonicalFile
-        check("Repository", File(root, ".git").exists(), root.absolutePath)
+        val root = File(path).canonicalFile
+        val pathExists = root.exists()
+        check("Diagnostic path", pathExists, root.absolutePath)
 
-        val canonicalProjectConfig = File(ConfigLoader.DEFAULT_CONFIG_FILE)
-        val legacyProjectConfig = File(ConfigLoader.LEGACY_CONFIG_FILE)
+        val isGitRepository = pathExists && File(root, ".git").exists()
+        if (isGitRepository) {
+            check("Repository", true, root.absolutePath)
+        } else {
+            warn(
+                "Repository",
+                "not a Git repository at ${root.absolutePath}; repository-specific diagnostics are skipped"
+            )
+        }
+
+        val canonicalProjectConfig = File(root, ConfigLoader.DEFAULT_CONFIG_FILE)
+        val legacyProjectConfig = File(root, ConfigLoader.LEGACY_CONFIG_FILE)
         val userConfig = UserConfigStore.load()
-        val effective = ConfigLoader.loadEffective()
+        val effective = ConfigLoader.loadEffective(canonicalProjectConfig.absolutePath)
 
         val canonicalGeminiEnvironmentKey = System.getenv("VERICORE_GEMINI_API_KEY")?.trim().orEmpty()
         val canonicalGoogleEnvironmentKey = System.getenv("VERICORE_GOOGLE_API_KEY")?.trim().orEmpty()
@@ -67,13 +89,20 @@ class DoctorCommand(private val repositoryRoot: () -> File = { File(".").absolut
             userConfig?.ai?.apiKey?.isNotBlank() == true -> "user configuration"
             else -> "not configured"
         }
+
         check("AI provider", effective.ai.provider.isNotBlank(), effective.ai.provider.ifBlank { "not configured" })
         if (resolvedApiKey.isBlank()) {
-            warn("AI credentials", "not configured (AI commands require a provider key; run 'vericore setup' to configure one)")
+            warn(
+                "AI credentials",
+                "not configured (AI commands require a provider key; run 'vericore setup' to configure one)"
+            )
         } else {
             check("AI credentials", true, "configured via $keySource")
             if (legacyGeminiEnvironmentKey.isNotBlank() || legacyGoogleEnvironmentKey.isNotBlank()) {
-                warn("Legacy AI configuration", "Deprecated CodeContext environment variable detected; migrate to the VERICORE_* equivalent.")
+                warn(
+                    "Legacy AI configuration",
+                    "Deprecated CodeContext environment variable detected; migrate to the VERICORE_* equivalent."
+                )
             }
         }
 
