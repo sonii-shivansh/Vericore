@@ -70,6 +70,34 @@ jobs:
           $version = (& .\build\install\vericore\bin\vericore.bat --version).Trim()
           if ($version -notmatch [regex]::Escape('${{ steps.version.outputs.version }}')) { throw "Unexpected CLI version: $version" }
 
+      - name: Verify Windows prepare-to-verify execution
+        shell: pwsh
+        run: |
+          $fixture = Join-Path $env:RUNNER_TEMP "vericore-windows-e2e"
+          if (Test-Path $fixture) { Remove-Item -Recurse -Force $fixture }
+          New-Item -ItemType Directory -Force -Path (Join-Path $fixture "src\main\java\example") | Out-Null
+          Set-Content -Path (Join-Path $fixture "pom.xml") -Value '<project />'
+          Set-Content -Path (Join-Path $fixture "mvnw.cmd") -Value @("@echo off", "echo %*>>verification-executed.log", "exit /b 0")
+          Set-Content -Path (Join-Path $fixture "src\main\java\example\Service.java") -Value 'package example; public class Service { public String greet(String name) { return "Hello " + name; } }'
+          git -C $fixture init -q
+          git -C $fixture config user.name "Vericore E2E"
+          git -C $fixture config user.email "e2e@example.com"
+          git -C $fixture add .
+          git -C $fixture commit -qm "initial fixture"
+          Set-Content -Path (Join-Path $fixture "src\main\java\example\Service.java") -Value 'package example; public class Service { public String greet(String name) { return "Hello, " + name; } }'
+          $cli = Join-Path $env:GITHUB_WORKSPACE "build\install\vericore\bin\vericore.bat"
+          & $cli analyze $fixture
+          if ($LASTEXITCODE -ne 0) { throw "Windows fixture analyze failed with exit code $LASTEXITCODE" }
+          & $cli prepare "verify Windows change safely" --path $fixture
+          if ($LASTEXITCODE -ne 0) { throw "Windows fixture prepare failed with exit code $LASTEXITCODE" }
+          $contract = Get-Content (Join-Path $fixture "output\agent-change-contract.json") -Raw
+          if ($contract -notmatch "mvnw\.cmd") { throw "Prepared contract did not contain Windows Maven wrapper command" }
+          if ($contract -notmatch "cd /d") { throw "Prepared contract did not contain Windows cmd directory syntax" }
+          & $cli verify --path $fixture --output (Join-Path $fixture "output\verify.json")
+          if ($LASTEXITCODE -ne 0) { throw "Windows fixture verify failed with exit code $LASTEXITCODE" }
+          $executed = Get-Content (Join-Path $fixture "verification-executed.log") -Raw
+          if ($executed -notmatch "-B test") { throw "Windows verification did not execute Maven test command" }
+          if ($executed -notmatch "-B package -DskipTests") { throw "Windows verification did not execute Maven package command" }
       - name: Upload distribution
         uses: actions/upload-artifact@v7
         with:

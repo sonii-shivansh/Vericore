@@ -45,7 +45,7 @@ enum class RiskLevel { LOW, MEDIUM, HIGH, UNKNOWN }
 class EngineeringPlanner {
     private val buildSystemDetector = BuildSystemDetector()
 
-    fun plan(request: EngineeringPlanRequest): EngineeringPlan {
+    fun plan(request: EngineeringPlanRequest, windowsPlatform: Boolean = isWindows()): EngineeringPlan {
         require(request.changeSummary.isNotBlank()) { "changeSummary must not be blank" }
         require(request.changeSummary.length <= 4000) { "changeSummary must not exceed 4000 characters" }
         require(request.changedPaths.size <= 500) { "changedPaths must not exceed 500 entries" }
@@ -53,7 +53,7 @@ class EngineeringPlanner {
         val root = File(request.repositoryPath).canonicalFile
         require(root.isDirectory) { "Repository path is not a directory: ${request.repositoryPath}" }
         val repository = root.path
-        val build = buildSystemDetector.detect(root)
+        val build = buildSystemDetector.detect(root, windowsPlatform)
 
         val citations = request.evidence.citations.sortedBy { it.id }
         val plannedPaths = request.changedPaths.map(::normalizePath).filter { it.isNotEmpty() && !it.startsWith("<outside-") && !isGeneratedPath(it) }.distinct().sorted().take(100)
@@ -88,16 +88,15 @@ class EngineeringPlanner {
             if (plannedPaths.isEmpty()) add("No explicit planned paths were supplied; change-scope safety can only evaluate evidence-derived context.")
             if (build.system == BuildSystem.UNKNOWN) add("Verification commands were intentionally omitted because the repository build system could not be identified safely.")
         }
-        val shellRoot = repository.replace("'", "'\\''")
-        val workingRoot = if (build.workingDirectory.isEmpty()) shellRoot else "$shellRoot/${build.workingDirectory.replace("'", "'\\''")}"
+        val verificationRoot = if (build.workingDirectory.isEmpty()) root else File(root, build.workingDirectory).canonicalFile
         val verificationCommands = when (build.system) {
             BuildSystem.MAVEN -> listOf(
-                "cd '$workingRoot' && ${build.executable} -B test",
-                "cd '$workingRoot' && ${build.executable} -B package -DskipTests"
+                buildCommand(verificationRoot, build.executable!!, "-B test", windowsPlatform),
+                buildCommand(verificationRoot, build.executable!!, "-B package -DskipTests", windowsPlatform)
             )
             BuildSystem.GRADLE -> listOf(
-                "cd '$workingRoot' && ${build.executable} --no-daemon clean test",
-                "cd '$workingRoot' && ${build.executable} --no-daemon build"
+                buildCommand(verificationRoot, build.executable!!, "--no-daemon clean test", windowsPlatform),
+                buildCommand(verificationRoot, build.executable!!, "--no-daemon build", windowsPlatform)
             )
             BuildSystem.UNKNOWN -> emptyList()
         }
@@ -117,6 +116,13 @@ class EngineeringPlanner {
         return provisional.copy(contractFingerprint = com.vericore.core.workflow.AgentChangeContract.fingerprintFor(provisional))
     }
 
+    private fun buildCommand(root: File, executable: String, arguments: String, windowsPlatform: Boolean): String =
+        if (windowsPlatform) {
+            "cd /d \"" + root.canonicalPath + "\" && " + executable + " " + arguments
+        } else {
+            "cd '" + root.canonicalPath.replace("'", "'\\''") + "' && " + executable + " " + arguments
+        }
+    private fun isWindows(): Boolean = System.getProperty("os.name").lowercase().contains("win")
     private fun normalizePath(path: String): String = path.replace('\\', '/').trim().removePrefix("./")
     private fun isRepositoryRelative(path: String): Boolean = path.isNotEmpty() && !path.startsWith('/') && !path.contains(":/") && path != ".." && !path.startsWith("../") && !path.contains("/../")
     private fun isGeneratedPath(path: String): Boolean {

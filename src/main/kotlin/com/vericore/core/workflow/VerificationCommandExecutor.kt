@@ -75,18 +75,25 @@ object VerificationCommandExecutor {
 
     private fun isSafeRepositoryBuildCommand(repository: File, command: String): Boolean {
         val normalized = command.trim()
-        val root = repository.canonicalPath.replace("'", "'\\''")
-        val prefix = "cd '$root' && "
+        val root = repository.canonicalPath
+        val prefix = if (isWindows()) {
+            "cd /d \"" + root + "\" && "
+        } else {
+            "cd '" + root.replace("'", "'\\''") + "' && "
+        }
         if (!normalized.startsWith(prefix)) return false
         val actual = normalized.removePrefix(prefix).trim()
         if (actual.isEmpty()) return false
-        if (actual.contains(';') || actual.contains("&&") || actual.contains("||") || actual.contains('`') || actual.contains("${'$'}(") || actual.contains('>')) return false
-        return actual == "./mvnw" || actual.startsWith("./mvnw ") ||
-            actual == "./gradlew" || actual.startsWith("./gradlew ") ||
-            actual == "mvn" || actual.startsWith("mvn ") ||
-            actual == "gradle" || actual.startsWith("gradle ")
+        if (actual.contains(';') || actual.contains("&&") || actual.contains("||") || actual.contains('|') ||
+            actual.contains('`') || actual.contains("\$(") || actual.contains('>') || actual.contains('<')) return false
+        val executable = actual.substringBefore(' ').trim()
+        val allowed = if (isWindows()) {
+            setOf("mvnw.cmd", "gradlew.bat", "mvn", "gradle")
+        } else {
+            setOf("./mvnw", "./gradlew", "mvn", "gradle")
+        }
+        return executable in allowed
     }
-
     private fun shell(): String = if (isWindows()) "cmd" else "sh"
     private fun shellArgument(): String = if (isWindows()) "/c" else "-lc"
     private fun isWindows(): Boolean = System.getProperty("os.name").lowercase().contains("win")

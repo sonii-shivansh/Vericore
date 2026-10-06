@@ -1,4 +1,11 @@
 # Changelog
+## V2-004 — Cross-platform installation and verification hardening
+
+- Added platform-aware Maven/Gradle wrapper detection for Windows (`mvnw.cmd`, `gradlew.bat`).
+- Generated `prepare` verification commands now use native Windows `cmd` syntax while retaining the existing Unix shell form.
+- Hardened verification-command validation to accept only the platform-native wrapper/system build executables.
+- Added Windows prepare-to-verify E2E coverage to the Windows CI path.
+
 
 All notable changes to Vericore are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and the project uses [Semantic Versioning](https://semver.org/).
 

@@ -46,7 +46,8 @@ class EngineeringPlannerTest {
                     changedPaths = listOf("src/PaymentService.java"),
                     evidence = GroundedEvidence(citations = emptyList()),
                     repositoryPath = repo.path
-                )
+                ),
+                windowsPlatform = false
             )
             assertEquals(BuildSystem.MAVEN, plan.buildSystem)
             assertTrue(plan.verificationCommands.all { it.contains("mvn") })
@@ -69,10 +70,11 @@ class EngineeringPlannerTest {
                     changedPaths = listOf("java/src/main/java/App.java"),
                     evidence = GroundedEvidence(citations = emptyList()),
                     repositoryPath = repo.path
-                )
+                ),
+                windowsPlatform = false
             )
             assertEquals(BuildSystem.MAVEN, plan.buildSystem)
-            assertTrue(plan.verificationCommands.all { it.contains("cd '${repo.canonicalPath}/java'") })
+            assertTrue(plan.verificationCommands.all { it.contains(module.canonicalPath) })
             assertTrue(plan.verificationCommands.all { it.contains("mvn") })
             assertTrue(plan.verificationCommands.none { it.contains("gradle") })
         } finally {
@@ -114,7 +116,8 @@ class EngineeringPlannerTest {
                     changeSummary = "Update payment validation",
                     evidence = GroundedEvidence(citations = emptyList()),
                     repositoryPath = repo.path
-                )
+                ),
+                windowsPlatform = false
             )
             assertEquals(BuildSystem.MAVEN, plan.buildSystem)
             assertTrue(plan.verificationCommands.all { it.contains("./mvnw") })
@@ -220,6 +223,57 @@ class EngineeringPlannerTest {
                     evidence = GroundedEvidence(citations = emptyList())
                 )
             )
+        }
+    }
+    @Test
+    fun `Windows Maven plan uses cmd syntax and Windows wrapper`() {
+        val repo = Files.createTempDirectory("vericore-windows-plan").toFile()
+        try {
+            File(repo, "pom.xml").writeText("<project/>\n")
+            File(repo, "mvnw.cmd").writeText("@echo off\r\nexit /b 0\r\n")
+
+            val plan = planner.plan(
+                EngineeringPlanRequest(
+                    changeSummary = "Update payment validation",
+                    changedPaths = listOf("src/PaymentService.java"),
+                    evidence = GroundedEvidence(citations = emptyList()),
+                    repositoryPath = repo.path
+                ),
+                windowsPlatform = true
+            )
+
+            assertEquals(BuildSystem.MAVEN, plan.buildSystem)
+            assertTrue(plan.verificationCommands.all { it.startsWith("cd /d \"") })
+            assertTrue(plan.verificationCommands.all { it.contains("mvnw.cmd") })
+            assertTrue(plan.verificationCommands.none { it.contains("./mvnw") })
+        } finally {
+            repo.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `Windows nested build plan targets module path`() {
+        val repo = Files.createTempDirectory("vericore-windows-nested-plan").toFile()
+        try {
+            val module = File(repo, "java").apply { mkdirs() }
+            File(module, "pom.xml").writeText("<project/>\n")
+            File(module, "mvnw.cmd").writeText("@echo off\r\nexit /b 0\r\n")
+
+            val plan = planner.plan(
+                EngineeringPlanRequest(
+                    changeSummary = "Update PDF processing",
+                    changedPaths = listOf("java/src/main/java/App.java"),
+                    evidence = GroundedEvidence(citations = emptyList()),
+                    repositoryPath = repo.path
+                ),
+                windowsPlatform = true
+            )
+
+            assertEquals(BuildSystem.MAVEN, plan.buildSystem)
+            assertTrue(plan.verificationCommands.all { it.contains(module.canonicalPath) })
+            assertTrue(plan.verificationCommands.all { it.contains("mvnw.cmd") })
+        } finally {
+            repo.deleteRecursively()
         }
     }
 }
