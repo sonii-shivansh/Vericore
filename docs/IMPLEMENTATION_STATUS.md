@@ -2,6 +2,8 @@
 
 > This document distinguishes what Vericore implements today from explicit future work.
 
+- **V2-003 first-run onboarding**: the existing `setup` flow is exposed in the installed CLI, paired with `doctor`, and covered by clean-environment onboarding E2E validation.
+
 - **V2-004 cross-platform verification hardening**: Windows Maven/Gradle wrapper detection, native `cmd` verification command generation, safe executor validation, and Windows prepare→verify CI coverage are implemented.
 
 - **V2-005 documentation parity**: CI now builds the CLI and verifies that the runtime command surface is represented in `docs/CLI.md`.
