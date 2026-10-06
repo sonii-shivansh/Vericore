@@ -70,7 +70,8 @@ class EngineeringPlannerTest {
                     changedPaths = listOf("java/src/main/java/App.java"),
                     evidence = GroundedEvidence(citations = emptyList()),
                     repositoryPath = repo.path
-                )
+                ),
+                windowsPlatform = false
             )
             assertEquals(BuildSystem.MAVEN, plan.buildSystem)
             assertTrue(plan.verificationCommands.all { it.contains("cd '${repo.canonicalPath}/java'") })
