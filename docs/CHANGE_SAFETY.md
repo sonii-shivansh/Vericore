@@ -17,7 +17,7 @@ The workflow is deterministic. It does not authorize a change and it does not de
 From the repository you intend to change:
 
 ```bash
-vericore prepare "add OAuth login"
+vericore prepare "add OAuth login" --planned-path src/main/java/com/example/AuthController.java
 ```
 
 Make the change, run your normal tests, then verify the persisted contract:
@@ -45,6 +45,8 @@ vericore verify \
 | `output/engineering-context.json` | Repository state, evidence, and context used by planning |
 | `output/engineering-plan.json` | Deterministic, evidence-backed implementation plan |
 | `output/agent-change-contract.json` | Persisted repository-bound verification contract |
+
+When the change is not already present in the working tree, supply explicit planned paths during preparation. For example, `--planned-path src/main/java/com/example/AuthController.java`. MCP agents can supply the same paths in `plannedPaths`.
 
 The contract binds the planned change to repository identity and the Git `HEAD` observed during preparation when Git metadata is available.
 
