@@ -53,7 +53,6 @@ class EngineeringPlanner {
         val root = File(request.repositoryPath).canonicalFile
         require(root.isDirectory) { "Repository path is not a directory: ${request.repositoryPath}" }
         val repository = root.path
-        val windowsPlatform = isWindows()
         val build = buildSystemDetector.detect(root, windowsPlatform)
 
         val citations = request.evidence.citations.sortedBy { it.id }
@@ -119,11 +118,10 @@ class EngineeringPlanner {
 
     private fun buildCommand(root: File, executable: String, arguments: String, windowsPlatform: Boolean): String =
         if (windowsPlatform) {
-            "cd /d \"${root.canonicalPath.replace(\"\"\", \"\\\\\\\"\")}\" && $executable $arguments"
+            "cd /d \"" + root.canonicalPath + "\" && " + executable + " " + arguments
         } else {
-            "cd '${root.canonicalPath.replace(\"'\", \"'\\\\''\")}' && $executable $arguments"
+            "cd '" + root.canonicalPath.replace("'", "'\\''") + "' && " + executable + " " + arguments
         }
-
     private fun isWindows(): Boolean = System.getProperty("os.name").lowercase().contains("win")
     private fun normalizePath(path: String): String = path.replace('\\', '/').trim().removePrefix("./")
     private fun isRepositoryRelative(path: String): Boolean = path.isNotEmpty() && !path.startsWith('/') && !path.contains(":/") && path != ".." && !path.startsWith("../") && !path.contains("/../")
