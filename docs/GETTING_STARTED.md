@@ -1,6 +1,65 @@
 # Getting Started
 
-> From a fresh checkout to a useful Vericore analysis, grounded evidence, and a safe change workflow.
+> From a fresh install to repository understanding and a verified code change.
+
+## Choose your path
+
+### I want to understand a repository
+
+Start with:
+
+~~~bash
+vericore analyze /path/to/repository
+~~~
+
+Then open:
+
+~~~text
+/path/to/repository/output/index.html
+~~~
+
+For machine-readable deterministic state:
+
+~~~bash
+vericore evidence-graph /path/to/repository --json
+vericore reality /path/to/repository --json
+~~~
+
+### I want to understand a risky change
+
+Use deterministic repository evidence:
+
+~~~bash
+vericore repo-qa "Why is PaymentService risky?" --path /path/to/repository
+vericore impact /path/to/repository src/main/kotlin/com/example/PaymentService.kt --json
+vericore architecture /path/to/repository --json
+~~~
+
+### I want to let an AI agent use Vericore
+
+Start the local MCP server:
+
+~~~bash
+vericore mcp
+~~~
+
+Then read [MCP](MCP.md) for the canonical tool surface and trust boundary.
+
+### I want to make a code change safely
+
+Prepare the repository before editing:
+
+~~~bash
+vericore prepare "add payment validation" --path /path/to/repository
+~~~
+
+Make the code change, run the project's normal tests, then verify:
+
+~~~bash
+vericore verify --path /path/to/repository
+~~~
+
+The verification step is bound to the persisted Agent Change Contract created by prepare.
 
 ## Prerequisites
 
@@ -12,153 +71,63 @@ For a source build, use JDK 21 or newer:
 
 Released platform archives bundle a Java runtime, so a separate JDK is not required for normal end-user use.
 
-## 1. Build from source
+## 1. Install from a release archive
 
-```bash
+Download the published archive from [GitHub Releases](https://github.com/sonii-shivansh/Vericore/releases).
+
+Platform archives bundle a Java runtime for normal end-user execution:
+
+~~~text
+Windows:      bin\vericore.bat --version
+Linux/macOS:  ./bin/vericore --version
+~~~
+
+## 2. Build from source
+
+If you are developing Vericore itself:
+
+~~~bash
 git clone https://github.com/sonii-shivansh/Vericore.git
 cd Vericore
 ./gradlew --no-daemon clean test
 ./gradlew --no-daemon installDist
-```
+~~~
 
 The installed CLI is:
 
-```text
+~~~text
 build/install/vericore/bin/vericore
-```
+~~~
 
 Verify it:
 
-```bash
+~~~bash
 ./build/install/vericore/bin/vericore --version
 ./build/install/vericore/bin/vericore --help
-```
+~~~
 
-For every command, option, default, and output artifact, use the **[CLI Reference](CLI.md)**.
+For every command, option, default, output artifact, and failure behavior, use the **[CLI Reference](CLI.md)**.
 
-## 2. Check the local installation
+## 3. Check the local installation
 
 From a Git repository:
 
-```bash
+~~~bash
 vericore doctor
-```
+~~~
 
-`doctor` checks the Java runtime, Git repository context, effective AI configuration, credentials when configured, and Gemini reachability when applicable. Missing AI credentials are a warning rather than a failure because deterministic analysis does not require AI.
+doctor checks the Java runtime, Git repository context, effective AI configuration, credentials when configured, and Gemini reachability when applicable. Missing AI credentials are a warning rather than a failure because deterministic repository analysis does not require AI.
 
-## 3. Analyze a repository
-
-```bash
-vericore analyze /path/to/repository
-```
-
-The default HTML report is written to:
-
-```text
-/path/to/repository/output/index.html
-```
-
-Create machine-readable repository-state artifacts when needed:
-
-```bash
-vericore evidence-graph /path/to/repository --json
-vericore reality /path/to/repository --json
-```
-
-`evidence-graph` and `reality` consume the analysis snapshot produced by `analyze`, so keep the artifacts from the same repository state. `evidence-graph` binds its graph to a Git commit when one is available.
-
-## 4. Review impact and architecture
-
-```bash
-vericore impact /path/to/repository src/main/kotlin/com/example/PaymentService.kt --json
-vericore pr-intelligence /path/to/repository --json
-vericore architecture /path/to/repository --json
-```
-
-For an explicit Git revision pair:
-
-```bash
-vericore pr-intelligence /path/to/repository --base main --head feature/payment-retry --json
-```
-
-## 5. Ask repository questions
-
-For deterministic, grounded evidence:
-
-```bash
-vericore repo-qa "Why is PaymentService risky?" --path /path/to/repository
-```
-
-For optional AI reasoning:
-
-```bash
-vericore setup
-vericore doctor
-vericore ask "What are the main architectural hotspots in this repository?"
-```
-
-Read [Data & Privacy](DATA_PRIVACY.md) before enabling provider-backed features.
-
-## 6. Prepare and verify a change safely
-
-Create a repository-bound engineering plan and persisted change contract:
-
-```bash
-vericore prepare "add payment validation" --path /path/to/repository
-```
-
-The default artifacts are:
-
-```text
-output/engineering-context.json
-output/engineering-plan.json
-output/agent-change-contract.json
-```
-
-Make the code change, run normal tests, then verify the **original** persisted contract:
-
-```bash
-vericore verify --path /path/to/repository
-```
-
-Do not regenerate or replace the contract between `prepare` and `verify`.
-
-See [Change Safety](CHANGE_SAFETY.md) for the contract semantics and failure states.
-
-## 7. Run the local REST API
-
-```bash
-vericore server --host 127.0.0.1 --port 8080
-```
-
-In another terminal:
-
-```bash
-curl --fail http://127.0.0.1:8080/health
-```
-
-Keep the server on loopback for local use. The application does not provide deployment-grade authentication, authorization, tenant isolation, or TLS.
-
-See [API](API.md).
-
-## 8. Connect an AI agent with MCP
-
-```bash
-vericore mcp
-```
-
-The server uses stdin/stdout for MCP protocol traffic. See [MCP](MCP.md) for the tool catalog and safety boundary.
-
-## Common next steps
+## 4. Go deeper
 
 | Goal | Read |
 |---|---|
-| Find exact command syntax | [CLI Reference](CLI.md) |
-| Understand system architecture | [Architecture](ARCHITECTURE.md) |
-| Understand Engineering Reality | [Engineering Reality](ENGINEERING_REALITY.md) |
+| Exact command syntax | [CLI Reference](CLI.md) |
+| Understand deterministic repository identity | [Engineering Reality](ENGINEERING_REALITY.md) |
 | Understand safe changes | [Change Safety](CHANGE_SAFETY.md) |
-| Integrate REST | [API](API.md) |
+| Understand the system | [Architecture](ARCHITECTURE.md) |
 | Integrate an AI agent | [MCP](MCP.md) |
+| Integrate REST | [API](API.md) |
 | Review data handling | [Data & Privacy](DATA_PRIVACY.md) |
 | Contribute code | [Development](DEVELOPMENT.md) |
 
