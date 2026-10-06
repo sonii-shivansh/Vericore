@@ -50,7 +50,7 @@ assert (root/"output/agent-change-contract.json").is_file()
 assert (root/"output/engineering-plan.json").is_file()
 
 plan = prepared["plan"]
-(root/"src/main/kotlin/Target.kt").write_text('class Target {
+(root/"src/main/kotlin/Target.kt").write_text(chr(10).join(["class Target {", "    fun value(): String = \"after\"", "}"]) + chr(10))
     fun value(): String = "after"
 }
 ')
