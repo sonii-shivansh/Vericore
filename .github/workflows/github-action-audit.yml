@@ -1,0 +1,37 @@
+name: GitHub Action Audit
+
+on:
+  pull_request:
+    paths:
+      - action.yml
+      - docs/GITHUB_ACTION.md
+      - scripts/audit/github-action-audit.sh
+      - .github/workflows/github-action-audit.yml
+  push:
+    branches: [main]
+    paths:
+      - action.yml
+      - docs/GITHUB_ACTION.md
+      - scripts/audit/github-action-audit.sh
+      - .github/workflows/github-action-audit.yml
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Validate and execute Vericore Action
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Validate action metadata
+        run: bash scripts/audit/github-action-audit.sh
+
+      - name: Execute action against repository
+        uses: sonii-shivansh/Vericore@feat/p0-github-action
+        with:
+          command: analyze
+          path: .
