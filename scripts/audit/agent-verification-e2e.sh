@@ -51,9 +51,6 @@ assert (root/"output/engineering-plan.json").is_file()
 
 plan = prepared["plan"]
 (root/"src/main/kotlin/Target.kt").write_text(chr(10).join(["class Target {", "    fun value(): String = \"after\"", "}"]) + chr(10))
-    fun value(): String = "after"
-}
-')
 
 verify = mcp([{
     "jsonrpc":"2.0","id":3,"method":"initialize",
