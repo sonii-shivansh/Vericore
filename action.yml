@@ -26,32 +26,32 @@ runs:
     - name: Install Vericore
       shell: bash
       env:
-        VERICORE_VERSION: \${{ inputs.version }}
+        VERICORE_VERSION: ${{ inputs.version }}
       run: |
         set -euo pipefail
-        case "\${RUNNER_OS}/\${RUNNER_ARCH}" in
+        case "${RUNNER_OS}/${RUNNER_ARCH}" in
           Linux/X64) asset="linux-x64"; archive_ext="tar.gz" ;;
           macOS/X64) asset="macos-x64"; archive_ext="tar.gz" ;;
           macOS/ARM64) asset="macos-arm64"; archive_ext="tar.gz" ;;
-          *) echo "::error::Unsupported runner \${RUNNER_OS}/\${RUNNER_ARCH}."; exit 1 ;;
+          *) echo "::error::Unsupported runner ${RUNNER_OS}/${RUNNER_ARCH}."; exit 1 ;;
         esac
         if [[ "$VERICORE_VERSION" == "latest" ]]; then
           base_url="https://github.com/sonii-shivansh/Vericore/releases/latest/download"
         else
-          tag="\${VERICORE_VERSION#v}"
-          base_url="https://github.com/sonii-shivansh/Vericore/releases/download/v\${tag}"
+          tag="${VERICORE_VERSION#v}"
+          base_url="https://github.com/sonii-shivansh/Vericore/releases/download/v${tag}"
         fi
-        archive="vericore-\${asset}.\${archive_ext}"
-        tmp_dir="\$(mktemp -d)"
+        archive="vericore-${asset}.${archive_ext}"
+        tmp_dir="$(mktemp -d)"
         trap 'rm -rf "$tmp_dir"' EXIT
         curl --fail --location --retry 3 --retry-delay 1 --silent --show-error -o "$tmp_dir/$archive" "$base_url/$archive"
         curl --fail --location --retry 3 --retry-delay 1 --silent --show-error -o "$tmp_dir/SHA256SUMS" "$base_url/SHA256SUMS"
-        expected="\$(awk -v file="$archive" '$2 == file {print $1; exit}' "$tmp_dir/SHA256SUMS")"
+        expected="$(awk -v file="$archive" '$2 == file {print $1; exit}' "$tmp_dir/SHA256SUMS")"
         [[ -n "$expected" ]] || { echo "::error::No SHA-256 entry found for $archive."; exit 1; }
         if command -v sha256sum >/dev/null 2>&1; then
-          actual="\$(sha256sum "$tmp_dir/$archive" | awk '{print $1}')"
+          actual="$(sha256sum "$tmp_dir/$archive" | awk '{print $1}')"
         else
-          actual="\$(shasum -a 256 "$tmp_dir/$archive" | awk '{print $1}')"
+          actual="$(shasum -a 256 "$tmp_dir/$archive" | awk '{print $1}')"
         fi
         [[ "$actual" == "$expected" ]] || { echo "::error::SHA-256 verification failed for $archive."; exit 1; }
         install_root="$RUNNER_TEMP/vericore"
@@ -64,9 +64,9 @@ runs:
     - name: Run Vericore
       shell: bash
       env:
-        VERICORE_COMMAND: \${{ inputs.command }}
-        VERICORE_PATH: \${{ inputs.path }}
-        VERICORE_ARGS: \${{ inputs.args }}
+        VERICORE_COMMAND: ${{ inputs.command }}
+        VERICORE_PATH: ${{ inputs.path }}
+        VERICORE_ARGS: ${{ inputs.args }}
       run: |
         set -euo pipefail
         case "$VERICORE_COMMAND" in
@@ -76,9 +76,9 @@ runs:
         read -r -a extra_args <<< "$VERICORE_ARGS"
         case "$VERICORE_COMMAND" in
           verify)
-            vericore verify --path "$VERICORE_PATH" "\${extra_args[@]}"
+            vericore verify --path "$VERICORE_PATH" "${extra_args[@]}"
             ;;
           analyze|pr-intelligence|architecture-contract)
-            vericore "$VERICORE_COMMAND" "$VERICORE_PATH" "\${extra_args[@]}"
+            vericore "$VERICORE_COMMAND" "$VERICORE_PATH" "${extra_args[@]}"
             ;;
         esac
