@@ -1,4 +1,9 @@
 # Changelog
+
+## V2-005 — Documentation and release UX hardening
+
+- Added a CI-enforced CLI documentation parity audit so runtime command changes cannot silently leave `docs/CLI.md` stale.
+
 ## V2-004 — Cross-platform installation and verification hardening
 
 - Added platform-aware Maven/Gradle wrapper detection for Windows (`mvnw.cmd`, `gradlew.bat`).
