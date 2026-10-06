@@ -26,7 +26,8 @@ app = sys.argv[1]
 root = pathlib.Path.cwd().resolve()
 
 def mcp(requests):
-    payload = chr(10).join(json.dumps(r) for r in requests) + chr(10)\n    p = subprocess.run([app, "mcp"], input=payload, text=True, capture_output=True, check=True)
+    payload = chr(10).join(json.dumps(r) for r in requests) + chr(10)
+    p = subprocess.run([app, "mcp"], input=payload, text=True, capture_output=True, check=True)
     return [json.loads(line) for line in p.stdout.splitlines() if line.strip()]
 
 prepare = mcp([{
