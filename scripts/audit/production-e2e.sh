@@ -142,7 +142,7 @@ def rpc(requests, name):
     p=subprocess.run([str(cli),"mcp"],input=payload,text=True,capture_output=True,check=True)
     (out/f"{name}.stdout").write_text(p.stdout)
     (out/f"{name}.stderr").write_text(p.stderr)
-    return {x.get("id"):x for x in map(json.loads,p.stdout.splitlines()) if x.strip()}
+    return {x.get("id"):x for x in (json.loads(line) for line in p.stdout.splitlines() if line.strip())}
 responses=rpc([
  {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"production-e2e","version":"1.0"}}},
  {"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}},
