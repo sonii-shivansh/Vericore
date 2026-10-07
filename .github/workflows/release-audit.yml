@@ -107,16 +107,14 @@ jobs:
     uses: ./.github/workflows/onboarding-e2e.yml
     secrets: inherit
 
-  phase1:
-    name: Phase 1 regression
+  live-e2e:
+    name: Live end-to-end application validation
     needs: deterministic-audit
-    uses: ./.github/workflows/phase1-regression.yml
-    secrets: inherit
-
-  phase4:
-    name: Phase 4 regression
-    needs: deterministic-audit
-    uses: ./.github/workflows/phase4-regression.yml
+    uses: ./.github/workflows/end-to-end-live-validation.yml
+    with:
+      repository: spring-projects/spring-petclinic
+      ref: main
+      run_ai: false
     secrets: inherit
 
   live-petclinic:
@@ -162,7 +160,7 @@ jobs:
   readiness-certificate:
     name: Generate release readiness certificate
     if: always()
-    needs: [deterministic-audit, windows-ci, verification, platform, onboarding, phase1, phase4, live-petclinic, live-runelite, output-petclinic, output-runelite]
+    needs: [deterministic-audit, windows-ci, verification, platform, onboarding, live-e2e, live-petclinic, live-runelite, output-petclinic, output-runelite]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     outputs:
@@ -203,8 +201,7 @@ jobs:
             --check "verification=${{ needs.verification.result }}" \
             --check "platform=${{ needs.platform.result }}" \
             --check "onboarding=${{ needs.onboarding.result }}" \
-            --check "phase1=${{ needs.phase1.result }}" \
-            --check "phase4=${{ needs.phase4.result }}" \
+            --check "live-e2e=${{ needs.live-e2e.result }}" \
             --check "live-petclinic=${{ needs.live-petclinic.result }}" \
             --check "live-runelite=${{ needs.live-runelite.result }}" \
             --check "output-petclinic=${{ needs.output-petclinic.result }}" \
