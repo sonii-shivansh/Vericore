@@ -4,6 +4,7 @@ set -euo pipefail
 CLI=${CLI:?CLI must point to the installed Vericore executable}
 REPO=${1:?repository path required}
 OUT="${2:-$REPO/output/production-e2e}"
+COMMAND_TIMEOUT_SECONDS="${VERICORE_E2E_COMMAND_TIMEOUT_SECONDS:-180}"
 mkdir -p "$OUT"
 export OUT
 
@@ -13,7 +14,7 @@ capture() {
   local name="$1"; shift
   echo "===== $name ====="
   set +e
-  "$@" >"$OUT/$name.stdout" 2>"$OUT/$name.stderr"
+  timeout --signal=TERM --kill-after=15s "${COMMAND_TIMEOUT_SECONDS}s" "$@" >"$OUT/$name.stdout" 2>"$OUT/$name.stderr"
   local rc=$?
   set -e
   printf '%s\n' "$rc" >"$OUT/$name.exit"
@@ -31,10 +32,14 @@ expect_success() {
 expect_failure() {
   local name="$1"; shift
   set +e
-  "$@" >"$OUT/$name.stdout" 2>"$OUT/$name.stderr"
+  timeout --signal=TERM --kill-after=15s "${COMMAND_TIMEOUT_SECONDS}s" "$@" >"$OUT/$name.stdout" 2>"$OUT/$name.stderr"
   local rc=$?
   set -e
   printf '%s\n' "$rc" >"$OUT/$name.exit"
+  test "$rc" -ne 124 || {
+    echo "Command timed out after ${COMMAND_TIMEOUT_SECONDS}s: $name" >&2
+    return 1
+  }
   test "$rc" -ne 0 || {
     echo "Expected failure but command succeeded: $name" >&2
     return 1
