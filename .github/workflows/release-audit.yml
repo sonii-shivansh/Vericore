@@ -7,8 +7,6 @@ on:
       ready:
         description: "Whether the exact candidate passed every required release-audit check"
         value: ${{ jobs.readiness-certificate.outputs.ready }}
-  pull_request:
-    branches: [ main ]
   push:
     branches: [ main ]
 
