@@ -1,0 +1,25 @@
+name: Production E2E Verification
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/end-to-end-live-validation.yml"
+      - "scripts/audit/production-e2e.sh"
+      - "src/**"
+      - "build.gradle.kts"
+      - "settings.gradle.kts"
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  production-e2e:
+    name: Authoritative production E2E
+    uses: ./.github/workflows/end-to-end-live-validation.yml
+    with:
+      repository: spring-projects/spring-petclinic
+      ref: main
+      run_ai: false
