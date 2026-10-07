@@ -41,6 +41,16 @@ on:
       - "src/**"
       - "build.gradle.kts"
       - "settings.gradle.kts"
+  push:
+    branches:
+      - main
+      - "test/**"
+    paths:
+      - ".github/workflows/end-to-end-live-validation.yml"
+      - "scripts/audit/production-e2e.sh"
+      - "src/**"
+      - "build.gradle.kts"
+      - "settings.gradle.kts"
 
 permissions:
   contents: read
