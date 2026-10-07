@@ -51,7 +51,7 @@ runs:
         base_url="https://github.com/sonii-shivansh/Vericore/releases/download/v${tag}"
         archive="vericore-${tag}-${asset}.${archive_ext}"
         tmp_dir="$(mktemp -d)"
-        trap 'rm -rf "$tmp_dir"' EXIT
+        cleanup_dir="$tmp_dir"
         curl --fail --location --retry 3 --retry-delay 1 --silent --show-error -o "$tmp_dir/$archive" "$base_url/$archive"
         curl --fail --location --retry 3 --retry-delay 1 --silent --show-error -o "$tmp_dir/SHA256SUMS" "$base_url/SHA256SUMS"
         expected="$(awk -v file="$archive" '$2 == file {print $1; exit}' "$tmp_dir/SHA256SUMS")"
@@ -68,6 +68,7 @@ runs:
         tar -xzf "$tmp_dir/$archive" -C "$install_root"
         echo "$install_root/vericore/bin" >> "$GITHUB_PATH"
         "$install_root/vericore/bin/vericore" --version
+        rm -rf "$cleanup_dir"
 
     - name: Run Vericore
       shell: bash
