@@ -229,7 +229,7 @@ GitHub Actions is the authoritative automated execution environment for release 
 
 ## Current release line
 
-`v0.8.2` is the **latest published Vericore release**, published on 2026-10-04. The current `main` branch is 15 commits ahead of the `v0.8.2` tag and contains post-release hardening and VCORE validation workflows. Those changes are development work and must not be described as part of the published `v0.8.2` artifact set. Earlier public releases were published under the former project name.
+`v0.8.2` is the **latest published Vericore release**, published on 2026-10-04. The current `main` branch is 31 commits ahead of the `v0.8.2` tag and contains post-release hardening and VCORE validation workflows. Those changes are development work and must not be described as part of the published `v0.8.2` artifact set. Earlier public releases were published under the former project name.
 
 ## Current limitations
 
