@@ -1,6 +1,23 @@
 name: End-to-End Live Repository Validation
 
 on:
+  workflow_call:
+    inputs:
+      repository:
+        description: "Real public Java/Kotlin repository to validate"
+        required: false
+        type: string
+        default: "spring-projects/spring-petclinic"
+      ref:
+        description: "Repository ref"
+        required: false
+        type: string
+        default: "main"
+      run_ai:
+        description: "Run optional AI command when GEMINI_API_KEY is configured"
+        required: false
+        type: boolean
+        default: false
   workflow_dispatch:
     inputs:
       repository:

@@ -24,11 +24,8 @@ The final release must have:
 - [x] Planned-path mutation scope is enforced.
 - [x] Verification uses the persisted contract rather than silently rebuilding it.
 - [x] MCP prepare → contract retrieval → verify E2E exists.
-- [x] VCORE-001 validation workflow exists.
-- [x] VCORE-002 validation workflow exists.
-- [x] VCORE-003 validation workflow exists.
-- [x] VCORE-004 validation workflow exists.
-- [ ] VCORE-001 through VCORE-004 receive a final release-candidate audit with all gates green.
+- [x] Authoritative live end-to-end application validation workflow exists.
+- [ ] Final live end-to-end application validation passes on the exact release candidate SHA.
 
 ## 2. CLI and public contracts
 
@@ -97,10 +94,7 @@ The final `v1.0.0` candidate is **not ready** until all applicable items below a
 - [ ] REST/API audit
 - [ ] safety/adversarial audit
 - [ ] onboarding E2E
-- [ ] VCORE-001 validation
-- [ ] VCORE-002 validation
-- [ ] VCORE-003 validation
-- [ ] VCORE-004 validation
+- [ ] authoritative live end-to-end application validation
 - [ ] Agent Verification E2E
 - [ ] live repository gates
 - [ ] live output-quality audit
