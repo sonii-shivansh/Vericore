@@ -108,12 +108,28 @@ jobs:
     secrets: inherit
 
   live-e2e:
-    name: Live end-to-end application validation
+    name: Live end-to-end application validation (${{ matrix.target.name }})
     needs: deterministic-audit
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - name: Spring Petclinic
+            repository: spring-projects/spring-petclinic
+            ref: main
+          - name: RuneLite
+            repository: runelite/runelite
+            ref: master
+          - name: Quarkus
+            repository: quarkusio/quarkus
+            ref: main
+          - name: Gson
+            repository: google/gson
+            ref: main
     uses: ./.github/workflows/end-to-end-live-validation.yml
     with:
-      repository: spring-projects/spring-petclinic
-      ref: main
+      repository: ${{ matrix.target.repository }}
+      ref: ${{ matrix.target.ref }}
       run_ai: false
     secrets: inherit
 
@@ -201,7 +217,7 @@ jobs:
             --check "verification=${{ needs.verification.result }}" \
             --check "platform=${{ needs.platform.result }}" \
             --check "onboarding=${{ needs.onboarding.result }}" \
-            --check "live-e2e=${{ needs.live-e2e.result }}" \
+            --check "live-e2e-matrix=${{ needs.live-e2e.result }}" \
             --check "live-petclinic=${{ needs.live-petclinic.result }}" \
             --check "live-runelite=${{ needs.live-runelite.result }}" \
             --check "output-petclinic=${{ needs.output-petclinic.result }}" \
