@@ -26,6 +26,7 @@ on:
       - 'gradle/**'
       - 'gradlew'
       - 'docs/**'
+      - 'scripts/audit/production-e2e.sh'
   workflow_dispatch:
     inputs:
       repository:
@@ -80,6 +81,14 @@ jobs:
           test -d .git
           git rev-parse HEAD > "$RUNNER_TEMP/target-before.sha"
           mkdir -p output/live-command-output
+      - name: Run authoritative production E2E audit
+        working-directory: ${{ runner.temp }}/target
+        env:
+          CLI: ${{ github.workspace }}/build/install/vericore/bin/vericore
+        run: |
+          chmod +x "$GITHUB_WORKSPACE/scripts/audit/production-e2e.sh"
+          "$GITHUB_WORKSPACE/scripts/audit/production-e2e.sh" "$RUNNER_TEMP/target" "$RUNNER_TEMP/target/output/production-e2e"
+
       - name: Run CLI command output audit
         working-directory: ${{ runner.temp }}/target
         env:
