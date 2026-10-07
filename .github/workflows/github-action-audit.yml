@@ -31,7 +31,7 @@ jobs:
         run: bash scripts/audit/github-action-audit.sh
 
       - name: Execute action against repository
-        uses: sonii-shivansh/Vericore@feat/p0-github-action
+        uses: ./
         with:
           command: analyze
           path: .
