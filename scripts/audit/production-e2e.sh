@@ -125,7 +125,10 @@ PY
 cp "$OUT/original-source" "$REPO/$SOURCE_FILE"
 git -C "$REPO" status --short
 
-expect_success 37-verify-clean "$CLI" verify --path "$REPO"   --plan "$REPO/output/agent-e2e/engineering-plan.json"   --contract "$REPO/output/agent-e2e/agent-change-contract.json"   --output "$REPO/output/agent-e2e/verification-clean.json"
+# A clean tree after prepare is an expected fail-closed case: there is no planned
+# source mutation to verify. This must not be mistaken for a successful verify.
+expect_failure 37-verify-without-mutation "$CLI" verify --path "$REPO"   --plan "$REPO/output/agent-e2e/engineering-plan.json"   --contract "$REPO/output/agent-e2e/agent-change-contract.json"   --output "$REPO/output/agent-e2e/verification-no-mutation.json"
+grep -Eq 'No source working-tree changes|Status: FAIL|status.*FAIL'   "$OUT/37-verify-without-mutation.stderr" "$OUT/37-verify-without-mutation.stdout"   "$REPO/output/agent-e2e/verification-no-mutation.json"
 
 printf '%s\n' 'unexpected mutation' > "$REPO/.vericore-production-e2e-unexpected"
 expect_failure 38-verify-unexpected "$CLI" verify --path "$REPO"   --plan "$REPO/output/agent-e2e/engineering-plan.json"   --contract "$REPO/output/agent-e2e/agent-change-contract.json"
