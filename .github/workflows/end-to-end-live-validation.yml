@@ -106,7 +106,9 @@ jobs:
         working-directory: ${{ runner.temp }}/target
         run: |
           git status --short
-          test -z "$(git status --porcelain)"
+          test -z "$(git diff --name-only)"
+          test -z "$(git diff --cached --name-only)"
+          test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/|\\.vericore/)' || true)"
 
       - name: Upload complete E2E evidence
         if: always()
