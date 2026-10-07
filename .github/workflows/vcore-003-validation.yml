@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - fix/vcore-003-verify-execution
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:

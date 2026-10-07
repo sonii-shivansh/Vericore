@@ -4,9 +4,6 @@ on:
   push:
     branches:
       - fix/vcore-002-build-command-detection
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
 
 permissions:

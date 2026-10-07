@@ -1,16 +1,6 @@
 name: VCORE-004 Validation
 
 on:
-  pull_request:
-    paths:
-      - "src/main/kotlin/com/vericore/cli/VerifyCommand.kt"
-      - "src/main/kotlin/com/vericore/core/workflow/ChangeSafety.kt"
-      - "src/main/kotlin/com/vericore/core/workflow/EngineeringVerification.kt"
-      - "src/main/kotlin/com/vericore/mcp/EngineeringContextGateway.kt"
-      - "src/test/kotlin/com/vericore/core/workflow/ChangeSafetyAnalyzerTest.kt"
-      - "src/test/kotlin/com/vericore/core/workflow/ChangeSafetyTest.kt"
-      - "src/test/kotlin/com/vericore/mcp/EngineeringContextGatewayTest.kt"
-      - ".github/workflows/vcore-004-validation.yml"
   workflow_dispatch:
 
 permissions:
