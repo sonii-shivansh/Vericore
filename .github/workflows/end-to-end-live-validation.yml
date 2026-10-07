@@ -1,0 +1,276 @@
+name: End-to-End Live Repository Validation
+
+on:
+  workflow_dispatch:
+    inputs:
+      repository:
+        description: "Real public Java/Kotlin repository to validate"
+        required: false
+        default: "spring-projects/spring-petclinic"
+      ref:
+        description: "Repository ref"
+        required: false
+        default: "main"
+      run_ai:
+        description: "Run optional AI command when GEMINI_API_KEY is configured"
+        required: false
+        type: boolean
+        default: false
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/end-to-end-live-validation.yml"
+      - "src/**"
+      - "scripts/**"
+      - "build.gradle.kts"
+      - "settings.gradle.kts"
+
+permissions:
+  contents: read
+
+env:
+  JAVA_VERSION: "21"
+
+jobs:
+  live-e2e:
+    name: Live end-to-end application validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      TARGET_REPOSITORY: ${{ inputs.repository || 'spring-projects/spring-petclinic' }}
+      TARGET_REF: ${{ inputs.ref || 'main' }}
+      RUN_AI: ${{ inputs.run_ai || 'false' }}
+    steps:
+      - name: Checkout Vericore
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v6
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+          cache: gradle
+
+      - name: Build Vericore and install distribution
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon clean test installDist
+
+      - name: Resolve Vericore version
+        run: ./build/install/vericore/bin/vericore --version
+
+      - name: CLI command-surface smoke test
+        run: |
+          set -euo pipefail
+          CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
+          "$CLI" --help
+          "$CLI" --version
+          commands="analyze impact architecture architecture-drift architecture-contract context-snapshot context-diff evidence-graph reality pr-intelligence repo-qa plan prepare verify ask evolution server mcp mcp-config setup doctor"
+          for command in $commands; do
+            echo "=== $command --help ==="
+            "$CLI" "$command" --help >/dev/null
+          done
+
+      - name: Clone real target repository
+        run: |
+          set -euo pipefail
+          rm -rf "$RUNNER_TEMP/target"
+          git clone --depth 50 --branch "$TARGET_REF" "https://github.com/$TARGET_REPOSITORY.git" "$RUNNER_TEMP/target"
+          git -C "$RUNNER_TEMP/target" rev-parse HEAD
+          test -d "$RUNNER_TEMP/target/.git"
+
+      - name: Analyze real repository
+        working-directory: ${{ runner.temp }}/target
+        run: |
+          set -euo pipefail
+          CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
+          "$CLI" doctor --path .
+          "$CLI" analyze . --clear-cache
+          test -s output/index.html
+          test -s output/analysis-snapshot.json
+          test -s output/engineering-risks.json
+
+      - name: Run repository intelligence commands
+        working-directory: ${{ runner.temp }}/target
+        run: |
+          set -euo pipefail
+          CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
+          "$CLI" evidence-graph . --json
+          "$CLI" reality . --json
+          "$CLI" architecture . --json
+          "$CLI" context-snapshot . --json
+          "$CLI" pr-intelligence . --json
+          "$CLI" evolution . --months 1 --interval 30
+          test -s output/semantic-evidence-graph.json
+          test -s output/engineering-reality.json
+          test -s output/architecture.json
+          test -s output/engineering-context.json
+          test -s output/pr-intelligence.json
+
+      - name: Exercise impact, QA and planner on real repository
+        working-directory: ${{ runner.temp }}/target
+        run: |
+          set -euo pipefail
+          CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
+          changed="$(git ls-files '*.java' '*.kt' | head -1)"
+          test -n "$changed"
+          "$CLI" impact . "$changed" --json
+          "$CLI" repo-qa "Which files are the main architectural hotspots?" --path . --max-results 8 --evidence-output output/grounded-evidence.json > output/repo-qa.json
+          "$CLI" plan "Safely improve the selected repository component" --repository . --changed "$changed" --evidence output/grounded-evidence.json --output output/engineering-plan.json
+          test -s output/change-impact.json
+          test -s output/grounded-evidence.json
+          test -s output/engineering-plan.json
+
+      - name: Exercise architecture drift and contract
+        working-directory: ${{ runner.temp }}/target
+        run: |
+          set -euo pipefail
+          CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
+          cp output/architecture.json output/architecture-baseline.json
+          "$CLI" architecture-drift . --baseline output/architecture-baseline.json --json
+          "$CLI" architecture-contract . --json --record output/architecture-contract-history.jsonl
+          test -s output/architecture-drift.json
+          test -s output/architecture-contract.json
+          test -s output/architecture-contract-history.jsonl
+
+      - name: Exercise context diff
+        working-directory: ${{ runner.temp }}/target
+        run: |
+          set -euo pipefail
+          CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
+          cp output/engineering-context.json output/context-before.json
+          "$CLI" context-snapshot . --json >/dev/null
+          cp output/engineering-context.json output/context-after.json
+          "$CLI" context-diff output/context-before.json output/context-after.json --json
+          test -s output/engineering-context-diff.json
+
+      - name: Exercise prepare -> real repository mutation -> verify
+        working-directory: ${{ runner.temp }}/target
+        run: |
+          set -euo pipefail
+          CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
+          changed="$(git ls-files '*.java' '*.kt' | head -1)"
+          test -n "$changed"
+          rm -rf output/agent-e2e
+          mkdir -p output/agent-e2e
+          "$CLI" prepare "Add a harmless verification marker to the selected source file"             --path .             --plan-output output/agent-e2e/engineering-plan.json             --contract-output output/agent-e2e/agent-change-contract.json             --output output/agent-e2e/engineering-context.json
+          python3 - "$changed" <<'PY'
+import pathlib, sys
+p = pathlib.Path(sys.argv[1])
+original = p.read_text()
+marker = "\n// Vericore live E2E verification marker\n"
+assert marker not in original
+p.write_text(original + marker)
+PY
+          set +e
+          "$CLI" verify --path .             --plan output/agent-e2e/engineering-plan.json             --contract output/agent-e2e/agent-change-contract.json             --output output/agent-e2e/verification.json
+          rc=$?
+          set -e
+          test "$rc" -eq 0
+          python3 - output/agent-e2e/verification.json <<'PY'
+import json, sys
+r=json.load(open(sys.argv[1]))
+assert r["status"] in {"PASS", "REVIEW_REQUIRED"}, r
+assert r["verification"]["executionComplete"] is True, r
+PY
+          git checkout -- "$changed"
+          git status --short
+
+      - name: Verify mutation-scope fail-closed behavior
+        working-directory: ${{ runner.temp }}/target
+        run: |
+          set -euo pipefail
+          CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
+          changed="$(git ls-files '*.java' '*.kt' | head -1)"
+          "$CLI" prepare "Validate mutation scope" --path . >/dev/null
+          printf '%s\n' 'vericore-e2e-unexpected-mutation' > .vericore-e2e-unexpected
+          set +e
+          "$CLI" verify --path . --plan output/engineering-plan.json --contract output/agent-change-contract.json >/tmp/vericore-unexpected.log 2>&1
+          rc=$?
+          set -e
+          rm -f .vericore-e2e-unexpected
+          test "$rc" -ne 0
+          grep -q "FAIL" /tmp/vericore-unexpected.log
+
+      - name: REST API end-to-end audit
+        working-directory: ${{ runner.temp }}/target
+        run: |
+          set -euo pipefail
+          CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
+          "$CLI" server --host 127.0.0.1 --port 18080 >/tmp/vericore-rest.log 2>&1 &
+          pid=$!
+          trap 'kill "$pid" 2>/dev/null || true' EXIT
+          for _ in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:18080/health >/tmp/vericore-health.json 2>/dev/null && break
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:18080/
+          curl -fsS http://127.0.0.1:18080/health
+          curl -fsS http://127.0.0.1:18080/health/live
+          curl -fsS http://127.0.0.1:18080/health/ready
+          status="$(curl -sS -o /tmp/vericore-invalid.json -w '%{http_code}' -X POST http://127.0.0.1:18080/analyze -H 'Content-Type: application/json' -d '{"repoPath":"https://github.com/example/example.git"}')"
+          [[ "$status" != 2* && "$status" != 3* ]]
+
+      - name: MCP protocol and Agent Verification audit
+        working-directory: ${{ runner.temp }}/target
+        run: |
+          set -euo pipefail
+          CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
+          "$CLI" mcp-config > /tmp/mcp-config.json
+          python3 - <<'PY'
+import json
+c=json.load(open("/tmp/mcp-config.json"))
+assert c["mcpServers"]["vericore"] == {"command":"vericore","args":["mcp"]}
+PY
+          python3 - "$CLI" "$PWD" <<'PY'
+import json, pathlib, subprocess, sys
+app, root = sys.argv[1], str(pathlib.Path(sys.argv[2]).resolve())
+requests = [
+ {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"live-e2e","version":"1.0"}}},
+ {"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}},
+ {"jsonrpc":"2.0","id":3,"method":"ping","params":{}},
+ {"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"vericore_get_engineering_reality","arguments":{"repoPath":root}}},
+ {"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"vericore_prepare_change","arguments":{"repoPath":root,"changeSummary":"Live MCP verification"}}},
+]
+p=subprocess.run([app,"mcp"],input="\n".join(map(json.dumps,requests))+"\n",text=True,capture_output=True,check=True)
+responses=[json.loads(x) for x in p.stdout.splitlines() if x.strip()]
+by={x.get("id"):x for x in responses}
+assert by[1]["result"]["protocolVersion"]
+assert by[3]["result"] == {}
+names={x["name"] for x in by[2]["result"]["tools"]}
+required={"vericore_analyze_repository","vericore_get_engineering_reality","vericore_get_change_contract","vericore_prepare_change","vericore_verify_change"}
+assert required <= names, required-names
+assert by[4]["result"]["isError"] is False
+assert by[5]["result"]["isError"] is False
+PY
+
+      - name: Optional AI command
+        if: env.RUN_AI == 'true' && env.GEMINI_API_KEY != ''
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        working-directory: ${{ runner.temp }}/target
+        run: |
+          set -euo pipefail
+          CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
+          "$CLI" ask "What are the main architectural hotspots in this repository?" >/tmp/vericore-ask.txt
+          test -s /tmp/vericore-ask.txt
+
+      - name: Validate clean target repository
+        working-directory: ${{ runner.temp }}/target
+        run: |
+          git status --short
+          test -z "$(git status --porcelain)"
+
+      - name: Upload live E2E evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: vericore-live-e2e-evidence
+          path: |
+            ${{ runner.temp }}/target/output/
+            /tmp/vericore-*.json
+            /tmp/vericore-*.txt
+            /tmp/vericore-*.log
+          if-no-files-found: ignore
