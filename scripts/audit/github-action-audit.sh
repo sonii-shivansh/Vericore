@@ -4,7 +4,7 @@ set -euo pipefail
 action_file="action.yml"
 [[ -f "$action_file" ]]
 
-grep -q '^name: Vericore$' "$action_file"
+grep -q '^name: Vericore AI Verification$' "$action_file"
 grep -q 'using: composite' "$action_file"
 grep -q 'default: analyze' "$action_file"
 grep -q 'default: latest' "$action_file"
