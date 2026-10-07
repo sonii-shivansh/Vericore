@@ -34,3 +34,5 @@ mkdir -p "${install_root}"
 tar -xzf "${tmp_dir}/${archive}" -C "${install_root}"
 echo "${install_root}/vericore/bin" >> "${GITHUB_PATH}"
 "${install_root}/vericore/bin/vericore" --version
+
+# Release-audit candidate validation trigger.
