@@ -243,24 +243,51 @@ assert c["mcpServers"]["vericore"] == {"command":"vericore","args":["mcp"]}
 PY
           python3 - "$CLI" "$PWD" <<'PY'
 import json, pathlib, subprocess, sys
-app, root = sys.argv[1], str(pathlib.Path(sys.argv[2]).resolve())
-requests = [
+app = sys.argv[1]
+root = pathlib.Path(sys.argv[2]).resolve()
+changed = next(root.rglob("*.java"), None) or next(root.rglob("*.kt"), None)
+assert changed, "No Java/Kotlin source found"
+relative = changed.relative_to(root).as_posix()
+
+def call(requests):
+    payload = "\\n".join(json.dumps(r) for r in requests) + "\\n"
+    p = subprocess.run([app, "mcp"], input=payload, text=True, capture_output=True, check=True)
+    return {r.get("id"): r for r in (json.loads(x) for x in p.stdout.splitlines() if x.strip())}
+
+base = call([
  {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"live-e2e","version":"1.0"}}},
  {"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}},
  {"jsonrpc":"2.0","id":3,"method":"ping","params":{}},
- {"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"vericore_get_engineering_reality","arguments":{"repoPath":root}}},
- {"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"vericore_prepare_change","arguments":{"repoPath":root,"changeSummary":"Live MCP verification"}}},
-]
-p=subprocess.run([app,"mcp"],input="\n".join(map(json.dumps,requests))+"\n",text=True,capture_output=True,check=True)
-responses=[json.loads(x) for x in p.stdout.splitlines() if x.strip()]
-by={x.get("id"):x for x in responses}
-assert by[1]["result"]["protocolVersion"]
-assert by[3]["result"] == {}
-names={x["name"] for x in by[2]["result"]["tools"]}
-required={"vericore_analyze_repository","vericore_get_engineering_reality","vericore_get_change_contract","vericore_prepare_change","vericore_verify_change"}
-assert required <= names, required-names
-assert by[4]["result"]["isError"] is False
-assert by[5]["result"]["isError"] is False
+ {"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"vericore_get_engineering_reality","arguments":{"repoPath":str(root)}}},
+ {"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"vericore_prepare_change","arguments":{"repoPath":str(root),"changeSummary":"Live MCP verification","plannedPaths":[relative]}}},
+])
+assert base[1]["result"]["protocolVersion"]
+assert base[3]["result"] == {}
+names = {x["name"] for x in base[2]["result"]["tools"]}
+required = {"vericore_analyze_repository","vericore_impact_analysis","vericore_get_engineering_reality","vericore_get_context_snapshot","vericore_get_change_contract","vericore_prepare_change","vericore_verify_change"}
+assert required <= names, required - names
+assert base[4]["result"]["isError"] is False
+assert base[5]["result"]["isError"] is False
+prepared = json.loads(next(x["text"] for x in base[5]["result"]["content"]))
+plan = prepared["plan"]
+assert plan["plannedPaths"] == [relative]
+
+original = changed.read_text()
+marker = "\\n// Vericore MCP live E2E verification marker\\n"
+assert marker not in original
+changed.write_text(original + marker)
+try:
+    verified = call([
+      {"jsonrpc":"2.0","id":6,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"live-e2e","version":"1.0"}}},
+      {"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"vericore_get_change_contract","arguments":{"repoPath":str(root)}}},
+      {"jsonrpc":"2.0","id":8,"method":"tools/call","params":{"name":"vericore_verify_change","arguments":{"repoPath":str(root),"plan":plan}}},
+    ])
+    assert verified[7]["result"]["isError"] is False, verified[7]
+    assert verified[8]["result"]["isError"] is False, verified[8]
+    verification = json.loads(next(x["text"] for x in verified[8]["result"]["content"]))
+    assert verification["status"] in {"PASS", "REVIEW_REQUIRED"}, verification
+finally:
+    changed.write_text(original)
 PY
 
       - name: Optional AI command
