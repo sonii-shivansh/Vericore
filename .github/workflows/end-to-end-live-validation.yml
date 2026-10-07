@@ -108,7 +108,8 @@ jobs:
           git status --short
           test -z "$(git diff --name-only)"
           test -z "$(git diff --cached --name-only)"
-          test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/|\\.vericore/)' || true)"
+          unexpected="$(git status --porcelain | sed -E 's/^.. //g' | grep -Ev '^(output/|\\.vericore/)' || true)"
+          test -z "$unexpected"
 
       - name: Upload complete E2E evidence
         if: always()
