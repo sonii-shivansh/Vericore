@@ -7,6 +7,8 @@ OUT="${2:-$REPO/output/production-e2e}"
 mkdir -p "$OUT"
 export OUT
 
+cd "$REPO"
+
 capture() {
   local name="$1"; shift
   echo "===== $name ====="
