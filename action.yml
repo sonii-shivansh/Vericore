@@ -36,12 +36,16 @@ runs:
           *) echo "::error::Unsupported runner ${RUNNER_OS}/${RUNNER_ARCH}."; exit 1 ;;
         esac
         if [[ "$VERICORE_VERSION" == "latest" ]]; then
-          base_url="https://github.com/sonii-shivansh/Vericore/releases/latest/download"
+          release_json="$(curl --fail --location --retry 3 --retry-delay 1 --silent --show-error \
+            "https://api.github.com/repos/sonii-shivansh/Vericore/releases/latest")"
+          tag="$(printf '%s' "$release_json" | sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)"
+          [[ -n "$tag" ]] || { echo "::error::Unable to resolve the latest Vericore release tag."; exit 1; }
         else
-          tag="${VERICORE_VERSION#v}"
-          base_url="https://github.com/sonii-shivansh/Vericore/releases/download/v${tag}"
+          tag="$VERICORE_VERSION"
         fi
-        archive="vericore-${asset}.${archive_ext}"
+        tag="${tag#v}"
+        base_url="https://github.com/sonii-shivansh/Vericore/releases/download/v${tag}"
+        archive="vericore-${tag}-${asset}.${archive_ext}"
         tmp_dir="$(mktemp -d)"
         trap 'rm -rf "$tmp_dir"' EXIT
         curl --fail --location --retry 3 --retry-delay 1 --silent --show-error -o "$tmp_dir/$archive" "$base_url/$archive"
