@@ -106,10 +106,18 @@ jobs:
         working-directory: ${{ runner.temp }}/target
         run: |
           git status --short
-          test -z "$(git diff --name-only)"
-          test -z "$(git diff --cached --name-only)"
-          unexpected="$(git status --porcelain | sed -E 's/^.. //g' | grep -Ev '^(output/|\\.vericore/)' || true)"
-          test -z "$unexpected"
+          python3 - <<'PY'
+import subprocess
+rows = subprocess.check_output(["git", "status", "--porcelain=v1"], text=True).splitlines()
+unexpected = []
+for row in rows:
+    code = row[:2]
+    path = row[3:]
+    if code == "??" and (path.startswith("output/") or path.startswith(".vericore/")):
+        continue
+    unexpected.append(row)
+assert not unexpected, unexpected
+PY
 
       - name: Upload complete E2E evidence
         if: always()
