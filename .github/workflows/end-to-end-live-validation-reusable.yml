@@ -46,8 +46,15 @@ jobs:
       TARGET_REF: ${{ inputs.ref || 'main' }}
       RUN_AI: ${{ inputs.run_ai || 'false' }}
     steps:
-      - name: Probe
-        run: |
-          echo "repository=$TARGET_REPOSITORY"
-          echo "ref=$TARGET_REF"
-          echo "run_ai=$RUN_AI"
+      - name: Checkout Vericore
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v6
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+          cache: gradle
+
