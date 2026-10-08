@@ -1,0 +1,126 @@
+name: Phase 1 Product Journey E2E
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/main/kotlin/**"
+      - "docs/**"
+      - "README.md"
+      - "scripts/audit/**"
+      - ".github/workflows/phase1-product-journey.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  product-journey:
+    name: 60-second product journey
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          java-version: "21"
+          distribution: temurin
+          cache: gradle
+
+      - name: Build and test
+        run: ./gradlew --no-daemon clean test installDist
+
+      - name: Exercise the public product journey
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cli="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
+          fixture="$RUNNER_TEMP/vericore-phase1-fixture"
+          rm -rf "$fixture"
+          mkdir -p "$fixture/src/main/kotlin/example"
+
+          cat > "$fixture/pom.xml" <<'EOF'
+          <project xmlns="http://maven.apache.org/POM/4.0.0">
+            <modelVersion>4.0.0</modelVersion>
+            <groupId>fixture</groupId>
+            <artifactId>vericore-phase1-fixture</artifactId>
+            <version>1.0</version>
+          </project>
+          EOF
+
+          cat > "$fixture/mvnw" <<'EOF'
+          #!/bin/sh
+          printf '%s\n' "$*" >> verification-executed.log
+          exit 0
+          EOF
+          chmod +x "$fixture/mvnw"
+
+          cat > "$fixture/src/main/kotlin/example/Service.kt" <<'EOF'
+          package example
+          class Service {
+              fun greet(name: String): String = "Hello $name"
+          }
+          EOF
+
+          cat > "$fixture/src/main/kotlin/example/Controller.kt" <<'EOF'
+          package example
+          import example.Service
+          class Controller(private val service: Service)
+          EOF
+
+          git -C "$fixture" init -q
+          git -C "$fixture" config user.name "Vericore Phase 1"
+          git -C "$fixture" config user.email "phase1@example.invalid"
+          git -C "$fixture" add .
+          git -C "$fixture" commit -qm "initial fixture"
+
+          "$cli" --version
+          "$cli" init --path "$fixture"
+          git -C "$fixture" add .vericore.json
+          git -C "$fixture" commit -qm "initialize Vericore"
+          "$cli" scan --path "$fixture"
+          "$cli" inspect --path "$fixture" --json
+          "$cli" repo-qa "What depends on Service?" --path "$fixture" --evidence-output "$fixture/output/grounded-evidence.json"
+          "$cli" review --path "$fixture" --json
+          "$cli" plan "update Service greeting" --repository "$fixture" --changed src/main/kotlin/example/Service.kt --evidence "$fixture/output/grounded-evidence.json" --output "$fixture/output/plan-preview.json"
+          "$cli" prepare "update Service greeting" --path "$fixture" --planned-path src/main/kotlin/example/Service.kt
+
+          cat > "$fixture/src/main/kotlin/example/Service.kt" <<'EOF'
+          package example
+          class Service {
+              fun greet(name: String): String = "Hello, $name"
+          }
+          EOF
+
+          "$cli" verify --path "$fixture" --output "$fixture/output/verification.json"
+          "$cli" report --path "$fixture" --output "$fixture/output/phase1-report.html"
+
+          test -s "$fixture/output/analysis-snapshot.json"
+          test -s "$fixture/output/inspection.json"
+          test -s "$fixture/output/grounded-evidence.json"
+          test -s "$fixture/output/plan-preview.json"
+          test -s "$fixture/output/agent-change-contract.json"
+          test -s "$fixture/output/verification.json"
+          test -s "$fixture/output/phase1-report.html"
+          test -s "$fixture/verification-executed.log"
+
+          grep -q '"schemaVersion": "1.0"' "$fixture/output/inspection.json"
+          grep -q 'Service.kt' "$fixture/output/inspection.json"
+          grep -q '"status"' "$fixture/output/verification.json"
+
+      - name: Run the existing CLI audit
+        run: ./scripts/audit/cli-audit.sh
+
+      - name: Upload Phase 1 evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: phase1-product-journey-evidence
+          path: |
+            ${{ runner.temp }}/vericore-phase1-fixture/output/
+            ${{ runner.temp }}/vericore-phase1-fixture/verification-executed.log
+          if-no-files-found: ignore

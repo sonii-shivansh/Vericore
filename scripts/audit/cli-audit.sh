@@ -6,7 +6,7 @@ REPO="$(pwd)"
 run(){ echo "==> $*"; "$@"; }
 run "$APP" --version
 run "$APP" --help
-for command in analyze impact architecture architecture-drift architecture-contract context-snapshot context-diff reality pr-intelligence repo-qa plan prepare verify ask evolution server mcp setup doctor; do run "$APP" "$command" --help >/dev/null; done
+for command in analyze inspect impact architecture architecture-drift architecture-contract context-snapshot context-diff reality pr-intelligence repo-qa plan prepare verify ask evolution server mcp setup doctor; do run "$APP" "$command" --help >/dev/null; done
 # Run one real-repository analysis, then use a tiny Maven Git fixture for commands that
 # perform history-backed analysis and verification. This keeps the release smoke test
 # deterministic without repeatedly scanning Vericore's full 250-commit history.
@@ -47,6 +47,8 @@ EOF
 )
 run "$APP" analyze "$REPO" >/dev/null
 run "$APP" analyze "$audit_fixture" >/dev/null
+run "$APP" inspect --path "$audit_fixture" --json >/dev/null
+[[ -s "$audit_fixture/output/inspection.json" ]]
 run "$APP" reality "$audit_fixture" --json >/dev/null
 run "$APP" architecture "$audit_fixture" --json >/dev/null
 run "$APP" context-snapshot "$audit_fixture" --json >/dev/null
