@@ -30,7 +30,7 @@ data class VerificationReceipt(
             return VerificationReceipt(
                 repository = result.repository,
                 preparedHead = contract?.preparedHead.orEmpty(),
-                verifiedHead = result.provenance.commit.orEmpty(),
+                verifiedHead = result.provenance.repositoryCommit.orEmpty(),
                 contractFingerprint = contract?.fingerprint.orEmpty(),
                 status = result.status,
                 changedPaths = result.safety.changedPaths,
