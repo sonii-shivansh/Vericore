@@ -7,6 +7,7 @@
 | Need | Read |
 |---|---|
 | **Understand Vericore quickly** | **[README](../README.md)** |
+| **Understand why Vericore exists** | **[Why Vericore?](WHY_VERICORE.md)** |
 | Install and run Vericore | [Getting Started](GETTING_STARTED.md) |
 | **Use a command** | **[CLI Reference](CLI.md)** |
 | Understand the system | [Architecture](ARCHITECTURE.md) |
@@ -28,6 +29,8 @@
 
 ~~~text
 README
+   ↓
+Why Vericore?
    ↓
 Getting Started
    ↓
@@ -53,7 +56,7 @@ Development
 ~~~text
 README
    ↓
-Engineering Reality
+Why Vericore?
    ↓
 Change Safety
    ↓
@@ -65,7 +68,7 @@ prepare → change → verify
 ~~~text
 README
    ↓
-Architecture
+Why Vericore?
    ↓
 MCP
    ↓
@@ -114,6 +117,7 @@ Every user-facing CLI command must have its syntax, options, defaults, outputs, 
 - Keep the README focused on product behavior and the fastest path to first use.
 - Keep Getting Started task-oriented; do not turn it into a second command reference.
 - Keep API and MCP documents focused on their respective protocols.
+- Keep product explanation in [Why Vericore?](WHY_VERICORE.md), rather than duplicating it across technical documents.
 - Prefer links to authoritative contracts instead of copying the same rules into multiple documents.
 
 ### Automated parity
