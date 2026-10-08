@@ -1,182 +1,173 @@
 # Getting Started
 
-> From a fresh install to repository understanding and a verified code change.
+> From installation to your first repository analysis and verified AI-assisted change.
 
-## Recommended path for AI-agent changes
+For the product story, start with [Why Vericore?](WHY_VERICORE.md). This page is the practical path.
 
-When an AI coding agent is about to modify a repository, establish the verification boundary before the edit:
+## 1. Install
 
-~~~bash
-vericore prepare "describe the intended change" --path /path/to/repository
-~~~
-
-Then let the agent or developer make the change and verify the original persisted contract:
-
-~~~bash
-vericore verify --path /path/to/repository
-~~~
-
-This prepare → change → verify workflow is Vericore's primary agent-safety path. The verification step evaluates the persisted Agent Change Contract created before the edit.
-
-## Choose your path
-
-### I want to understand a repository
-
-Start with:
-
-~~~bash
-vericore analyze /path/to/repository
-~~~
-
-Then open:
-
-~~~text
-/path/to/repository/output/index.html
-~~~
-
-For machine-readable deterministic state:
-
-~~~bash
-vericore evidence-graph /path/to/repository --json
-vericore reality /path/to/repository --json
-~~~
-
-### I want to understand a risky change
-
-Use deterministic repository evidence:
-
-~~~bash
-vericore repo-qa "Why is PaymentService risky?" --path /path/to/repository
-vericore impact /path/to/repository src/main/kotlin/com/example/PaymentService.kt --json
-vericore architecture /path/to/repository --json
-~~~
-
-### I want to let an AI agent use Vericore
-
-Generate a client-ready MCP configuration:
-
-~~~bash
-vericore mcp-config
-~~~
-
-Then start the local MCP server through the generated client configuration, or run it directly:
-
-~~~bash
-vericore mcp
-~~~
-
-Then read [MCP](MCP.md) for the canonical tool surface and trust boundary.
-
-### I want to make a code change safely
-
-Prepare the repository before editing:
-
-~~~bash
-vericore prepare "add payment validation" --path /path/to/repository
-~~~
-
-Make the code change, run the project's normal tests, then verify:
-
-~~~bash
-vericore verify --path /path/to/repository
-~~~
-
-The verification step is bound to the persisted Agent Change Contract created by prepare.
-
-## Prerequisites
-
-For a source build, use JDK 21 or newer:
-
-- JDK 21+
-- Git
-- Bash, PowerShell, or another shell supported by the Gradle wrapper
-
-Released platform archives bundle a Java runtime, so a separate JDK is not required for normal end-user use.
-
-## 1. Install from a release archive
+### Release archive
 
 Download the published archive from [GitHub Releases](https://github.com/sonii-shivansh/Vericore/releases).
 
-Platform archives bundle a Java runtime for normal end-user execution:
+Platform archives bundle a Java runtime:
 
-~~~text
+```text
 Windows:      bin\vericore.bat --version
 Linux/macOS:  ./bin/vericore --version
-~~~
+```
 
-## 2. Install with one command
+### One-command installer
 
-### Linux x64 / macOS
+**Linux / macOS:**
 
-~~~bash
+```bash
 curl -fsSL https://raw.githubusercontent.com/sonii-shivansh/Vericore/main/scripts/install.sh | bash
-~~~
+```
 
-### Windows PowerShell (x64)
+**Windows PowerShell:**
 
-~~~powershell
+```powershell
 irm https://raw.githubusercontent.com/sonii-shivansh/Vericore/main/scripts/install.ps1 | iex
-~~~
+```
 
-The installer downloads the latest published platform archive, verifies its SHA-256 checksum from SHA256SUMS, installs the bundled Java runtime, and avoids requiring a separate JDK.
+The installer downloads the latest published platform archive and verifies its SHA-256 checksum before installation. Supported targets are Linux x64, macOS x64, macOS arm64, and Windows x64. Open a new shell after a PATH update.
 
-Supported targets: Linux x64, macOS x64, macOS arm64, and Windows x64. After installation, open a new shell if PATH was updated.
+## 2. Check the installation
 
-## 3. Build from source
+Run:
 
-If you are developing Vericore itself:
+```bash
+vericore doctor
+```
 
-~~~bash
+You do not need to be inside a Git repository for this check.
+
+For a specific repository:
+
+```bash
+vericore doctor --path /path/to/repository
+```
+
+Doctor checks the local runtime and configuration, with repository and AI-provider details reported when applicable. Missing AI credentials are warnings because deterministic analysis does not require AI.
+
+## 3. Understand a repository
+
+For a quick repository analysis:
+
+```bash
+vericore analyze /path/to/repository
+```
+
+The default HTML report is written to:
+
+```text
+/path/to/repository/output/index.html
+```
+
+For deeper machine-readable evidence:
+
+```bash
+vericore evidence-graph /path/to/repository --json
+vericore reality /path/to/repository --json
+```
+
+For exact command syntax, options, defaults, outputs, and failure behavior, see the **[CLI Reference](CLI.md)**.
+
+## 4. Safely make an AI-assisted change
+
+This is Vericore's primary verification workflow:
+
+```text
+prepare → AI agent changes code → verify
+```
+
+### Before the edit
+
+Create the repository-bound change contract:
+
+```bash
+vericore prepare "add payment validation" \
+  --path /path/to/repository
+```
+
+For tighter scope, specify planned paths:
+
+```bash
+vericore prepare "add payment validation" \
+  --path /path/to/repository \
+  --planned-path src/main/kotlin/com/example/PaymentService.kt
+```
+
+### Let the agent change the repository
+
+Use your normal AI coding workflow. Vericore does not autonomously modify source code.
+
+### After the edit
+
+Run:
+
+```bash
+vericore verify --path /path/to/repository
+```
+
+Verification evaluates the **original persisted Agent Change Contract** rather than silently creating a new boundary from the mutated repository.
+
+Run the project's normal tests as part of your engineering workflow. A Vericore verification result does not replace tests or human review.
+
+## 5. Connect an AI agent
+
+Generate a client-ready MCP configuration:
+
+```bash
+vericore mcp-config
+```
+
+Or start the local server directly:
+
+```bash
+vericore mcp
+```
+
+See [MCP](MCP.md) for the canonical tool surface and trust boundary.
+
+## 6. Build Vericore from source
+
+For Vericore development, use **JDK 21+** and Git:
+
+```bash
 git clone https://github.com/sonii-shivansh/Vericore.git
 cd Vericore
 ./gradlew --no-daemon clean test
 ./gradlew --no-daemon installDist
-~~~
+```
 
 The installed CLI is:
 
-~~~text
+```text
 build/install/vericore/bin/vericore
-~~~
+```
 
 Verify it:
 
-~~~bash
+```bash
 ./build/install/vericore/bin/vericore --version
 ./build/install/vericore/bin/vericore --help
-~~~
+```
 
-For every command, option, default, output artifact, and failure behavior, use the **[CLI Reference](CLI.md)**.
-
-## 4. Check the local installation
-
-Run Doctor immediately after installation; you do not need to be inside a Git repository:
-
-~~~bash
-vericore doctor
-~~~
-
-For a specific repository, provide its path:
-
-~~~bash
-vericore doctor --path /path/to/repository
-~~~
-
-Doctor checks the Java runtime, diagnostic path, Git repository context when available, effective AI configuration, credentials when configured, and Gemini reachability when applicable. Being outside a Git repository is a warning—not a failure—because Doctor is also an installation and configuration diagnostic. Missing AI credentials are a warning rather than a failure because deterministic repository analysis does not require AI.
-
-## 5. Go deeper
+## Go deeper
 
 | Goal | Read |
 |---|---|
-| Exact command syntax | [CLI Reference](CLI.md) |
-| Understand deterministic repository identity | [Engineering Reality](ENGINEERING_REALITY.md) |
+| Exact command contract | [CLI Reference](CLI.md) |
 | Understand safe changes | [Change Safety](CHANGE_SAFETY.md) |
 | Understand the system | [Architecture](ARCHITECTURE.md) |
+| Understand repository state | [Engineering Reality](ENGINEERING_REALITY.md) |
 | Integrate an AI agent | [MCP](MCP.md) |
 | Integrate REST | [API](API.md) |
 | Review data handling | [Data & Privacy](DATA_PRIVACY.md) |
 | Contribute code | [Development](DEVELOPMENT.md) |
 
-## Troubleshooting principle
+## Troubleshooting
 
 Start with the exact command and sanitized output. For CI-only failures, inspect the corresponding GitHub Actions job and artifact rather than inferring from a local result.
