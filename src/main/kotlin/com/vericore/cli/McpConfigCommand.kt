@@ -2,6 +2,7 @@ package com.vericore.cli
 
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.flag
+import com.github.ajalt.clikt.parameters.options.option
 import java.io.File
 
 /** Emits or writes a client-ready stdio MCP server configuration for Vericore. */
