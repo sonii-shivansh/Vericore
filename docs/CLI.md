@@ -695,6 +695,27 @@ Exit behavior is suitable for automation: configuration/runtime failures are rep
 
 ---
 
+## 24. `report`
+
+Generate a durable HTML engineering report from a completed analysis session.
+
+### Syntax
+
+```bash
+vericore report [--path <repository>] [--session <session-id>] [--output <file>]
+```
+
+### Examples
+
+```bash
+vericore report
+vericore report --path /workspace/my-repository
+vericore report --session 1760000000000-ab12cd34
+vericore report --output output/engineering-report.html
+```
+
+The command reads the persisted `output/analysis-snapshot.json` referenced by the selected session and writes a standalone HTML report. It does not re-run repository analysis.
+
 ## Recommended command workflows
 
 ### First analysis
