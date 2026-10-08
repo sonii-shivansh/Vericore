@@ -209,8 +209,8 @@ jobs:
           status=${PIPESTATUS[0]}
           set -e
           test -s output/live-command-output/21-ask.txt
-          if grep -Eiq 'HTTP[[:space:]]*429|quota[^[:alnum:]]*(exceeded|exhausted)|rate[[:space:]-]*limit|RESOURCE_EXHAUSTED' output/live-command-output/21-ask.txt; then
-            echo 'Gemini quota/rate limit encountered; deterministic checks remain authoritative.'
+          if grep -Eiq 'HTTP[[:space:]]*429|quota[^[:alnum:]]*(exceeded|exhausted)|rate[[:space:]-]*limit|RESOURCE_EXHAUSTED|AI provider request failed|provider could not answer' output/live-command-output/21-ask.txt; then
+            echo 'Gemini provider unavailable or rate-limited; deterministic checks remain authoritative.'
           else
             test "$status" -eq 0
             ! grep -q 'AI features disabled' output/live-command-output/21-ask.txt
