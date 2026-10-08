@@ -80,6 +80,8 @@ jobs:
 
           "$cli" --version
           "$cli" init --path "$fixture"
+          git -C "$fixture" add .vericore.json
+          git -C "$fixture" commit -qm "initialize Vericore"
           "$cli" scan --path "$fixture"
           "$cli" inspect --path "$fixture" --json
           "$cli" repo-qa "What depends on Service?" --path "$fixture" --evidence-output "$fixture/output/grounded-evidence.json"
