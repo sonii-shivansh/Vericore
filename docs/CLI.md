@@ -76,6 +76,50 @@ Run `analyze` before `evidence-graph` or `reality`. Those commands consume the p
 
 ---
 
+## Product onboarding: `init`
+
+Initialize Vericore for an existing Git repository.
+
+### Syntax
+
+```bash
+vericore init [--path <repository>] [--force]
+```
+
+### Examples
+
+```bash
+vericore init
+vericore init --path /workspace/my-repository
+vericore init --force
+```
+
+The command creates the default `.vericore.json` configuration and the local `.vericore/` workspace for sessions, reports, evidence, baselines and contracts. AI remains optional.
+
+---
+
+## Product scanning: `scan`
+
+Run the existing deterministic repository analysis through the product-level scanning entry point.
+
+### Syntax
+
+```bash
+vericore scan [--path <repository>] [--no-cache] [--clear-cache] [--no-snapshot] [--verbose|-v]
+```
+
+### Examples
+
+```bash
+vericore scan
+vericore scan --path /workspace/my-repository
+vericore scan --no-cache
+```
+
+`scan` delegates to the established analysis engine, so it does not maintain a separate analysis implementation or data model.
+
+---
+
 ## 2. `impact`
 
 Analyze the dependency impact of one or more changed files.
