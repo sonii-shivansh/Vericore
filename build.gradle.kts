@@ -31,9 +31,9 @@ dependencies {
     implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:2.3.12")
     implementation("io.ktor:ktor-server-cors-jvm:2.3.12")
     testImplementation(kotlin("test"))
-    testImplementation("io.kotest:kotest-runner-junit5:5.8.0")
-    testImplementation("io.kotest:kotest-assertions-core:5.8.0")
-    testImplementation("io.kotest:kotest-property:5.8.0")
+    testImplementation("io.kotest:kotest-runner-junit5:6.2.5")
+    testImplementation("io.kotest:kotest-assertions-core:6.2.5")
+    testImplementation("io.kotest:kotest-property:6.2.5")
     testImplementation("io.mockk:mockk:1.13.9")
 }
 
