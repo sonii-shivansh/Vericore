@@ -624,15 +624,19 @@ The command takes no CLI options. It uses stdin/stdout for the MCP protocol. See
 
 ## 21. `mcp-config`
 
-Print a client-ready MCP stdio configuration using the installed `vericore` command.
+Print or write a client-ready MCP stdio configuration using the installed `vericore` command.
 
 ### Syntax
 
 ```bash
 vericore mcp-config
+vericore mcp-config --write
+vericore mcp-config --write --force
 ```
 
-The output is JSON in the common `mcpServers` configuration shape and can be copied into an MCP client configuration. It intentionally references `vericore` from `PATH` rather than embedding a machine-specific absolute path.
+By default the command prints JSON in the common `mcpServers` configuration shape. With `--write`, it creates a project-level `.mcp.json` in the current directory so supported MCP clients can use the repository configuration directly. Existing `.mcp.json` files are never replaced unless `--force` is supplied.
+
+The generated configuration intentionally references `vericore` from `PATH` rather than embedding a machine-specific absolute path.
 
 ---
 
