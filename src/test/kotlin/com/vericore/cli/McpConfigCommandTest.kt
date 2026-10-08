@@ -39,7 +39,7 @@ class McpConfigCommandTest {
             val result = McpConfigCommand().test("--write")
             val target = temp.resolve(".mcp.json")
             assertTrue(target.isFile)
-            assertTrue(target.readText().contains(""command": "vericore""))
+            assertTrue(target.readText().contains(""""command": "vericore""""))
             assertTrue(result.stdout.contains("Wrote"))
             assertFalse(target.readText().contains("apiKey"))
         } finally {
