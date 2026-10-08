@@ -12,23 +12,23 @@ permissions:
 
 jobs:
   comment:
-    if: \${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
       - name: Download review artifact
         uses: actions/download-artifact@v5
         with:
           name: vericore-pr-review
-          path: \${{ runner.temp }}/vericore-pr-review
-          run-id: \${{ github.event.workflow_run.id }}
-          github-token: \${{ secrets.GITHUB_TOKEN }}
+          path: ${{ runner.temp }}/vericore-pr-review
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update PR review comment
         uses: actions/github-script@v8
         env:
-          ARTIFACT_DIR: \${{ runner.temp }}/vericore-pr-review
+          ARTIFACT_DIR: ${{ runner.temp }}/vericore-pr-review
         with:
-          github-token: \${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const fs = require('fs');
             const path = require('path');
@@ -65,7 +65,7 @@ jobs:
             const findings = Array.isArray(review.findings) ? review.findings : [];
 
             const clean = value => String(value ?? '')
-              .replace(/@/g, '@\\u200b')
+              .replace(/@/g, '@\u200b')
               .split(String.fromCharCode(96)).join("'")
               .replace(/</g, '&lt;')
               .replace(/>/g, '&gt;')
