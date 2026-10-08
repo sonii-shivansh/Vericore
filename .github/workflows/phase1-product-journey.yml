@@ -105,6 +105,7 @@ jobs:
           test -s "$fixture/output/plan-preview.json"
           test -s "$fixture/output/agent-change-contract.json"
           test -s "$fixture/output/verification.json"
+          test -s "$fixture/output/verification-receipt.json"
           test -s "$fixture/output/phase1-report.html"
           test -s "$fixture/verification-executed.log"
 
