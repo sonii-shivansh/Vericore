@@ -9,6 +9,7 @@ import com.vericore.core.intelligence.EngineeringRiskEngine
 import com.vericore.core.parser.ParsedFile
 import com.vericore.core.scanner.OptimizedGitAnalyzer
 import com.vericore.core.scanner.RepositoryScanner
+import com.vericore.core.session.SessionRecorder
 import com.vericore.output.ReportGenerator
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
@@ -36,6 +37,7 @@ class ImprovedAnalyzeCommand : CliktCommand(
         require(rootDir.isDirectory) { "Path is not a directory: $path" }
 
         val config = ConfigLoader.loadForRepository(rootDir.path)
+        val session = SessionRecorder.start(rootDir, "analyze", listOf(path, "--no-cache=$noCache", "--clear-cache=$clearCache", "--no-snapshot=$noSnapshot"))
         val time = measureTimeMillis {
             try {
                 if (clearCache) {
@@ -43,9 +45,11 @@ class ImprovedAnalyzeCommand : CliktCommand(
                     echo("🗑️  Cache cleared")
                 }
 
+                session.event("scan", "Scanning repository")
                 echo("📂 Scanning repository...")
                 val scanner = RepositoryScanner()
                 val files = scanner.scan(rootDir.path)
+                session.event("scan-complete", "Found ${files.size} source files")
                 echo("   Found ${files.size} files")
 
                 require(files.isNotEmpty()) {
@@ -55,6 +59,7 @@ class ImprovedAnalyzeCommand : CliktCommand(
                     "Too many files (${files.size}). Limit: ${config.maxFilesAnalyze}"
                 }
 
+                session.event("parse", "Parsing source files")
                 echo("🧠 Parsing code...")
                 val cacheManager = if (config.enableCache && !noCache) CacheManager() else null
                 val parser = CodeParallelParser(cacheManager)
@@ -68,6 +73,7 @@ class ImprovedAnalyzeCommand : CliktCommand(
                 val failedCount = parser.lastWarningCount
                 if (failedCount > 0) echo("   ⚠️  $failedCount files reported parser diagnostics")
 
+                session.event("git-history", "Analyzing Git history")
                 echo("📜 Analyzing Git history...")
                 val enrichedFiles = try {
                     OptimizedGitAnalyzer().analyze(rootDir.path, parsedFiles)
@@ -77,6 +83,7 @@ class ImprovedAnalyzeCommand : CliktCommand(
                     parsedFiles
                 }
 
+                session.event("dependency-graph", "Building dependency graph")
                 echo("🕸️  Building dependency graph...")
                 val graph = RobustDependencyGraph()
                 val buildResult = graph.build(enrichedFiles)
@@ -117,6 +124,7 @@ class ImprovedAnalyzeCommand : CliktCommand(
                 if (!noSnapshot) {
                     val snapshotFile = File(outputDir, "analysis-snapshot.json")
                     snapshotFile.writeText(Json { prettyPrint = true }.encodeToString(snapshot))
+                    session.event("artifact", "Analysis snapshot written", rootDir.toPath().relativize(snapshotFile.toPath()).toString())
                     echo("🧾 Analysis snapshot: ${snapshotFile.absolutePath}")
 
                     val riskFile = File(outputDir, "engineering-risks.json")
@@ -124,10 +132,12 @@ class ImprovedAnalyzeCommand : CliktCommand(
                     echo("🛡️  Risk report: ${riskFile.absolutePath}")
                 }
 
+                session.event("report", "Generating analysis report")
                 echo("📊 Generating report...")
                 val reportFile = File(outputDir, "index.html")
                 val learningPath = com.vericore.core.generator.LearningPathGenerator().generate(graph)
                 ReportGenerator().generate(graph, reportFile.absolutePath, enrichedFiles, learningPath)
+                session.event("artifact", "HTML report written", rootDir.toPath().relativize(reportFile.toPath()).toString())
                 echo("✅ Report: ${reportFile.absolutePath}")
 
                 if (config.ai.enabled && config.ai.apiKey.isNotBlank()) {
@@ -140,12 +150,12 @@ class ImprovedAnalyzeCommand : CliktCommand(
                             runBlocking {
                                 val insights = aiAnalyzer.batchAnalyze(enrichedFiles, graph, limit = 10)
                                 val aiReportFile = File(outputDir, "ai-insights.md")
-                                aiReportFile.writeText("# AI Code Insights\n\n")
+                                aiReportFile.writeText("# AI Code Insights" + System.lineSeparator() + System.lineSeparator())
                                 insights.forEach { (insightPath, insight) ->
-                                    aiReportFile.appendText("## ${File(insightPath).name}\n")
-                                    aiReportFile.appendText("**Purpose**: ${insight.purpose}\n\n")
-                                    aiReportFile.appendText("**Complexity**: ${insight.complexity}/10\n")
-                                    aiReportFile.appendText("**Refactoring Tips**: ${insight.refactoringTips.joinToString(", ")}\n\n")
+                                    aiReportFile.appendText("## ${File(insightPath).name}" + System.lineSeparator())
+                                    aiReportFile.appendText("**Purpose**: ${insight.purpose}" + System.lineSeparator() + System.lineSeparator())
+                                    aiReportFile.appendText("**Complexity**: ${insight.complexity}/10" + System.lineSeparator())
+                                    aiReportFile.appendText("**Refactoring Tips**: ${insight.refactoringTips.joinToString(", ")}" + System.lineSeparator() + System.lineSeparator())
                                 }
                                 echo("✨ AI Insights saved to: ${aiReportFile.absolutePath}")
                             }
@@ -155,7 +165,14 @@ class ImprovedAnalyzeCommand : CliktCommand(
                         }
                     }
                 }
+                session.complete(
+                    status = "COMPLETED",
+                    summary = "Analysis completed successfully",
+                    snapshotPath = if (!noSnapshot) rootDir.toPath().relativize(rootDir.resolve("output/analysis-snapshot.json").toPath()).toString() else null,
+                    reportPath = rootDir.toPath().relativize(rootDir.resolve("output/index.html").toPath()).toString()
+                )
             } catch (e: Exception) {
+                session.complete(status = "FAILED", summary = e.message ?: e::class.simpleName.orEmpty())
                 if (e is IllegalStateException || e is IllegalArgumentException) throw e
                 echo("❌ Analysis failed: ${e.message}")
                 if (verbose) println(e.stackTraceToString())
