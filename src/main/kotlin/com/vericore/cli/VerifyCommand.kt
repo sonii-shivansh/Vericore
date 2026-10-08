@@ -7,6 +7,7 @@ import com.vericore.core.workflow.AgentChangeContract
 import com.vericore.core.workflow.ChangeSafetyAnalyzer
 import com.vericore.core.workflow.EngineeringVerification
 import com.vericore.core.workflow.RepositoryState
+import com.vericore.core.workflow.VerificationReceipt
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
@@ -53,6 +54,12 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
         val result = runBlocking { EngineeringVerification.verify(root.path, plan, contract) }
         val encoded = json.encodeToString(result)
         writeOutput(encoded)
+        val receipt = VerificationReceipt.from(result)
+        root.resolve("output/verification-receipt.json").apply {
+            parentFile?.mkdirs()
+            writeText(json.encodeToString(receipt))
+        }
+        echo("Verification receipt: ${root.resolve("output/verification-receipt.json").path}")
         echo("Status: ${result.status}")
         if (result.status == com.vericore.core.workflow.SafetyStatus.FAIL) {
             throw IllegalStateException("Change verification failed: the prepared contract or change scope is invalid")
