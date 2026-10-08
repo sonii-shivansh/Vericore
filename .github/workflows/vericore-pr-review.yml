@@ -1,0 +1,48 @@
+name: Vericore PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    name: Analyze pull request
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout pull request
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Run Vericore PR intelligence
+        uses: sonii-shivansh/Vericore@main
+        with:
+          command: pr-intelligence
+          path: .
+          args: --base \${{ github.event.pull_request.base.sha }} --head \${{ github.event.pull_request.head.sha }} --json
+
+      - name: Prepare review artifact
+        shell: bash
+        env:
+          PR_NUMBER: \${{ github.event.pull_request.number }}
+          HEAD_SHA: \${{ github.event.pull_request.head.sha }}
+          BASE_SHA: \${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          test -s output/pr-intelligence.json
+          mkdir -p review-artifact
+          cp output/pr-intelligence.json review-artifact/pr-intelligence.json
+          printf '%s\n' "$PR_NUMBER" > review-artifact/pr-number
+          printf '%s\n' "$HEAD_SHA" > review-artifact/head-sha
+          printf '%s\n' "$BASE_SHA" > review-artifact/base-sha
+
+      - name: Upload review artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vericore-pr-review
+          path: review-artifact/
+          retention-days: 7
