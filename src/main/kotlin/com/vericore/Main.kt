@@ -19,6 +19,7 @@ import com.vericore.cli.McpCommand
 import com.vericore.cli.McpConfigCommand
 import com.vericore.cli.PRIntelligenceCommand
 import com.vericore.cli.ReportCommand
+import com.vericore.cli.ReviewCommand
 import com.vericore.cli.PrepareCommand
 import com.vericore.cli.RealityCommand
 import com.vericore.cli.RepositoryQACommand
@@ -47,6 +48,7 @@ fun main(args: Array<String>) {
                 PRIntelligenceCommand(),
                 RepositoryQACommand(),
                 ReportCommand(),
+                ReviewCommand(),
                 EngineeringPlanCommand(),
                 PrepareCommand(),
                 VerifyCommand(),

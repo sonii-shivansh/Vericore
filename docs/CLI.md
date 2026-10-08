@@ -716,6 +716,20 @@ vericore report --output output/engineering-report.html
 
 The command reads the persisted `output/analysis-snapshot.json` referenced by the selected session and writes a standalone HTML report. It does not re-run repository analysis.
 
+## 25. `review`
+
+Review the current working tree or a Git base/head revision pair using deterministic impact, risk, architecture, and test signals.
+
+### Syntax
+
+```bash
+vericore review --path <repository>
+vericore review --path <repository> --base main --head feature/my-change
+vericore review --path <repository> --json
+```
+
+The JSON artifact is written to `output/review.json`. Review findings are deterministic signals; they do not prove runtime correctness or production safety.
+
 ## Recommended command workflows
 
 ### First analysis
