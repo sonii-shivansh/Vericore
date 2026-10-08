@@ -2,13 +2,51 @@ name: Reusable Registration Probe
 
 on:
   workflow_call:
+    inputs:
+      repository:
+        required: false
+        type: string
+        default: "spring-projects/spring-petclinic"
+      ref:
+        required: false
+        type: string
+        default: "main"
+      run_ai:
+        required: false
+        type: boolean
+        default: false
+  workflow_dispatch:
+    inputs:
+      repository:
+        required: false
+        type: string
+        default: spring-projects/spring-petclinic
+      ref:
+        required: false
+        type: string
+        default: main
+      run_ai:
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
+env:
+  JAVA_VERSION: "21"
+
 jobs:
   probe:
     runs-on: ubuntu-24.04
+    env:
+      TARGET_REPOSITORY: ${{ inputs.repository || 'spring-projects/spring-petclinic' }}
+      TARGET_REF: ${{ inputs.ref || 'main' }}
+      RUN_AI: ${{ inputs.run_ai || 'false' }}
     steps:
       - name: Probe reusable workflow execution
-        run: echo "Reusable workflow execution works"
+        run: |
+          echo "Reusable workflow execution works"
+          echo "$TARGET_REPOSITORY"
+          echo "$TARGET_REF"
+          echo "$RUN_AI"
