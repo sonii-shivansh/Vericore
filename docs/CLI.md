@@ -730,6 +730,10 @@ vericore review --path <repository> --json
 
 The JSON artifact is written to `output/review.json`. Review findings are deterministic signals; they do not prove runtime correctness or production safety.
 
+`--ai` adds a grounded AI explanation on top of the deterministic review. It uses the real Git diff plus the persisted `output/analysis-snapshot.json` evidence, requires AI credentials to be configured, and reports the deterministic grounding score and evidence citations. It does not replace deterministic findings and does not claim runtime correctness.
+
+For `--ai`, run `vericore analyze .` first and keep the analysis snapshot current with the checked-out commit. The JSON artifact remains `output/review.json`; when AI is enabled it contains both `deterministic` and `ai` sections.
+
 ## Recommended command workflows
 
 ### First analysis

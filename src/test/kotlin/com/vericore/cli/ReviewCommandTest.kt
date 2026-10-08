@@ -13,5 +13,6 @@ class ReviewCommandTest {
         assertTrue(result.stdout.contains("Review a Git change"))
         assertTrue(result.stdout.contains("--base"))
         assertTrue(result.stdout.contains("--json"))
+        assertTrue(result.stdout.contains("--ai"))
     }
 }
