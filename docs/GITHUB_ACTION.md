@@ -110,3 +110,6 @@ Current action targets are Linux x64, macOS x64, and macOS arm64. Windows suppor
 The action is fail-closed: unsupported commands, unsupported runner platforms, missing checksum entries, checksum mismatches, download failures, and Vericore command failures fail the workflow.
 
 For consumer workflows, GitHub recommends pinning third-party actions to a specific release or immutable commit.
+
+
+<!-- Final Vericore PR review comment validation -->
