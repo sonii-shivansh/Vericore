@@ -12,13 +12,19 @@ AI is an optional interpretation layer. Repository facts and verification decisi
 
 ## First-run journey
 
+The public product journey is intentionally small. Specialized commands remain available underneath it.
+
 1. `vericore init`
-2. `vericore analyze .`
-3. `vericore ask "..."`
-4. `vericore prepare "..."`
-5. An AI coding agent makes the change.
-6. `vericore verify`
-7. `vericore report`
+2. `vericore scan`
+3. `vericore inspect`
+4. `vericore ask "..."`
+5. `vericore review`
+6. `vericore plan`
+7. `vericore prepare "..."`
+8. An AI coding agent makes the change.
+9. `vericore verify`
+10. `vericore report`
+11. `vericore doctor`
 
 ## Public command direction
 
@@ -26,7 +32,7 @@ The existing specialized commands remain available for compatibility. The produc
 
 - `init` — initialize the project
 - `scan` — understand the repository
-- `inspect` — inspect architecture, dependencies and risk
+- `inspect` — summarize architecture, risk, hotspots and next actions
 - `ask` — grounded repository questions
 - `review` — review a Git diff/change
 - `plan` — produce a deterministic engineering plan
@@ -49,9 +55,11 @@ Product-level commands should converge on repository, result/status, key finding
 - `init`
 - unified command output
 - `scan`
+- `inspect`
 - durable session recording
 - complete `report`
 - consistent `--json` support
+- one clean GitHub Actions product-flow E2E
 
 ### P1 — trusted AI
 - grounded AI explanations for analysis results

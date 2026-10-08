@@ -14,6 +14,7 @@ import com.vericore.cli.EvolutionCommand
 import com.vericore.cli.ImprovedAnalyzeCommand
 import com.vericore.cli.InitCommand
 import com.vericore.cli.ImpactCommand
+import com.vericore.cli.InspectCommand
 import com.vericore.cli.MainCommand
 import com.vericore.cli.McpCommand
 import com.vericore.cli.McpConfigCommand
@@ -39,6 +40,7 @@ fun main(args: Array<String>) {
                 ScanCommand(),
                 ImprovedAnalyzeCommand(),
                 ImpactCommand(),
+                InspectCommand(),
                 ArchitectureCommand(),
                 ArchitectureDriftCommand(),
                 ArchitectureContractCommand(),

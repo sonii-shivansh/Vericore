@@ -69,6 +69,35 @@ The `prepare` step establishes the evidence and verification boundary. The persi
 
 Vericore is **not** the coding agent and does **not** autonomously modify source code. It is the evidence, planning, and verification layer around the change.
 
+## The 60-second workflow
+
+Vericore has a simple public journey for developers and AI agents. The specialized commands remain available for deeper analysis and automation.
+
+```text
+init → scan → inspect → ask → review → plan → prepare
+                                             ↓
+                                      agent changes code
+                                             ↓
+                                  verify → report → doctor
+```
+
+A clean first run looks like:
+
+```bash
+vericore init
+vericore scan --path .
+vericore inspect --path .
+vericore repo-qa "What should I know before changing this repository?" --path .
+vericore review --path .
+vericore plan "add payment validation" --path .
+vericore prepare "add payment validation" --path .
+# let the coding agent make the change
+vericore verify --path .
+vericore report --path .
+```
+
+`scan` produces the deterministic repository snapshot. `inspect` summarizes that snapshot for a fast human/agent orientation. `prepare` establishes the repository-bound change contract; `verify` checks the original contract after the edit. AI remains optional.
+
 ## 30-second example
 
 Prepare the change before editing:
