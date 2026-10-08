@@ -24,17 +24,55 @@ jobs:
 
 For stable consumer workflows, pin the action to a release tag or immutable commit rather than main.
 
-## Verify a prepared change
+## PR review automation
 
-If your workflow has already created an Agent Change Contract in the checked-out working tree, run:
+Vericore can publish deterministic PR intelligence as a sticky pull-request comment without executing the pull request with write credentials.
+
+The recommended pattern is two-stage:
+
+1. A `pull_request` workflow checks out the merge commit with a read-only token and runs `pr-intelligence`.
+2. The result is uploaded as a short-lived artifact.
+3. A trusted `workflow_run` workflow reads only that artifact and updates one PR comment.
+
+This separation is intentional. The privileged comment workflow never checks out or executes pull-request source code.
+
+The reference implementation in this repository is:
+
+- `.github/workflows/vericore-pr-review.yml`
+- `.github/workflows/vericore-pr-review-comment.yml`
+
+The review comment reports risk, change size, impacted files, cross-package impact, test candidates, and the highest-priority deterministic findings. Subsequent pushes update the existing Vericore comment instead of creating an unbounded comment stream.
+
+### Consumer analysis workflow
+
+A consumer can use the reusable Action directly:
 
 ~~~yaml
-- uses: sonii-shivansh/Vericore@main
-  with:
-    command: verify
+name: Vericore PR Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: sonii-shivansh/Vericore@main
+        with:
+          command: pr-intelligence
+          args: --base ${{ github.event.pull_request.base.sha }} --head ${{ github.event.pull_request.head.sha }} --json
 ~~~
 
-The action does not create a replacement contract. verify uses Vericore's persisted contract boundary and fails when verification fails.
+The reusable Action produces `output/pr-intelligence.json`. A separate trusted workflow can consume that artifact and comment on the PR.
 
 ## Supported commands
 
@@ -64,6 +102,8 @@ Additional command arguments can be supplied with args:
 ## Security and portability
 
 The action downloads only published Vericore release archives from GitHub Releases and verifies the archive against the published SHA256SUMS file before execution.
+
+The PR review pattern deliberately separates unprivileged analysis from privileged commenting. Do not replace it with a `pull_request_target` workflow that checks out and executes an untrusted pull-request revision.
 
 Current action targets are Linux x64, macOS x64, and macOS arm64. Windows support is intentionally not claimed by this first action slice.
 
