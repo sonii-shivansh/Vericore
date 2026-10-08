@@ -6,7 +6,7 @@ import com.github.ajalt.clikt.parameters.options.option
 import java.io.File
 
 /** Emits or writes a client-ready stdio MCP server configuration for Vericore. */
-class McpConfigCommand : CliktCommand(
+class McpConfigCommand(private val workingDirectory: File = File(".")) : CliktCommand(
     name = "mcp-config",
     help = "Print or write a client-ready MCP stdio server configuration"
 ) {
@@ -30,7 +30,7 @@ class McpConfigCommand : CliktCommand(
             return
         }
 
-        val target = File(".mcp.json")
+        val target = workingDirectory.resolve(".mcp.json")
         require(!target.exists() || force) {
             "${target.path} already exists. Use --force only if you intend to replace it."
         }
