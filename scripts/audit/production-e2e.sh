@@ -168,6 +168,9 @@ required={
 }
 assert required <= names, sorted(required-names)
 assert not any(n.startswith("codecontext_") for n in names)
+review=next(t for t in responses[2]["result"]["tools"] if t["name"]=="vericore_review")
+props=review["inputSchema"]["properties"]
+assert props["includeAi"]["type"]=="boolean"
 PY
 
 "$CLI" server --host 127.0.0.1 --port 18080 >"$OUT/41-rest-server.log" 2>&1 &
