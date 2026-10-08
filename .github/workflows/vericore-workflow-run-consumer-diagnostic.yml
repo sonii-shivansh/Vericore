@@ -1,0 +1,20 @@
+name: Vericore Workflow Run Consumer Diagnostic
+
+on:
+  workflow_run:
+    workflows: ["Vericore Workflow Run Diagnostic"]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  consumer:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm workflow_run delivery
+        run: |
+          echo "workflow_run delivered successfully"
+          echo "Upstream workflow: ${{ github.event.workflow_run.name }}"
+          echo "Upstream run id: ${{ github.event.workflow_run.id }}"
