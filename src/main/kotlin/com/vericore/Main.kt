@@ -12,6 +12,7 @@ import com.vericore.cli.EngineeringPlanCommand
 import com.vericore.cli.EvidenceGraphCommand
 import com.vericore.cli.EvolutionCommand
 import com.vericore.cli.ImprovedAnalyzeCommand
+import com.vericore.cli.InitCommand
 import com.vericore.cli.ImpactCommand
 import com.vericore.cli.MainCommand
 import com.vericore.cli.McpCommand
@@ -20,6 +21,7 @@ import com.vericore.cli.PRIntelligenceCommand
 import com.vericore.cli.PrepareCommand
 import com.vericore.cli.RealityCommand
 import com.vericore.cli.RepositoryQACommand
+import com.vericore.cli.ScanCommand
 import com.vericore.cli.ServerCommand
 import com.vericore.cli.SetupCommand
 import com.vericore.cli.VerifyCommand
@@ -30,6 +32,8 @@ fun main(args: Array<String>) {
     try {
         MainCommand()
             .subcommands(
+                InitCommand(),
+                ScanCommand(),
                 ImprovedAnalyzeCommand(),
                 ImpactCommand(),
                 ArchitectureCommand(),
