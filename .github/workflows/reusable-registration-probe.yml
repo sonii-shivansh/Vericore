@@ -56,6 +56,14 @@ jobs:
           distribution: temurin
           cache: gradle
 
+
+      - name: Optional live AI command probe
+        if: env.RUN_AI == 'true' && env.GEMINI_API_KEY != ''
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          echo "optional AI step would run"
+
       - name: Probe reusable workflow execution
         run: |
           echo "Reusable workflow execution works"
