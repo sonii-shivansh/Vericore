@@ -150,20 +150,12 @@ class ImprovedAnalyzeCommand : CliktCommand(
                             runBlocking {
                                 val insights = aiAnalyzer.batchAnalyze(enrichedFiles, graph, limit = 10)
                                 val aiReportFile = File(outputDir, "ai-insights.md")
-                                aiReportFile.writeText("# AI Code Insights
-
-")
+                                aiReportFile.writeText("# AI Code Insights" + System.lineSeparator() + System.lineSeparator())
                                 insights.forEach { (insightPath, insight) ->
-                                    aiReportFile.appendText("## ${File(insightPath).name}
-")
-                                    aiReportFile.appendText("**Purpose**: ${insight.purpose}
-
-")
-                                    aiReportFile.appendText("**Complexity**: ${insight.complexity}/10
-")
-                                    aiReportFile.appendText("**Refactoring Tips**: ${insight.refactoringTips.joinToString(", ")}
-
-")
+                                    aiReportFile.appendText("## ${File(insightPath).name}" + System.lineSeparator())
+                                    aiReportFile.appendText("**Purpose**: ${insight.purpose}" + System.lineSeparator() + System.lineSeparator())
+                                    aiReportFile.appendText("**Complexity**: ${insight.complexity}/10" + System.lineSeparator())
+                                    aiReportFile.appendText("**Refactoring Tips**: ${insight.refactoringTips.joinToString(", ")}" + System.lineSeparator() + System.lineSeparator())
                                 }
                                 echo("✨ AI Insights saved to: ${aiReportFile.absolutePath}")
                             }
