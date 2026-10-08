@@ -111,5 +111,3 @@ The action is fail-closed: unsupported commands, unsupported runner platforms, m
 
 For consumer workflows, GitHub recommends pinning third-party actions to a specific release or immutable commit.
 
-
-<!-- Final Vericore PR review comment validation -->
