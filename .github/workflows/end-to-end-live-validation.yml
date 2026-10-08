@@ -23,34 +23,18 @@ on:
       repository:
         description: "Real public Java/Kotlin repository to validate"
         required: false
+        type: string
         default: spring-projects/spring-petclinic
       ref:
         description: "Repository ref"
         required: false
+        type: string
         default: main
       run_ai:
         description: "Run optional AI command when GEMINI_API_KEY is configured"
         required: false
         type: boolean
         default: false
-  pull_request:
-    branches: [main]
-    paths:
-      - ".github/workflows/end-to-end-live-validation.yml"
-      - "scripts/audit/production-e2e.sh"
-      - "src/**"
-      - "build.gradle.kts"
-      - "settings.gradle.kts"
-  push:
-    branches:
-      - main
-      - test/production-e2e-output-audit
-    paths:
-      - ".github/workflows/end-to-end-live-validation.yml"
-      - "scripts/audit/production-e2e.sh"
-      - "src/**"
-      - "build.gradle.kts"
-      - "settings.gradle.kts"
 
 permissions:
   contents: read
