@@ -1,0 +1,32 @@
+package com.vericore.cli
+
+import com.github.ajalt.clikt.testing.test
+import java.nio.file.Files
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
+
+class InitCommandTest {
+    @Test
+    fun initializesGitRepositoryWithoutRequiringAi() {
+        val root = Files.createTempDirectory("vericore-init").toFile()
+        root.resolve(".git").mkdirs()
+        val result = InitCommand().test("--path ${root.path}")
+        assertEquals(0, result.statusCode)
+        assertTrue(root.resolve(".vericore.json").isFile)
+        assertTrue(root.resolve(".vericore/sessions").isDirectory)
+        assertTrue(root.resolve(".vericore/reports").isDirectory)
+        assertTrue(result.stdout.contains("PROJECT INITIALIZED"))
+        assertTrue(result.stdout.contains("vericore setup"))
+    }
+
+    @Test
+    fun refusesNonGitDirectory() {
+        val root = Files.createTempDirectory("vericore-no-git").toFile()
+        val error = assertFailsWith<IllegalArgumentException> {
+            InitCommand().test("--path ${root.path}")
+        }
+        assertTrue(error.message.orEmpty().contains("Not a Git repository"))
+    }
+}
