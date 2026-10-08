@@ -23,14 +23,14 @@ jobs:
         with:
           command: pr-intelligence
           path: .
-          args: --base \${{ github.event.pull_request.base.sha }} --head \${{ github.event.pull_request.head.sha }} --json
+          args: --base ${{ github.event.pull_request.base.sha }} --head ${{ github.event.pull_request.head.sha }} --json
 
       - name: Prepare review artifact
         shell: bash
         env:
-          PR_NUMBER: \${{ github.event.pull_request.number }}
-          HEAD_SHA: \${{ github.event.pull_request.head.sha }}
-          BASE_SHA: \${{ github.event.pull_request.base.sha }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set -euo pipefail
           test -s output/pr-intelligence.json
