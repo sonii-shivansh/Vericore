@@ -1,0 +1,16 @@
+name: Vericore Workflow Run Diagnostic
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  upstream:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Record upstream trigger
+        run: echo "Vericore workflow_run diagnostic upstream completed"
+
