@@ -26,6 +26,7 @@ on:
       - 'gradle/**'
       - 'gradlew'
       - 'docs/**'
+      - 'scripts/audit/production-e2e.sh'
   workflow_dispatch:
     inputs:
       repository:
@@ -80,6 +81,14 @@ jobs:
           test -d .git
           git rev-parse HEAD > "$RUNNER_TEMP/target-before.sha"
           mkdir -p output/live-command-output
+      - name: Run authoritative production E2E audit
+        working-directory: ${{ runner.temp }}/target
+        env:
+          CLI: ${{ github.workspace }}/build/install/vericore/bin/vericore
+        run: |
+          chmod +x "$GITHUB_WORKSPACE/scripts/audit/production-e2e.sh"
+          "$GITHUB_WORKSPACE/scripts/audit/production-e2e.sh" "$RUNNER_TEMP/target" "$RUNNER_TEMP/target/output/production-e2e"
+
       - name: Run CLI command output audit
         working-directory: ${{ runner.temp }}/target
         env:
@@ -94,7 +103,10 @@ jobs:
           capture 03-doctor "$CLI" doctor
           capture 04-analyze "$CLI" analyze .
           capture 05-architecture "$CLI" architecture . --json
-          SOURCE_FILE="$(find . -type f \( -name '*.java' -o -name '*.kt' \) -not -path './build/*' -print -quit)"
+          SOURCE_FILE="$(find . -type f -name '*.java' -not -path './build/*' -print -quit)"
+          if [ -z "$SOURCE_FILE" ]; then
+            SOURCE_FILE="$(find . -type f -name '*.kt' -not -path './build/*' -print -quit)"
+          fi
           test -n "$SOURCE_FILE"
           capture 06-impact "$CLI" impact . "$SOURCE_FILE" --json
           cp output/architecture.json output/architecture-baseline.json
@@ -112,8 +124,13 @@ jobs:
           capture 13-pr-intelligence "$CLI" pr-intelligence . --base HEAD~1 --head HEAD --json
           capture 14-repo-qa "$CLI" repo-qa "Which files are the main architectural hotspots?" --path . --evidence-output output/grounded-evidence.json
           capture 15-plan "$CLI" plan "Improve the repository safely" --evidence output/grounded-evidence.json --output output/engineering-plan.json
-          capture 16-prepare "$CLI" prepare "Improve the repository safely"
+          cp "$SOURCE_FILE" "$RUNNER_TEMP/vericore-output-audit-source"
+          trap 'cp "$RUNNER_TEMP/vericore-output-audit-source" "$SOURCE_FILE" 2>/dev/null || true' EXIT
+          capture 16-prepare "$CLI" prepare "Improve the repository safely" --planned-path "$SOURCE_FILE"
+          printf '\n// Vericore live command output audit marker\n' >> "$SOURCE_FILE"
           capture 17-verify "$CLI" verify --output output/final-verify.json
+          cp "$RUNNER_TEMP/vericore-output-audit-source" "$SOURCE_FILE"
+          trap - EXIT
           python3 - <<'PY'
           from pathlib import Path
           import json
