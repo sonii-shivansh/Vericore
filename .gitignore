@@ -37,6 +37,7 @@ Desktop.ini
 temp/
 .codecontext/cache/
 .vericore/cache/
+.vericore/
 test_output*.txt
 /output.txt
 build-error.log
