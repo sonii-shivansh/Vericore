@@ -38,6 +38,7 @@ object ChangeSafetyAnalyzer {
             if (deleted.isNotEmpty()) add("Deleted files require explicit review before the change is considered safe.")
         }
         val status = when {
+            actual.isEmpty() -> SafetyStatus.FAIL
             planned.isEmpty() && actual.isNotEmpty() -> SafetyStatus.FAIL
             unexpected.isNotEmpty() -> SafetyStatus.FAIL
             deleted.isNotEmpty() -> SafetyStatus.REVIEW_REQUIRED
