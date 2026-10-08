@@ -29,4 +29,16 @@ class InitCommandTest {
         }
         assertTrue(error.message.orEmpty().contains("Not a Git repository"))
     }
+    @Test
+    fun jsonOutputUsesProductResultEnvelope() {
+        val root = Files.createTempDirectory("vericore-init-json").toFile()
+        root.resolve(".git").mkdirs()
+        val result = InitCommand().test("--path ${root.path} --json")
+        assertEquals(0, result.statusCode)
+        assertTrue(result.stdout.contains(""schemaVersion": "1.0""))
+        assertTrue(result.stdout.contains(""command": "init""))
+        assertTrue(result.stdout.contains(""status": "PASS""))
+        assertTrue(result.stdout.contains(""nextStep""))
+    }
+
 }
