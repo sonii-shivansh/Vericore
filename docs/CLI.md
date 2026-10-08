@@ -96,6 +96,8 @@ vericore init --force
 
 The command creates the default `.vericore.json` configuration and the local `.vericore/` workspace for sessions, reports, evidence, baselines and contracts. AI remains optional.
 
+With `--json`, the command emits the standard product result envelope with `schemaVersion`, `command`, `status`, `repository`, `artifacts`, and `nextStep`.
+
 ---
 
 ## 5. `scan`
