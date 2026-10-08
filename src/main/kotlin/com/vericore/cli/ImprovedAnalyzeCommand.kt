@@ -167,7 +167,7 @@ class ImprovedAnalyzeCommand : CliktCommand(
                 }
                 session.complete(
                     status = "COMPLETED",
-                    summary = "Analysis completed in ${time}ms",
+                    summary = "Analysis completed successfully",
                     snapshotPath = if (!noSnapshot) rootDir.toPath().relativize(rootDir.resolve("output/analysis-snapshot.json").toPath()).toString() else null,
                     reportPath = rootDir.toPath().relativize(rootDir.resolve("output/index.html").toPath()).toString()
                 )
