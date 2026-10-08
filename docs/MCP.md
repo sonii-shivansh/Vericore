@@ -58,6 +58,7 @@ For the complete CLI command contract, see [CLI Reference](CLI.md).
 | `vericore_architecture_analysis` | Architecture Intelligence | No |
 | `vericore_pr_intelligence` | Working-tree or revision-pair change intelligence | No |
 | `vericore_review` | Deterministic review with optional grounded AI interpretation | No |
+| `vericore_recommendations` | Prioritized deterministic engineering recommendations from the analysis snapshot | No |
 | `vericore_get_engineering_reality` | Repository-state-bound Engineering Reality | No |
 | `vericore_get_context_snapshot` | Versioned engineering-context snapshot | No |
 | `vericore_get_context_diff` | Deterministic snapshot diff | No |
@@ -130,6 +131,18 @@ The review tool is the agent-native equivalent of `vericore review`. It always r
 Set `includeAi` to `true` when grounded AI interpretation is wanted. AI review requires AI to be enabled/configured and a current `output/analysis-snapshot.json`; the deterministic review remains the authoritative fact layer. AI claims are constrained by the grounded evidence service and the Git diff. If the snapshot is stale, AI review fails closed instead of silently analyzing an outdated repository state.
 
 Use `vericore_review` before modifying a repository and again after a change when the agent needs an impact/risk/test signal. It does not mutate source files and does not replace `vericore_verify_change`.
+
+### Recommendations
+
+The recommendations tool returns the same deterministic engineering actions exposed by the CLI. It requires a current `output/analysis-snapshot.json`.
+
+```json
+{
+  "repoPath":"/absolute/path/to/repository"
+}
+```
+
+Use `vericore_recommendations` when an agent needs actionable engineering priorities before deciding what to change. Recommendations are evidence-backed signals, not proof of correctness or security.
 
 ### Prepare
 

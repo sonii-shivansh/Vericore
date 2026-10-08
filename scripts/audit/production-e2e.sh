@@ -161,7 +161,7 @@ assert responses[3]["result"] == {}
 names={x["name"] for x in responses[2]["result"]["tools"]}
 required={
 "vericore_analyze_repository","vericore_impact_analysis","vericore_architecture_analysis",
-"vericore_pr_intelligence","vericore_review","vericore_get_engineering_reality","vericore_get_context_snapshot",
+"vericore_pr_intelligence","vericore_review","vericore_recommendations","vericore_get_engineering_reality","vericore_get_context_snapshot",
 "vericore_get_context_diff","vericore_get_architecture_drift","vericore_get_architecture_contract",
 "vericore_prepare_change","vericore_get_change_contract","vericore_get_evidence",
 "vericore_change_safety","vericore_verify_change"
