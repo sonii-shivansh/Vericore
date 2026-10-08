@@ -27,7 +27,7 @@ Commands that provide `--json` write their machine-readable artifact under the a
 
 ---
 
-## 1. `analyze`
+## 3. `analyze`
 
 Analyze a Java/Kotlin repository and generate deterministic engineering intelligence plus the HTML report.
 
@@ -76,7 +76,51 @@ Run `analyze` before `evidence-graph` or `reality`. Those commands consume the p
 
 ---
 
-## 2. `impact`
+## 4. `init`
+
+Initialize Vericore for an existing Git repository.
+
+### Syntax
+
+```bash
+vericore init [--path <repository>] [--force]
+```
+
+### Examples
+
+```bash
+vericore init
+vericore init --path /workspace/my-repository
+vericore init --force
+```
+
+The command creates the default `.vericore.json` configuration and the local `.vericore/` workspace for sessions, reports, evidence, baselines and contracts. AI remains optional.
+
+---
+
+## 5. `scan`
+
+Run the existing deterministic repository analysis through the product-level scanning entry point.
+
+### Syntax
+
+```bash
+vericore scan [--path <repository>] [--no-cache] [--clear-cache] [--no-snapshot] [--verbose|-v]
+```
+
+### Examples
+
+```bash
+vericore scan
+vericore scan --path /workspace/my-repository
+vericore scan --no-cache
+```
+
+`scan` delegates to the established analysis engine, so it does not maintain a separate analysis implementation or data model.
+
+---
+
+## 4. `impact`
 
 Analyze the dependency impact of one or more changed files.
 
@@ -105,7 +149,7 @@ The command reports changed files, impacted files/packages, cross-package impact
 
 ---
 
-## 3. `architecture`
+## 5. `architecture`
 
 Analyze repository architecture and report deterministic structural findings.
 
@@ -134,7 +178,7 @@ The result includes analyzed-file count, dependency edges, findings, cycles, cro
 
 ---
 
-## 4. `architecture-drift`
+## 6. `architecture-drift`
 
 Compare current Architecture Intelligence with a previously generated architecture baseline.
 
@@ -163,7 +207,7 @@ The report identifies added/removed findings, new/removed cycles, changed layers
 
 ---
 
-## 5. `architecture-contract`
+## 7. `architecture-contract`
 
 Evaluate architecture against a deterministic governance contract.
 
@@ -195,7 +239,7 @@ A failed contract exits unsuccessfully. The command reports the contract decisio
 
 ---
 
-## 6. `context-snapshot`
+## 8. `context-snapshot`
 
 Create a deterministic snapshot of repository engineering context.
 
@@ -223,7 +267,7 @@ The snapshot records repository commit (when available), file count, byte count,
 
 ---
 
-## 7. `context-diff`
+## 9. `context-diff`
 
 Compare two previously generated engineering-context snapshots.
 
@@ -251,7 +295,7 @@ The diff reports added, removed, modified, and unchanged paths.
 
 ---
 
-## 8. `evidence-graph`
+## 10. `evidence-graph`
 
 Build the deterministic semantic evidence graph from the current analysis snapshot.
 
@@ -282,7 +326,7 @@ The graph reports repository identity, observed commit, node count, edge count, 
 
 ---
 
-## 9. `reality`
+## 11. `reality`
 
 Build one deterministic Engineering Reality identity across the analysis snapshot and current repository state.
 
@@ -313,7 +357,7 @@ Reality binds analysis state to current repository context and rejects incompati
 
 ---
 
-## 10. `pr-intelligence`
+## 12. `pr-intelligence`
 
 Analyze a working tree or an explicit Git base/head revision pair for deterministic change risk and impact signals.
 
@@ -353,7 +397,7 @@ The result combines change size, dependency impact, package boundaries, risk, ar
 
 ---
 
-## 11. `repo-qa`
+## 13. `repo-qa`
 
 Retrieve bounded, deterministic repository evidence for a natural-language engineering question.
 
@@ -384,7 +428,7 @@ The command prints the grounded retrieval result as JSON. It is deterministic an
 
 ---
 
-## 12. `plan`
+## 14. `plan`
 
 Generate a deterministic, evidence-backed engineering plan for a proposed change.
 
@@ -415,7 +459,7 @@ The plan is read-only and cannot modify source code.
 
 ---
 
-## 13. `prepare`
+## 15. `prepare`
 
 Create the evidence-backed preparation bundle used by the safe change workflow.
 
@@ -445,7 +489,7 @@ The Agent Change Contract is persisted at preparation time. Do not replace it be
 
 ---
 
-## 14. `verify`
+## 16. `verify`
 
 Verify the current working tree against the original persisted engineering plan and Agent Change Contract.
 
@@ -476,7 +520,7 @@ Verification executes the persisted build/test commands using the native shell a
 
 ---
 
-## 15. `ask`
+## 17. `ask`
 
 Ask an AI provider a question about the current repository using bounded repository context.
 
@@ -504,7 +548,7 @@ The current interactive setup path provisions Gemini. The underlying `AICodeAnal
 
 ---
 
-## 16. `evolution`
+## 18. `evolution`
 
 Analyze repository evolution from Git history using deterministic time-based snapshots.
 
@@ -535,7 +579,7 @@ The command requires useful Git commit history and reports timestamp, commit, fi
 
 ---
 
-## 17. `server`
+## 19. `server`
 
 Start the local Vericore REST API server.
 
@@ -564,7 +608,7 @@ See [API](API.md) for endpoints.
 
 ---
 
-## 18. `mcp`
+## 20. `mcp`
 
 Start the local Model Context Protocol server over stdio.
 
@@ -578,7 +622,7 @@ The command takes no CLI options. It uses stdin/stdout for the MCP protocol. See
 
 ---
 
-## 19. `mcp-config`
+## 21. `mcp-config`
 
 Print a client-ready MCP stdio configuration using the installed `vericore` command.
 
@@ -592,7 +636,7 @@ The output is JSON in the common `mcpServers` configuration shape and can be cop
 
 ---
 
-## 20. `setup`
+## 22. `setup`
 
 Configure AI credentials for the current user.
 
@@ -624,7 +668,7 @@ Never commit a real API key to `.vericore.json` or source control.
 
 ---
 
-## 21. `doctor`
+## 23. `doctor`
 
 Check the local Vericore installation, repository context, AI configuration, and provider reachability when credentials are configured.
 
