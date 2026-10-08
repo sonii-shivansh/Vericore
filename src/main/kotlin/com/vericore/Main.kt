@@ -22,6 +22,7 @@ import com.vericore.cli.ReportCommand
 import com.vericore.cli.ReviewCommand
 import com.vericore.cli.PrepareCommand
 import com.vericore.cli.RealityCommand
+import com.vericore.cli.RecommendationsCommand
 import com.vericore.cli.RepositoryQACommand
 import com.vericore.cli.ScanCommand
 import com.vericore.cli.ServerCommand
@@ -49,6 +50,7 @@ fun main(args: Array<String>) {
                 RepositoryQACommand(),
                 ReportCommand(),
                 ReviewCommand(),
+                RecommendationsCommand(),
                 EngineeringPlanCommand(),
                 PrepareCommand(),
                 VerifyCommand(),
@@ -63,8 +65,6 @@ fun main(args: Array<String>) {
             .main(args)
     } catch (e: Throwable) {
         com.vericore.cli.ErrorHandler.handle(e)
-        // ErrorHandler intentionally owns user-facing formatting. Once an exception
-        // reaches this boundary, the process must still report failure to scripts/CI.
         exitProcess(1)
     }
 }
