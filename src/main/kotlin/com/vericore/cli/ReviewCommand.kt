@@ -42,7 +42,7 @@ class ReviewCommand : CliktCommand(name = "review", help = "Review a Git change 
         result.findings.forEach { finding ->
             echo("   [${finding.severity}] ${finding.ruleId}")
             echo("      ${finding.reason}")
-            if (finding.paths.isNotEmpty()) echo("      Files: ${finding.affectedPaths.take(5).joinToString(", ")}")
+            if (finding.paths.isNotEmpty()) echo("      Files: ${finding.paths.take(5).joinToString(", ")}")
         }
         echo("Next: use `vericore verify` after prepare when a change contract exists.")
     }
