@@ -523,6 +523,16 @@ Verification executes the persisted build/test commands using the native shell a
 
 ---
 
+### Verification receipt
+
+A successful or review-required full `vericore verify` run also writes:
+
+```text
+output/verification-receipt.json
+```
+
+The receipt is derived from the same verification result. It records the prepared and verified repository state, contract fingerprint, changed/planned/unexpected paths, verification commands/results, and deterministic safety reasons. It is an audit artifact, not a second verification decision.
+
 ## 17. `ask`
 
 Ask an AI provider a question about the current repository using bounded repository context.
