@@ -38,9 +38,10 @@ class ChangeSafetyAnalyzerTest {
     }
 
     @Test
-    fun `allows a clean tree without explicit planned paths`() {
-        val result = ChangeSafetyAnalyzer.verify(emptyList(), emptyList())
-        assertEquals(SafetyStatus.PASS, result.status)
+    fun `fails closed when a planned change produces no source mutation`() {
+        val result = ChangeSafetyAnalyzer.verify(emptyList(), listOf("src/App.kt"))
+        assertEquals(SafetyStatus.FAIL, result.status)
+        assertTrue(result.reasons.contains("No source working-tree changes were detected."))
         assertTrue(result.changedPaths.isEmpty())
     }
 }
