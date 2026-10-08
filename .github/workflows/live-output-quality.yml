@@ -103,7 +103,10 @@ jobs:
           capture 03-doctor "$CLI" doctor
           capture 04-analyze "$CLI" analyze .
           capture 05-architecture "$CLI" architecture . --json
-          SOURCE_FILE="$(find . -type f ( -name '*.java' -o -name '*.kt' ) -not -path './build/*' -print -quit)"
+          SOURCE_FILE="$(find . -type f -name '*.java' -not -path './build/*' -print -quit)"
+          if [ -z "$SOURCE_FILE" ]; then
+            SOURCE_FILE="$(find . -type f -name '*.kt' -not -path './build/*' -print -quit)"
+          fi
           test -n "$SOURCE_FILE"
           capture 06-impact "$CLI" impact . "$SOURCE_FILE" --json
           cp output/architecture.json output/architecture-baseline.json
