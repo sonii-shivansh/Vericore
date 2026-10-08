@@ -1,0 +1,15 @@
+name: CI Registration Probe
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Probe workflow execution
+        run: echo "GitHub Actions workflow registration is executing jobs"
