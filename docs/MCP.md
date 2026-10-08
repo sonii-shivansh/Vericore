@@ -50,7 +50,7 @@ For the complete CLI command contract, see [CLI Reference](CLI.md).
 | `vericore_impact_analysis` | Dependency-aware impact for changed paths | No |
 | `vericore_architecture_analysis` | Architecture Intelligence | No |
 | `vericore_pr_intelligence` | Working-tree or revision-pair change intelligence | No |
-| `vericore_review` | Deterministic review with impact, risk, architecture, and test signals | No |
+| `vericore_review` | Deterministic review with optional grounded AI interpretation | No |
 | `vericore_get_engineering_reality` | Repository-state-bound Engineering Reality | No |
 | `vericore_get_context_snapshot` | Versioned engineering-context snapshot | No |
 | `vericore_get_context_diff` | Deterministic snapshot diff | No |
@@ -109,17 +109,20 @@ Both revisions must be supplied together.
 
 ### Review
 
-The review tool is the agent-native equivalent of `vericore review`. It returns the deterministic review result as structured JSON and accepts either the current working tree or a base/head revision pair.
+The review tool is the agent-native equivalent of `vericore review`. It always runs deterministic review first and accepts either the current working tree or a base/head revision pair.
 
 ```json
 {
   "repoPath":"/absolute/path/to/repository",
   "baseRevision":"main",
-  "headRevision":"feature/payment-retry"
+  "headRevision":"feature/payment-retry",
+  "includeAi":false
 }
 ```
 
-Use `vericore_review` before modifying a repository and again after a change when the agent needs a deterministic impact/risk/test signal. It does not mutate source files and does not replace `vericore_verify_change`.
+Set `includeAi` to `true` when grounded AI interpretation is wanted. AI review requires AI to be enabled/configured and a current `output/analysis-snapshot.json`; the deterministic review remains the authoritative fact layer. AI claims are constrained by the grounded evidence service and the Git diff. If the snapshot is stale, AI review fails closed instead of silently analyzing an outdated repository state.
+
+Use `vericore_review` before modifying a repository and again after a change when the agent needs an impact/risk/test signal. It does not mutate source files and does not replace `vericore_verify_change`.
 
 ### Prepare
 

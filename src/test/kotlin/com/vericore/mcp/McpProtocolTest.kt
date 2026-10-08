@@ -29,6 +29,16 @@ class McpProtocolTest {
     }
 
     @Test
+    fun reviewToolSchemaExposesOptionalGroundedAi() {
+        val response = McpProtocol.handle(buildJsonObject {
+            put("jsonrpc", JsonPrimitive("2.0")); put("id", JsonPrimitive(6)); put("method", JsonPrimitive("tools/list"))
+        })
+        val result = response["result"].toString()
+        assertTrue(result.contains("includeAi"))
+        assertTrue(result.contains("grounded AI review"))
+    }
+
+    @Test
     fun legacyCodeContextToolAliasRemainsCallableAndWarns() {
         val originalErr = System.err
         val capturedErr = ByteArrayOutputStream()
