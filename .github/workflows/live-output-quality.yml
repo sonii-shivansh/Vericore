@@ -103,7 +103,7 @@ jobs:
           capture 03-doctor "$CLI" doctor
           capture 04-analyze "$CLI" analyze .
           capture 05-architecture "$CLI" architecture . --json
-          SOURCE_FILE="$(find . -type f \( -name '*.java' -o -name '*.kt' \) -not -path './build/*' -print -quit)"
+          SOURCE_FILE="$(find . -type f ( -name '*.java' -o -name '*.kt' ) -not -path './build/*' -print -quit)"
           test -n "$SOURCE_FILE"
           capture 06-impact "$CLI" impact . "$SOURCE_FILE" --json
           cp output/architecture.json output/architecture-baseline.json
@@ -121,8 +121,13 @@ jobs:
           capture 13-pr-intelligence "$CLI" pr-intelligence . --base HEAD~1 --head HEAD --json
           capture 14-repo-qa "$CLI" repo-qa "Which files are the main architectural hotspots?" --path . --evidence-output output/grounded-evidence.json
           capture 15-plan "$CLI" plan "Improve the repository safely" --evidence output/grounded-evidence.json --output output/engineering-plan.json
-          capture 16-prepare "$CLI" prepare "Improve the repository safely"
+          cp "$SOURCE_FILE" "$RUNNER_TEMP/vericore-output-audit-source"
+          trap 'cp "$RUNNER_TEMP/vericore-output-audit-source" "$SOURCE_FILE" 2>/dev/null || true' EXIT
+          capture 16-prepare "$CLI" prepare "Improve the repository safely" --planned-path "$SOURCE_FILE"
+          printf '\n// Vericore live command output audit marker\n' >> "$SOURCE_FILE"
           capture 17-verify "$CLI" verify --output output/final-verify.json
+          cp "$RUNNER_TEMP/vericore-output-audit-source" "$SOURCE_FILE"
+          trap - EXIT
           python3 - <<'PY'
           from pathlib import Path
           import json
