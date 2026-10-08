@@ -20,11 +20,17 @@ The process uses newline-delimited JSON-RPC over stdin/stdout. stdout is reserve
 
 Client configuration uses the stable executable boundary:
 
-```text
+```bash
 vericore mcp-config
 ```
 
-This prints:
+To create a project-level configuration file directly:
+
+```bash
+vericore mcp-config --write
+```
+
+This writes `.mcp.json`:
 
 ```json
 {
@@ -37,8 +43,9 @@ This prints:
 }
 ```
 
-The generated configuration intentionally uses the `vericore` executable from `PATH`, so it remains portable across machines. If your MCP client requires an absolute executable path, replace `command` with the installed Vericore path while keeping `args` as `["mcp"]`.
-```
+The generated configuration uses the `vericore` executable from `PATH`, so it remains portable across machines and contains no API keys. Existing `.mcp.json` files are protected from accidental replacement; use `--force` only when intentionally regenerating the file.
+
+Claude Code supports project-scoped `.mcp.json` configurations, making this a convenient checked-in project integration. citeturn1search2 Other MCP clients may use their own configuration locations; the printed JSON can be copied into those clients.
 
 For the complete CLI command contract, see [CLI Reference](CLI.md).
 
