@@ -1,1 +1,79 @@
-package com.vericore.core.session\n\nimport java.io.File\nimport java.util.UUID\nimport kotlinx.serialization.Serializable\nimport kotlinx.serialization.encodeToString\nimport kotlinx.serialization.json.Json\n\n@Serializable\ndata class SessionRecord(\n    val schemaVersion: String = "1.0",\n    val id: String,\n    val command: String,\n    val repositoryPath: String,\n    val startedAtEpochMillis: Long,\n    val completedAtEpochMillis: Long? = null,\n    val status: String = "RUNNING",\n    val snapshotPath: String? = null,\n    val reportPath: String? = null,\n    val summary: String? = null\n)\n\n@Serializable\ndata class SessionEvent(\n    val timestampEpochMillis: Long,\n    val type: String,\n    val message: String,\n    val artifact: String? = null\n)\n\nclass SessionRecorder private constructor(\n    private val sessionDir: File,\n    private var record: SessionRecord\n) {\n    private val json = Json { prettyPrint = true; encodeDefaults = true }\n    private val eventsFile = File(sessionDir, "commands.jsonl")\n    private val sessionFile = File(sessionDir, "session.json")\n\n    init { persist() }\n\n    fun event(type: String, message: String, artifact: String? = null) {\n        eventsFile.appendText(\n            Json.encodeToString(SessionEvent(System.currentTimeMillis(), type, message, artifact)) + System.lineSeparator()\n        )\n    }\n\n    fun complete(status: String, summary: String, snapshotPath: String? = null, reportPath: String? = null) {\n        record = record.copy(\n            completedAtEpochMillis = System.currentTimeMillis(),\n            status = status,\n            snapshotPath = snapshotPath,\n            reportPath = reportPath,\n            summary = summary\n        )\n        persist()\n        event("completed", summary, reportPath ?: snapshotPath)\n    }\n\n    private fun persist() { sessionFile.writeText(json.encodeToString(record)) }\n\n    companion object {\n        fun start(repositoryRoot: File, command: String, args: List<String>): SessionRecorder {\n            val workspace = repositoryRoot.resolve(".vericore").resolve("sessions")\n            require(workspace.mkdirs() || workspace.isDirectory) {\n                "Unable to create Vericore session directory: " + workspace.absolutePath\n            }\n            val id = System.currentTimeMillis().toString() + "-" + UUID.randomUUID().toString().take(8)\n            val sessionDir = workspace.resolve(id)\n            require(sessionDir.mkdirs()) { "Unable to create Vericore session: " + sessionDir.absolutePath }\n            val recorder = SessionRecorder(\n                sessionDir,\n                SessionRecord(id = id, command = command, repositoryPath = repositoryRoot.absolutePath, startedAtEpochMillis = System.currentTimeMillis())\n            )\n            val safeArgs = args.filterNot { it.contains("api", ignoreCase = true) && it.contains("key", ignoreCase = true) }\n            recorder.event("started", (command + " " + safeArgs.joinToString(" ")).trim())\n            return recorder\n        }\n    }\n}
+package com.vericore.core.session
+
+import java.io.File
+import java.util.UUID
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+
+@Serializable
+data class SessionRecord(
+    val schemaVersion: String = "1.0",
+    val id: String,
+    val command: String,
+    val repositoryPath: String,
+    val startedAtEpochMillis: Long,
+    val completedAtEpochMillis: Long? = null,
+    val status: String = "RUNNING",
+    val snapshotPath: String? = null,
+    val reportPath: String? = null,
+    val summary: String? = null
+)
+
+@Serializable
+data class SessionEvent(
+    val timestampEpochMillis: Long,
+    val type: String,
+    val message: String,
+    val artifact: String? = null
+)
+
+class SessionRecorder private constructor(
+    private val sessionDir: File,
+    private var record: SessionRecord
+) {
+    private val json = Json { prettyPrint = true; encodeDefaults = true }
+    private val eventsFile = File(sessionDir, "commands.jsonl")
+    private val sessionFile = File(sessionDir, "session.json")
+
+    init { persist() }
+
+    fun event(type: String, message: String, artifact: String? = null) {
+        eventsFile.appendText(
+            Json.encodeToString(SessionEvent(System.currentTimeMillis(), type, message, artifact)) + System.lineSeparator()
+        )
+    }
+
+    fun complete(status: String, summary: String, snapshotPath: String? = null, reportPath: String? = null) {
+        record = record.copy(
+            completedAtEpochMillis = System.currentTimeMillis(),
+            status = status,
+            snapshotPath = snapshotPath,
+            reportPath = reportPath,
+            summary = summary
+        )
+        persist()
+        event("completed", summary, reportPath ?: snapshotPath)
+    }
+
+    private fun persist() { sessionFile.writeText(json.encodeToString(record)) }
+
+    companion object {
+        fun start(repositoryRoot: File, command: String, args: List<String>): SessionRecorder {
+            val workspace = repositoryRoot.resolve(".vericore").resolve("sessions")
+            require(workspace.mkdirs() || workspace.isDirectory) {
+                "Unable to create Vericore session directory: " + workspace.absolutePath
+            }
+            val id = System.currentTimeMillis().toString() + "-" + UUID.randomUUID().toString().take(8)
+            val sessionDir = workspace.resolve(id)
+            require(sessionDir.mkdirs()) { "Unable to create Vericore session: " + sessionDir.absolutePath }
+            val recorder = SessionRecorder(
+                sessionDir,
+                SessionRecord(id = id, command = command, repositoryPath = repositoryRoot.absolutePath, startedAtEpochMillis = System.currentTimeMillis())
+            )
+            val safeArgs = args.filterNot { it.contains("api", ignoreCase = true) && it.contains("key", ignoreCase = true) }
+            recorder.event("started", (command + " " + safeArgs.joinToString(" ")).trim())
+            return recorder
+        }
+    }
+}
