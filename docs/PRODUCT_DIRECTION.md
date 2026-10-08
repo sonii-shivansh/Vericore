@@ -1,87 +1,92 @@
 # Vericore Product Direction
 
-> AI writes the code. Vericore verifies the change.
+> **AI writes the code. Vericore verifies the change.**
 
 Vericore is being evolved into an engineering intelligence and verification layer for AI-assisted software development.
 
-## Product pipeline
+## Product model
 
-`repository facts → evidence → deterministic analysis → AI interpretation → recommendation → verification`
+repository facts → evidence → deterministic analysis → plan/contract → AI agent change → verification → explainable result
 
-AI is an optional interpretation layer. Repository facts and verification decisions remain deterministic and auditable.
+The repository remains the source of truth. AI is an optional interpretation layer, not the authority for repository facts or verification decisions.
 
-## First-run journey
+## Public journey
 
-The public product journey is intentionally small. Specialized commands remain available underneath it.
+The public experience should stay small and understandable:
 
-1. `vericore init`
-2. `vericore scan`
-3. `vericore inspect`
-4. `vericore ask "..."`
-5. `vericore review`
-6. `vericore plan`
-7. `vericore prepare "..."`
-8. An AI coding agent makes the change.
-9. `vericore verify`
-10. `vericore report`
-11. `vericore doctor`
+1. init — initialize the project
+2. scan — understand the repository
+3. inspect — summarize what matters
+4. ask — ask grounded repository questions
+5. review — review a change
+6. plan — produce a deterministic engineering plan
+7. prepare — establish the change boundary
+8. AI agent changes the repository
+9. verify — verify the original boundary
+10. report — produce the engineering record
+11. doctor — diagnose installation/configuration
 
-## Public command direction
+Specialized commands remain available underneath this product journey.
 
-The existing specialized commands remain available for compatibility. The product-level surface should converge on:
-
-- `init` — initialize the project
-- `scan` — understand the repository
-- `inspect` — summarize architecture, risk, hotspots and next actions
-- `ask` — grounded repository questions
-- `review` — review a Git diff/change
-- `plan` — produce a deterministic engineering plan
-- `prepare` — establish a change contract
-- `verify` — verify an agent change
-- `report` — produce a complete engineering session report
-- `doctor` — diagnose installation and configuration
-
-Advanced commands remain available underneath this layer.
-
-## Output contract
+## Output direction
 
 Human-readable output is the default. Machine-readable JSON remains available for automation.
 
-Product-level commands should converge on repository, result/status, key findings, AI interpretation when enabled, artifacts, duration and next step.
+Product-level commands should make the same core information easy to find:
+- repository/state
+- status
+- key findings
+- evidence/artifacts
+- optional AI interpretation
+- next step
 
 ## Roadmap
 
-### P0 — product foundation
-- `init`
-- unified command output
-- `scan`
-- `inspect`
-- durable session recording
-- complete `report`
-- consistent `--json` support
-- one clean GitHub Actions product-flow E2E
+### Phase 0 — Public foundation
+- concise discovery-first README
+- clear product explanation
+- task-oriented Getting Started
+- coherent documentation hub
+- implementation status separated from future work
+- technical documents kept as authoritative references
 
-### P1 — trusted AI
-- grounded AI explanations for analysis results
-- evidence IDs and grounding score in AI answers
-- AI-assisted change review
-- feature-gap and recommendation engine
+### Phase 1 — Understandability
+- finish the unified public command experience
+- consistent machine-readable product output
+- short reproducible 60-second product journey
+- strong verification receipt/output
+- incremental verification where it improves speed without weakening determinism
 
-### P2 — agent ecosystem
-- polished MCP auto-configuration
-- verified integrations for Cursor, Claude Code, Gemini CLI, Codex and GitHub Copilot
-- agent-facing skills/commands
+### Phase 2 — Agent-native workflow
+- native integrations for major coding-agent environments
+- agent-facing skills and commands
+- polished MCP onboarding
+- reliable prepare → agent change → verify workflows
 
-### P3 — team control plane
-- GitHub PR review and comments
-- architecture policy enforcement
-- project memory
-- organization/cross-repository intelligence
-- web dashboard and audit history
+### Phase 3 — Verification moat
+- stronger change contracts
+- protected paths and expected operations
+- explainable deterministic verification results
+- verification receipts suitable for CI/PR artifacts
+- architecture and dependency expectations tied to verification
 
-### P4 — commercial
-- open-core developer CLI
-- Pro/team capabilities around AI, history, policy and collaboration
-- enterprise private deployment, SSO/RBAC and audit controls
+### Phase 4 — Evidence-grounded intelligence
+- project memory built from verified repository evidence
+- feature-gap analysis
+- broader cross-repository intelligence where evidence boundaries remain explicit
+- repeatable benchmarks and public evaluation examples
 
-Pricing should be validated against real developer and team usage before publication.
+### Later
+
+GitHub App, dashboards, team/org governance, hosted services, and commercial packaging are deliberately later. The immediate goal is an excellent open-source verification layer for AI-assisted development.
+
+## Product principles
+
+- Evidence before AI.
+- Deterministic analysis is authoritative.
+- AI interprets; it does not invent repository facts.
+- Verification is repository-bound.
+- Fail closed when the verification boundary cannot be trusted.
+- Preserve CLI compatibility while the public journey improves.
+- Keep MCP machine-readable and safe for local agent use.
+- Do not expand into hosted control-plane features before the developer/agent workflow is genuinely useful.
