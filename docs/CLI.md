@@ -811,3 +811,32 @@ vericore architecture-contract . --json
 This document describes the CLI implementation, not future roadmap ideas. When a command, option, output artifact, or safety boundary changes, update this reference in the same change.
 
 For the system-level model, see [Architecture](ARCHITECTURE.md). For agent integrations, see [MCP](MCP.md). For safe changes, see [Change Safety](CHANGE_SAFETY.md).
+## 5. `inspect`
+
+Summarize the persisted deterministic analysis for a fast human or agent orientation. It does not run a second analysis engine.
+
+### Syntax
+
+```bash
+vericore inspect [--path <repository>] [--json]
+```
+
+### Examples
+
+```bash
+vericore inspect --path .
+vericore inspect --path . --json
+```
+
+### Output
+
+The human-readable output summarizes languages, repository size, dependency-graph health, architecture cycles, high/critical risk counts, top hotspots, and the highest-priority deterministic next actions.
+
+With `--json`, Vericore writes:
+
+```text
+output/inspection.json
+```
+
+`inspect` requires `output/analysis-snapshot.json`; run `vericore scan --path <repository>` first.
+
