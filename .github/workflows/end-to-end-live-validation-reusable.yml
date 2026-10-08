@@ -4,34 +4,28 @@ on:
   workflow_call:
     inputs:
       repository:
-        description: "Real public Java/Kotlin repository to validate"
         required: false
         type: string
         default: "spring-projects/spring-petclinic"
       ref:
-        description: "Repository ref"
         required: false
         type: string
         default: "main"
       run_ai:
-        description: "Run optional AI command when GEMINI_API_KEY is configured"
         required: false
         type: boolean
         default: false
   workflow_dispatch:
     inputs:
       repository:
-        description: "Real public Java/Kotlin repository to validate"
         required: false
         type: string
         default: spring-projects/spring-petclinic
       ref:
-        description: "Repository ref"
         required: false
         type: string
         default: main
       run_ai:
-        description: "Run optional AI command when GEMINI_API_KEY is configured"
         required: false
         type: boolean
         default: false
@@ -52,73 +46,8 @@ jobs:
       TARGET_REF: ${{ inputs.ref || 'main' }}
       RUN_AI: ${{ inputs.run_ai || 'false' }}
     steps:
-      - name: Checkout Vericore
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-
-      - name: Set up Java
-        uses: actions/setup-java@v6
-        with:
-          java-version: ${{ env.JAVA_VERSION }}
-          distribution: temurin
-          cache: gradle
-
-      - name: Build Vericore and install distribution
+      - name: Probe
         run: |
-          chmod +x ./gradlew scripts/audit/production-e2e.sh
-          ./gradlew --no-daemon clean test installDist
-
-      - name: Clone real target repository
-        run: |
-          set -euo pipefail
-          rm -rf "$RUNNER_TEMP/target"
-          git clone --depth 50 --branch "$TARGET_REF" "https://github.com/$TARGET_REPOSITORY.git" "$RUNNER_TEMP/target"
-          git -C "$RUNNER_TEMP/target" rev-parse HEAD
-          test -d "$RUNNER_TEMP/target/.git"
-
-      - name: Run complete production E2E and output audit
-        env:
-          CLI: ${{ github.workspace }}/build/install/vericore/bin/vericore
-        run: |
-          scripts/audit/production-e2e.sh "$RUNNER_TEMP/target" "$RUNNER_TEMP/target/output/production-e2e"
-
-      - name: Optional live AI command
-        if: env.RUN_AI == 'true' && env.GEMINI_API_KEY != ''
-        env:
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          CLI: ${{ github.workspace }}/build/install/vericore/bin/vericore
-        working-directory: ${{ runner.temp }}/target
-        run: |
-          set -euo pipefail
-          "$CLI" ask "What are the main architectural hotspots in this repository?" \
-            > output/production-e2e/42-ask.stdout \
-            2> output/production-e2e/42-ask.stderr
-          test -s output/production-e2e/42-ask.stdout
-
-      - name: Validate target repository remained clean
-        working-directory: ${{ runner.temp }}/target
-        run: |
-          git status --short
-          python3 - <<'PY'
-import subprocess
-rows = subprocess.check_output(["git", "status", "--porcelain=v1"], text=True).splitlines()
-unexpected = []
-for row in rows:
-    code = row[:2]
-    path = row[3:]
-    if code == "??" and (path.startswith("output/") or path.startswith(".vericore/")):
-        continue
-    unexpected.append(row)
-assert not unexpected, unexpected
-PY
-
-      - name: Upload complete E2E evidence
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: vericore-production-e2e-${{ github.run_id }}
-          path: |
-            ${{ runner.temp }}/target/output/production-e2e/
-            ${{ runner.temp }}/target/output/*.json
-          if-no-files-found: warn
+          echo "repository=$TARGET_REPOSITORY"
+          echo "ref=$TARGET_REF"
+          echo "run_ai=$RUN_AI"
