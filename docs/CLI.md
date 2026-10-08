@@ -343,6 +343,7 @@ vericore reality [<path>] [--json]
 ```bash
 vericore analyze .
 vericore reality . --json
+vericore recommendations . --json
 ```
 
 ### Output
@@ -737,6 +738,36 @@ The JSON artifact is written to `output/review.json`. Review findings are determ
 `--ai` adds a grounded AI explanation on top of the deterministic review. It uses the real Git diff plus the persisted `output/analysis-snapshot.json` evidence, requires AI credentials to be configured, and reports the deterministic grounding score and evidence citations. It does not replace deterministic findings and does not claim runtime correctness.
 
 For `--ai`, run `vericore analyze .` first and keep the analysis snapshot current with the checked-out commit. The JSON artifact remains `output/review.json`; when AI is enabled it contains both `deterministic` and `ai` sections.
+
+## 26. `recommendations`
+
+Generate prioritized engineering actions from the persisted deterministic analysis snapshot.
+
+### Syntax
+
+```bash
+vericore recommendations [<path>] [--json]
+```
+
+### Examples
+
+```bash
+vericore analyze .
+vericore recommendations .
+vericore recommendations . --json
+```
+
+### Output
+
+With `--json`:
+
+```text
+output/recommendations.json
+```
+
+Recommendations are deterministic and evidence-backed. They can flag critical/high-risk hotspots, dependency cycles, parser diagnostics, and cross-package coupling. They do not claim that a repository is correct or secure.
+
+The command requires `output/analysis-snapshot.json`; run `vericore analyze` or `vericore scan` first.
 
 ## Recommended command workflows
 
