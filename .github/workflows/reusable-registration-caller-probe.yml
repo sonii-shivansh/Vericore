@@ -1,0 +1,12 @@
+name: Reusable Registration Caller Probe
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    uses: ./.github/workflows/reusable-registration-probe.yml
