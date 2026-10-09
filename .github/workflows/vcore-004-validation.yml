@@ -1,6 +1,13 @@
 name: VCORE-004 Validation
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "build.gradle.kts"
+      - "gradle/**"
+      - "gradlew"
   workflow_dispatch:
 
 permissions:

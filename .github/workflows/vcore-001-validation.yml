@@ -1,6 +1,13 @@
 name: VCORE-001 Validation
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "build.gradle.kts"
+      - "gradle/**"
+      - "gradlew"
   push:
     branches:
       - fix/vcore-001-same-package-dependencies

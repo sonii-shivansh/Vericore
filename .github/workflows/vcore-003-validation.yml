@@ -1,6 +1,13 @@
 name: VCORE-003 Validation
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "build.gradle.kts"
+      - "gradle/**"
+      - "gradlew"
   push:
     branches:
       - fix/vcore-003-verify-execution
