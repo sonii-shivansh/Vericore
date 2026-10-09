@@ -3,6 +3,9 @@ set -euo pipefail
 
 CLI=${CLI:?CLI must point to the installed Vericore executable}
 REPO=${1:?repository path required}
+# Canonicalize once so the allowlist roots and every REST request use the same
+# absolute path, even when the caller supplies a relative path or symlink.
+REPO="$(cd "$REPO" && pwd -P)"
 OUT="${2:-$REPO/output/production-e2e}"
 COMMAND_TIMEOUT_SECONDS="${VERICORE_E2E_COMMAND_TIMEOUT_SECONDS:-180}"
 mkdir -p "$OUT"
@@ -228,7 +231,8 @@ PY
 # The server's path allowlist defaults to the Vericore checkout and system temp
 # directory. Explicitly allow this isolated audit fixture; do not weaken the
 # application's default path boundary.
-VERICORE_ALLOWED_PATHS="$REPO" "$CLI" server --host 127.0.0.1 --port 18080 >"$OUT/41-rest-server.log" 2>&1 &
+export VERICORE_ALLOWED_PATHS="$REPO"
+"$CLI" server --host 127.0.0.1 --port 18080 >"$OUT/41-rest-server.log" 2>&1 &
 SERVER_PID=$!
 trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
 for _ in $(seq 1 30); do
