@@ -82,7 +82,7 @@ jobs:
   live-e2e:
     name: Live end-to-end application validation
     runs-on: ubuntu-24.04
-    timeout-minutes: ${{ inputs.job_timeout_minutes }}
+    timeout-minutes: ${{ inputs.job_timeout_minutes || 60 }}
     env:
       TARGET_REPOSITORY: ${{ inputs.repository || 'spring-projects/spring-petclinic' }}
       TARGET_REF: ${{ inputs.ref || 'main' }}
@@ -116,7 +116,7 @@ jobs:
       - name: Run complete production E2E and output audit
         env:
           CLI: ${{ github.workspace }}/build/install/vericore/bin/vericore
-          VERICORE_E2E_COMMAND_TIMEOUT_SECONDS: ${{ inputs.command_timeout_seconds }}
+          VERICORE_E2E_COMMAND_TIMEOUT_SECONDS: ${{ inputs.command_timeout_seconds || 180 }}
         run: |
           scripts/audit/production-e2e.sh "$RUNNER_TEMP/target" "$RUNNER_TEMP/target/output/production-e2e"
 
