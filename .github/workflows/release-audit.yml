@@ -124,11 +124,15 @@ jobs:
           - name: Kotlin
             repository: google/kotlin
             ref: master
+            command_timeout_seconds: 600
+            job_timeout_minutes: 180
     uses: ./.github/workflows/end-to-end-live-validation.yml
     with:
       repository: ${{ matrix.target.repository }}
       ref: ${{ matrix.target.ref }}
       run_ai: false
+      command_timeout_seconds: ${{ matrix.target.command_timeout_seconds || 180 }}
+      job_timeout_minutes: ${{ matrix.target.job_timeout_minutes || 60 }}
     secrets: inherit
 
   live-petclinic:
