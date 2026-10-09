@@ -6,6 +6,7 @@ REPO=${1:?repository path required}
 OUT="${2:-$REPO/output/production-e2e}"
 COMMAND_TIMEOUT_SECONDS="${VERICORE_E2E_COMMAND_TIMEOUT_SECONDS:-180}"
 mkdir -p "$OUT"
+OUT="$(cd "$OUT" && pwd)"
 export OUT
 
 cd "$REPO"
