@@ -225,7 +225,10 @@ props=review["inputSchema"]["properties"]
 assert props["includeAi"]["type"]=="boolean"
 PY
 
-"$CLI" server --host 127.0.0.1 --port 18080 >"$OUT/41-rest-server.log" 2>&1 &
+# The server's path allowlist defaults to the Vericore checkout and system temp
+# directory. Explicitly allow this isolated audit fixture; do not weaken the
+# application's default path boundary.
+VERICORE_ALLOWED_PATHS="$REPO" "$CLI" server --host 127.0.0.1 --port 18080 >"$OUT/41-rest-server.log" 2>&1 &
 SERVER_PID=$!
 trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
 for _ in $(seq 1 30); do
@@ -237,7 +240,14 @@ curl -fsS http://127.0.0.1:18080/health/live >"$OUT/41-rest-live.json"
 curl -fsS http://127.0.0.1:18080/health/ready >"$OUT/41-rest-ready.json"
 curl -fsS -H 'Content-Type: application/json' -d '{"repoPath":"'"$REPO"'"}'   http://127.0.0.1:18080/architecture >"$OUT/41-rest-architecture.json"
 status="$(curl -sS -o "$OUT/41-rest-remote.json" -w '%{http_code}'   -X POST http://127.0.0.1:18080/analyze   -H 'Content-Type: application/json'   -d '{"repoPath":"https://github.com/example/example.git"}')"
-[[ "$status" != 2* && "$status" != 3* ]]
+# This is an intentional negative security test: curl must capture, not fail on,
+# the HTTP response. Assert the precise rejection and its documented error.
+[[ "$status" == "400" ]]
+python3 - "$OUT/41-rest-remote.json" <<'PY'
+import json, pathlib, sys
+response=json.loads(pathlib.Path(sys.argv[1]).read_text())
+assert "Remote repositories are not supported" in response.get("error", response.get("message", "")), response
+PY
 kill "$SERVER_PID" 2>/dev/null || true
 trap - EXIT
 
