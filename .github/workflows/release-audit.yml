@@ -121,9 +121,9 @@ jobs:
           - name: Quarkus
             repository: quarkusio/quarkus
             ref: main
-          - name: Gson
-            repository: google/gson
-            ref: main
+          - name: Kotlin
+            repository: google/kotlin
+            ref: master
     uses: ./.github/workflows/end-to-end-live-validation.yml
     with:
       repository: ${{ matrix.target.repository }}
