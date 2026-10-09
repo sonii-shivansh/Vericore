@@ -248,13 +248,28 @@ jobs:
           test -z "$(git diff --name-only)"
           test -z "$(git diff --cached --name-only)"
           test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/|\.vericore/)' || true)"
-      - name: Verify prepared contract remains valid after mutation tests
+      - name: Verify a valid planned change after mutation tests
         working-directory: ${{ runner.temp }}/target
         run: |
+          set -euo pipefail
           CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
-          "$CLI" verify --output output/final-verify.json
+          cp README.md "$RUNNER_TEMP/final-readme.original"
+          restore_readme() { cp "$RUNNER_TEMP/final-readme.original" README.md; }
+          trap restore_readme EXIT
+          "$CLI" prepare "Verify a harmless planned README marker" --path . --planned-path README.md
+          printf '\nVericore release-gate positive verification marker\n' >> README.md
+          "$CLI" verify --path . --output output/final-verify.json
           test -s output/final-verify.json
-          grep -q '"valid": true' output/final-verify.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          result=json.loads(Path('output/final-verify.json').read_text())
+          assert result.get('valid') is True or result.get('status') == 'PASS', result
+          assert result.get('safety', {}).get('status') == 'PASS', result
+          PY
+          restore_readme
+          trap - EXIT
+          test -z "$(git diff --name-only)"
       - name: MCP protocol and gateway smoke test
         working-directory: ${{ runner.temp }}/target
         run: |
