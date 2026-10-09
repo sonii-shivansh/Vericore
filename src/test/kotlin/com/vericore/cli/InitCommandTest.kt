@@ -43,5 +43,5 @@ class InitCommandTest {
     }
 
     private fun cliPath(file: java.io.File): String =
-        file.absolutePath.replace('\\\\', '/')
+        file.absolutePath.replace(java.io.File.separatorChar, '/')
 }
