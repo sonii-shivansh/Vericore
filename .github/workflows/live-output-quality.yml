@@ -15,6 +15,11 @@ on:
         required: false
         type: boolean
         default: false
+      command_timeout_seconds:
+        description: "Timeout for each command in the authoritative live E2E audit"
+        required: false
+        type: number
+        default: 180
     secrets:
       GEMINI_API_KEY:
         required: false
@@ -42,6 +47,11 @@ on:
         required: false
         type: boolean
         default: true
+      command_timeout_seconds:
+        description: 'Timeout for each command in the authoritative live E2E audit'
+        required: false
+        type: number
+        default: 180
 
 permissions:
   contents: read
@@ -85,6 +95,7 @@ jobs:
         working-directory: ${{ runner.temp }}/target
         env:
           CLI: ${{ github.workspace }}/build/install/vericore/bin/vericore
+          VERICORE_E2E_COMMAND_TIMEOUT_SECONDS: ${{ inputs.command_timeout_seconds || 180 }}
         run: |
           chmod +x "$GITHUB_WORKSPACE/scripts/audit/production-e2e.sh"
           "$GITHUB_WORKSPACE/scripts/audit/production-e2e.sh" "$RUNNER_TEMP/target" "$RUNNER_TEMP/target/output/production-e2e"
