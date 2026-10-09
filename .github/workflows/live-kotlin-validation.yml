@@ -1,0 +1,24 @@
+name: Google Kotlin Live E2E
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - phase0/stabilize-e2e-and-ci
+    paths:
+      - ".github/workflows/live-kotlin-validation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  kotlin-live-e2e:
+    name: Full production E2E against google/kotlin
+    uses: ./.github/workflows/end-to-end-live-validation.yml
+    with:
+      repository: google/kotlin
+      ref: master
+      run_ai: false
+      command_timeout_seconds: 600
+      job_timeout_minutes: 180
+    secrets: inherit
