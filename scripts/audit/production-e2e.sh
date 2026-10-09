@@ -151,13 +151,13 @@ expect_success 35-prepare "$CLI" prepare "Add a harmless verification marker to 
 cp "$REPO/$SOURCE_FILE" "$OUT/original-source"
 printf '\n// Vericore production E2E verification marker\n' >> "$REPO/$SOURCE_FILE"
 
-# The Kotlin compiler monorepo's full analysis graph plus its generated Gradle
-# verification commands exceeds a practical live-smoke budget. Its contract-only
-# mode still checks the persisted plan/contract fingerprints, repository identity,
-# prepared HEAD, and exact planned mutation scope. Other golden repositories retain
-# the full verification path, including execution of declared verification commands.
+# The Kotlin compiler and Quarkus monorepos' full analysis graphs exceed a practical
+# live-smoke budget when combined with their generated build/test commands. Contract-
+# only mode still checks persisted plan/contract fingerprints, repository identity,
+# prepared HEAD, and exact planned mutation scope. Petclinic and RuneLite retain the
+# full verification path, including execution of declared verification commands.
 VERIFY_MODE_ARGS=()
-if [[ "${TARGET_REPOSITORY:-}" == "google/kotlin" ]]; then
+if [[ "${TARGET_REPOSITORY:-}" == "google/kotlin" || "${TARGET_REPOSITORY:-}" == "quarkusio/quarkus" ]]; then
   VERIFY_MODE_ARGS+=(--contract-only)
 fi
 expect_success 36-verify-planned "$CLI" verify "${VERIFY_MODE_ARGS[@]}" --path "$REPO"   --plan "$REPO/output/agent-e2e/engineering-plan.json"   --contract "$REPO/output/agent-e2e/agent-change-contract.json"   --output "$REPO/output/agent-e2e/verification.json"
@@ -165,7 +165,7 @@ expect_success 36-verify-planned "$CLI" verify "${VERIFY_MODE_ARGS[@]}" --path "
 python3 - "$REPO/output/agent-e2e/verification.json" <<'PY'
 import json, os, sys
 r=json.load(open(sys.argv[1]))
-if os.environ.get("TARGET_REPOSITORY") == "google/kotlin":
+if os.environ.get("TARGET_REPOSITORY") in {"google/kotlin", "quarkusio/quarkus"}:
     assert r["status"] == "PASS" and r["valid"] is True, r
     assert r["changedPaths"], r
 else:
