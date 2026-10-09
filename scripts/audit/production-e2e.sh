@@ -5,7 +5,7 @@ CLI=${CLI:?CLI must point to the installed Vericore executable}
 REPO=${1:?repository path required}
 OUT="${2:-$REPO/output/production-e2e}"
 # Large real-world repositories can contain tens of thousands of files; allow verification to finish.
-COMMAND_TIMEOUT_SECONDS="${VERICORE_E2E_COMMAND_TIMEOUT_SECONDS:-600}"
+COMMAND_TIMEOUT_SECONDS="${VERICORE_E2E_COMMAND_TIMEOUT_SECONDS:-1200}"
 mkdir -p "$OUT"
 export OUT
 
@@ -76,7 +76,19 @@ json.loads((repo/"output/analysis-snapshot.json").read_text())
 json.loads((repo/"output/engineering-risks.json").read_text())
 PY
 
-SOURCE_FILE="$(git -C "$REPO" ls-files '*.java' '*.kt' | sed -n '1p')"
+# Prefer production source over examples/tests so the planned change exercises a real component.
+SOURCE_FILE="$(python3 - "$REPO" <<'PY'
+import subprocess, sys
+repo=sys.argv[1]
+paths=subprocess.check_output(["git","-C",repo,"ls-files","*.java","*.kt"],text=True).splitlines()
+def score(path):
+    p=path.replace("\\","/").lower()
+    production="/src/main/" in p
+    excluded=any(token in p for token in ("/test/","/tests/","/example/","/examples/","/sample/","/samples/","/benchmark/"))
+    return (0 if production and not excluded else 1 if not excluded else 2, len(p), p)
+print(sorted(paths,key=score)[0] if paths else "")
+PY
+)"
 test -n "$SOURCE_FILE"
 
 expect_success 22-evidence-graph "$CLI" evidence-graph "$REPO" --json
@@ -119,7 +131,13 @@ expect_success 35-prepare "$CLI" prepare "Add a harmless verification marker to 
 
 cp "$REPO/$SOURCE_FILE" "$OUT/original-source"
 printf '\n// Vericore production E2E verification marker\n' >> "$REPO/$SOURCE_FILE"
-expect_success 36-verify-planned "$CLI" verify --path "$REPO"   --plan "$REPO/output/agent-e2e/engineering-plan.json"   --contract "$REPO/output/agent-e2e/agent-change-contract.json"   --output "$REPO/output/agent-e2e/verification.json"
+if ! expect_success 36-verify-planned "$CLI" verify --path "$REPO"   --plan "$REPO/output/agent-e2e/engineering-plan.json"   --contract "$REPO/output/agent-e2e/agent-change-contract.json"   --output "$REPO/output/agent-e2e/verification.json"; then
+  # Preserve structured diagnostics in the uploaded evidence when verification fails.
+  cp "$REPO/output/agent-e2e/verification.json" "$OUT/36-verification.json" 2>/dev/null || true
+  echo "Verification failed; captured contract and safety diagnostics where available." >&2
+  exit 1
+fi
+cp "$REPO/output/agent-e2e/verification.json" "$OUT/36-verification.json"
 
 python3 - "$REPO/output/agent-e2e/verification.json" <<'PY'
 import json, sys
