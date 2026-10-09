@@ -124,3 +124,7 @@ jobs:
           repo="$PWD"
           cd /tmp
           "$CLI" evolution "$repo" --months 1 --interval 30
+
+  windows-ci:
+    name: Windows tests and distribution
+    uses: ./.github/workflows/ci.yml

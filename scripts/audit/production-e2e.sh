@@ -6,6 +6,7 @@ REPO=${1:?repository path required}
 OUT="${2:-$REPO/output/production-e2e}"
 COMMAND_TIMEOUT_SECONDS="${VERICORE_E2E_COMMAND_TIMEOUT_SECONDS:-180}"
 mkdir -p "$OUT"
+OUT="$(cd "$OUT" && pwd)"
 export OUT
 
 cd "$REPO"
@@ -75,7 +76,18 @@ json.loads((repo/"output/analysis-snapshot.json").read_text())
 json.loads((repo/"output/engineering-risks.json").read_text())
 PY
 
-SOURCE_FILE="$(git -C "$REPO" ls-files '*.java' '*.kt' | head -1)"
+# Avoid piping the complete tracked-file list into `head`: with pipefail enabled,
+# Git can receive SIGPIPE (exit 141) after head exits early. This used to make
+# otherwise-successful large-repository E2E runs fail before impact/prepare/verify.
+SOURCE_LIST="$OUT/source-files.list"
+git -C "$REPO" ls-files -z -- '*.java' '*.kt' > "$SOURCE_LIST"
+SOURCE_FILE="$(python3 - "$SOURCE_LIST" <<'PY'
+import os, pathlib, sys
+paths = pathlib.Path(sys.argv[1]).read_bytes().split(b"\0")
+first = next((p for p in paths if p), b"")
+print(os.fsdecode(first))
+PY
+)"
 test -n "$SOURCE_FILE"
 
 expect_success 22-evidence-graph "$CLI" evidence-graph "$REPO" --json
