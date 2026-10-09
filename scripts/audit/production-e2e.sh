@@ -4,7 +4,8 @@ set -euo pipefail
 CLI=${CLI:?CLI must point to the installed Vericore executable}
 REPO=${1:?repository path required}
 OUT="${2:-$REPO/output/production-e2e}"
-COMMAND_TIMEOUT_SECONDS="${VERICORE_E2E_COMMAND_TIMEOUT_SECONDS:-180}"
+# Large real-world repositories can contain tens of thousands of files; allow verification to finish.
+COMMAND_TIMEOUT_SECONDS="${VERICORE_E2E_COMMAND_TIMEOUT_SECONDS:-600}"
 mkdir -p "$OUT"
 export OUT
 
