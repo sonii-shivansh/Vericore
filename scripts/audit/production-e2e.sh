@@ -231,7 +231,9 @@ PY
 # The server's path allowlist defaults to the Vericore checkout and system temp
 # directory. Explicitly allow this isolated audit fixture; do not weaken the
 # application's default path boundary.
-export VERICORE_ALLOWED_PATHS="$REPO"
+# Allow the isolated runner temp parent, which contains the target checkout and
+# any canonicalized path used by the CLI. This remains narrower than the runner FS.
+export VERICORE_ALLOWED_PATHS="$(dirname "$REPO")"
 "$CLI" server --host 127.0.0.1 --port 18080 >"$OUT/41-rest-server.log" 2>&1 &
 SERVER_PID=$!
 trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
