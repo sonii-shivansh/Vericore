@@ -6,7 +6,7 @@ on:
     outputs:
       ready:
         description: "Whether the exact candidate passed every required release-audit check"
-        value: ${{ jobs.readiness-certificate.outputs.ready }}
+        value: ${{ jobs.readiness_certificate.outputs.ready }}
   push:
     branches: [ main ]
 
@@ -171,7 +171,7 @@ jobs:
       run_gemini: false
     secrets: inherit
 
-  readiness-certificate:
+  readiness_certificate:
     name: Generate release readiness certificate
     if: always()
     needs: [deterministic-audit, windows-ci, verification, platform, onboarding, live-e2e, live-petclinic, live-runelite, output-petclinic, output-runelite]
