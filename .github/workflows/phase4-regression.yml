@@ -1,6 +1,14 @@
 name: Phase 4 Regression
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/**"
+      - "src/**"
+      - "build.gradle.kts"
+      - "gradle/**"
+      - "gradlew"
   workflow_dispatch:
   workflow_call:
 
