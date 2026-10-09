@@ -117,17 +117,17 @@ jobs:
         run: |
           git status --short
           python3 - <<'PY'
-import subprocess
-rows = subprocess.check_output(["git", "status", "--porcelain=v1"], text=True).splitlines()
-unexpected = []
-for row in rows:
-    code = row[:2]
-    path = row[3:]
-    if code == "??" and (path.startswith("output/") or path.startswith(".vericore/")):
-        continue
-    unexpected.append(row)
-assert not unexpected, unexpected
-PY
+          import subprocess
+          rows = subprocess.check_output(["git", "status", "--porcelain=v1"], text=True).splitlines()
+          unexpected = []
+          for row in rows:
+              code = row[:2]
+              path = row[3:]
+              if code == "??" and (path.startswith("output/") or path.startswith(".vericore/")):
+                  continue
+              unexpected.append(row)
+          assert not unexpected, unexpected
+          PY
 
       - name: Upload complete E2E evidence
         if: always()
