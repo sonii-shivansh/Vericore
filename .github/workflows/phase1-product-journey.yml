@@ -131,6 +131,7 @@ jobs:
               assert result["repository"] == str(root.resolve()), filename
               assert any(pathlib.Path(item["path"]).name == artifact for item in result["artifacts"]), filename
               assert isinstance(result["findings"], list), filename
+              assert result["nextStep"], filename
               assert isinstance(result["details"], dict), filename
           PY
 
