@@ -15,6 +15,9 @@ import kotlinx.serialization.json.Json
 class CacheManager(private val cacheDir: File = File(DEFAULT_CACHE_DIR)) {
     companion object {
         const val DEFAULT_CACHE_DIR = ".vericore/cache"
+
+        /** Resolve persistent parse-cache state inside the repository being analyzed. */
+        fun forRepository(root: File): CacheManager = CacheManager(File(root, DEFAULT_CACHE_DIR))
     }
 
     init { if (!cacheDir.exists()) cacheDir.mkdirs() }
