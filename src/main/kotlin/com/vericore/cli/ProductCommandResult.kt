@@ -3,6 +3,7 @@ package com.vericore.cli
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
 
 @Serializable
 data class ProductCommandResult(
@@ -12,7 +13,8 @@ data class ProductCommandResult(
     val repository: String? = null,
     val findings: List<ProductFinding> = emptyList(),
     val artifacts: List<ProductArtifact> = emptyList(),
-    val nextStep: String? = null
+    val nextStep: String? = null,
+    val details: JsonElement? = null
 )
 
 @Serializable

@@ -132,8 +132,10 @@ jobs:
           "$CLI" repo-qa "Which files are the main architectural hotspots?" --path . --evidence-output output/grounded-evidence.json > output/repo-qa.json
           test -s output/repo-qa.json
           test -s output/grounded-evidence.json
+          SOURCE_FILE="$(git ls-files '*.java' '*.kt' | sed -n '1p')"
+          test -n "$SOURCE_FILE"
           "$CLI" plan "Improve the repository safely" --evidence output/grounded-evidence.json --output output/engineering-plan.json
-          "$CLI" prepare "Improve the repository safely"
+          "$CLI" prepare "Improve the repository safely" --planned-path "$SOURCE_FILE"
           test -s output/engineering-plan.json
           test -s output/engineering-context.json
           test -s output/agent-change-contract.json
@@ -251,10 +253,29 @@ jobs:
       - name: Verify prepared contract remains valid after mutation tests
         working-directory: ${{ runner.temp }}/target
         run: |
+          set -euo pipefail
           CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
+          SOURCE_FILE="$(git ls-files '*.java' '*.kt' | sed -n '1p')"
+          test -n "$SOURCE_FILE"
+          cp "$SOURCE_FILE" "$RUNNER_TEMP/final-source.original"
+          restore_source() { cp "$RUNNER_TEMP/final-source.original" "$SOURCE_FILE"; }
+          trap restore_source EXIT
+          printf '\n// Vericore release-gate planned verification marker\n' >> "$SOURCE_FILE"
           "$CLI" verify --output output/final-verify.json
           test -s output/final-verify.json
-          grep -q '"valid": true' output/final-verify.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          result=json.loads(Path('output/final-verify.json').read_text())
+          assert result['status'] in {'PASS', 'REVIEW_REQUIRED'}, result['status']
+          assert result['contract'] and result['contract']['valid'] is True
+          assert result['verification']['executionComplete'] is True
+          assert result['verification']['allCommandsPassed'] is True
+          PY
+          restore_source
+          trap - EXIT
+          test -z "$(git diff --name-only)"
+          test -z "$(git diff --cached --name-only)"
       - name: MCP protocol and gateway smoke test
         working-directory: ${{ runner.temp }}/target
         run: |

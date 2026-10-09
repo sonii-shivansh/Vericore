@@ -49,8 +49,23 @@ class ReviewCommand : CliktCommand(
         if (jsonOutput) {
             val output = root.resolve("output/review.json")
             output.parentFile.mkdirs()
-            output.writeText(json.encodeToString(reviewOutput))
-            echo("Review JSON: ${output.absolutePath}")
+            val details = json.encodeToString(reviewOutput)
+            output.writeText(details)
+            echo(productJson(ProductCommandResult(
+                command = "review",
+                status = "COMPLETED",
+                repository = root.path,
+                findings = result.findings.map { finding ->
+                    ProductFinding(finding.severity.toString(), buildString {
+                        append(finding.reason)
+                        if (finding.paths.isNotEmpty()) append(" (files: ${finding.paths.joinToString(", ")})")
+                    })
+                },
+                artifacts = listOf(ProductArtifact("review", output.path)),
+                nextStep = "vericore verify --path ${root.path} after prepare",
+                details = json.parseToJsonElement(details)
+            )))
+            return
         }
 
         echo("🔎 Vericore Review")

@@ -75,7 +75,7 @@ json.loads((repo/"output/analysis-snapshot.json").read_text())
 json.loads((repo/"output/engineering-risks.json").read_text())
 PY
 
-SOURCE_FILE="$(git -C "$REPO" ls-files '*.java' '*.kt' | head -1)"
+SOURCE_FILE="$(git -C "$REPO" ls-files '*.java' '*.kt' | sed -n '1p')"
 test -n "$SOURCE_FILE"
 
 expect_success 22-evidence-graph "$CLI" evidence-graph "$REPO" --json

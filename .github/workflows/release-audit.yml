@@ -81,6 +81,11 @@ jobs:
           path: output/
           if-no-files-found: ignore
 
+  phase1_journey:
+    name: Phase 1 product journey
+    needs: deterministic-audit
+    uses: ./.github/workflows/phase1-product-journey.yml
+
   windows-ci:
     name: Windows CI
     needs: deterministic-audit
@@ -174,7 +179,7 @@ jobs:
   readiness_certificate:
     name: Generate release readiness certificate
     if: always()
-    needs: [deterministic-audit, windows-ci, verification, platform, onboarding, live-e2e, live-petclinic, live-runelite, output-petclinic, output-runelite]
+    needs: [deterministic-audit, phase1_journey, windows-ci, verification, platform, onboarding, live-e2e, live-petclinic, live-runelite, output-petclinic, output-runelite]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     outputs:
@@ -211,6 +216,7 @@ jobs:
             --sha "$CANDIDATE_SHA" \
             --ref "$CANDIDATE_REF" \
             --check "deterministic-audit=${{ needs.deterministic-audit.result }}" \
+            --check "phase1-product-journey=${{ needs.phase1_journey.result }}" \
             --check "windows-ci=${{ needs.windows-ci.result }}" \
             --check "verification=${{ needs.verification.result }}" \
             --check "platform=${{ needs.platform.result }}" \

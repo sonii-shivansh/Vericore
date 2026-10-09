@@ -57,6 +57,11 @@ Product-level commands should make the same core information easy to find:
 - strong verification receipt/output
 - incremental verification where it improves speed without weakening determinism
 
+Phase 1 verification contract:
+- Release Audit calls the product-journey workflow, so release readiness cannot pass without exercising the public journey.
+- `init`, `inspect`, and `review` expose the same schema-versioned product result envelope when `--json` is requested; detailed command-specific JSON remains available as an artifact and is included under `details`.
+- Verification reuses the content-addressed parser cache, but still recomputes repository changes, graph/impact/architecture signals, contract binding, and declared verification commands. A cache hit never reuses an earlier PASS decision.
+
 ### Phase 2 — Agent-native workflow
 - native integrations for major coding-agent environments
 - agent-facing skills and commands

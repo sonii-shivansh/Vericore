@@ -43,6 +43,7 @@
 - persisted output/agent-change-contract.json
 - contract tamper, plan mismatch, repository mismatch, stale-HEAD, and unexpected-change detection
 - verification against the persisted contract rather than a replacement derived from the mutated repository
+- content-addressed parser caching during verification; change scope, graph/impact/architecture, contract binding, and declared verification commands are re-evaluated on every run
 
 **Authoritative rule:** the persisted contract is the verification boundary.
 
@@ -97,11 +98,9 @@ GitHub Actions is the authoritative automated execution environment for release 
 Future work is not an API contract. A capability moves into **Implemented** only when the behavior exists in code and is supported by tests, CI, or release validation.
 
 Current priorities are:
-1. a clear unified developer/agent workflow;
-2. native agent integrations and agent-facing skills;
-3. stronger verification artifacts and incremental verification;
-4. deterministic explain capabilities;
-5. evidence-grounded project memory and feature-gap analysis;
-6. broader distribution and repeatable benchmarks.
+1. native agent integrations and agent-facing skills;
+2. deterministic explain capabilities;
+3. evidence-grounded project memory and feature-gap analysis;
+4. broader distribution and repeatable benchmarks.
 
 Team dashboards, hosted control planes, and commercial packaging are deliberately later concerns.

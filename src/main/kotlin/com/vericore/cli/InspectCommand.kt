@@ -58,8 +58,19 @@ class InspectCommand : CliktCommand(
         if (jsonOutput) {
             val output = root.resolve("output/inspection.json")
             output.parentFile.mkdirs()
-            output.writeText(Json { prettyPrint = true; encodeDefaults = true }.encodeToString(inspection))
-            echo("🔎 Inspection: ${output.absolutePath}")
+            val json = Json { prettyPrint = true; encodeDefaults = true }
+            val details = json.encodeToString(inspection)
+            output.writeText(details)
+            echo(productJson(ProductCommandResult(
+                command = "inspect",
+                status = "COMPLETED",
+                repository = root.path,
+                findings = recommendations.take(5).map { ProductFinding(it.priority.toString(), "${it.title}: ${it.action}") },
+                artifacts = listOf(ProductArtifact("inspection", output.path)),
+                nextStep = "vericore repo-qa \"What should I know before changing this repository?\" --path ${root.path}",
+                details = json.parseToJsonElement(details)
+            )))
+            return
         }
 
         echo("")

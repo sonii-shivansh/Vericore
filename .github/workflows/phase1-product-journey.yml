@@ -1,6 +1,7 @@
 name: Phase 1 Product Journey E2E
 
 on:
+  workflow_call:
   workflow_dispatch:
   pull_request:
     branches: [main]
@@ -83,9 +84,9 @@ jobs:
           git -C "$fixture" add .vericore.json
           git -C "$fixture" commit -qm "initialize Vericore"
           "$cli" scan --path "$fixture"
-          "$cli" inspect --path "$fixture" --json
+          "$cli" inspect --path "$fixture" --json > "$fixture/output/inspection-result.json"
           "$cli" repo-qa "What depends on Service?" --path "$fixture" --evidence-output "$fixture/output/grounded-evidence.json"
-          "$cli" review --path "$fixture" --json
+          "$cli" review --path "$fixture" --json > "$fixture/output/review-result.json"
           "$cli" plan "update Service greeting" --repository "$fixture" --changed src/main/kotlin/example/Service.kt --evidence "$fixture/output/grounded-evidence.json" --output "$fixture/output/plan-preview.json"
           "$cli" prepare "update Service greeting" --path "$fixture" --planned-path src/main/kotlin/example/Service.kt
 
@@ -101,6 +102,9 @@ jobs:
 
           test -s "$fixture/output/analysis-snapshot.json"
           test -s "$fixture/output/inspection.json"
+          test -s "$fixture/output/inspection-result.json"
+          test -s "$fixture/output/review-result.json"
+          test -s "$fixture/output/review.json"
           test -s "$fixture/output/grounded-evidence.json"
           test -s "$fixture/output/plan-preview.json"
           test -s "$fixture/output/agent-change-contract.json"
@@ -112,6 +116,23 @@ jobs:
           grep -q '"schemaVersion": "1.0"' "$fixture/output/inspection.json"
           grep -q 'Service.kt' "$fixture/output/inspection.json"
           grep -q '"status"' "$fixture/output/verification.json"
+
+          python3 - "$fixture" <<'PY'
+          import json, pathlib, sys
+          root=pathlib.Path(sys.argv[1])
+          for filename, command, artifact in [
+              ("inspection-result.json", "inspect", "inspection.json"),
+              ("review-result.json", "review", "review.json"),
+          ]:
+              result=json.loads((root/"output"/filename).read_text())
+              assert result["schemaVersion"] == "1.0", filename
+              assert result["command"] == command, filename
+              assert result["status"] == "COMPLETED", filename
+              assert result["repository"] == str(root.resolve()), filename
+              assert any(pathlib.Path(item["path"]).name == artifact for item in result["artifacts"]), filename
+              assert isinstance(result["findings"], list), filename
+              assert isinstance(result["details"], dict), filename
+          PY
 
       - name: Run the existing CLI audit
         run: ./scripts/audit/cli-audit.sh
