@@ -118,6 +118,8 @@ jobs:
           - name: RuneLite
             repository: runelite/runelite
             ref: master
+            command_timeout_seconds: 600
+            job_timeout_minutes: 90
           - name: Quarkus
             repository: quarkusio/quarkus
             ref: main
@@ -173,6 +175,7 @@ jobs:
       repository: runelite/runelite
       ref: master
       run_gemini: false
+      command_timeout_seconds: 600
     secrets: inherit
 
   readiness_certificate:
