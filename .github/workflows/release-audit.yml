@@ -2,6 +2,19 @@ name: Release Audit
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/**"
+      - "src/**"
+      - "scripts/**"
+      - "build.gradle.kts"
+      - "settings.gradle.kts"
+      - "gradle/**"
+      - "gradlew"
+      - "gradlew.bat"
+      - "README.md"
+      - "docs/**"
   workflow_call:
     outputs:
       ready:
@@ -206,7 +219,7 @@ jobs:
         id: certificate
         shell: bash
         env:
-          CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          CANDIDATE_SHA: ${{ github.sha }}
           CANDIDATE_REF: ${{ github.head_ref || github.ref_name }}
         run: |
           output="release-readiness-${{ steps.version.outputs.version }}.json"
