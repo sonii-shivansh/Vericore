@@ -11,6 +11,26 @@ export OUT
 
 cd "$REPO"
 
+# The Kotlin compiler repository has a large committed compiler test-data corpus.
+# Exclude those fixture directories for this live target while retaining the normal
+# 50k source-file safety limit.
+KOTLIN_CONFIG_CREATED=false
+if [[ "${TARGET_REPOSITORY:-}" == "google/kotlin" && ! -e "$REPO/.vericore.json" ]]; then
+  cat > "$REPO/.vericore.json" <<'JSON'
+{
+  "excludePaths": [".git", ".idea", ".gradle", "build", "target", "node_modules", ".vscode", "out", "dist", ".next", "testData", "testdata"],
+  "maxFilesAnalyze": 50000
+}
+JSON
+  KOTLIN_CONFIG_CREATED=true
+fi
+cleanup_kotlin_config() {
+  if [[ "$KOTLIN_CONFIG_CREATED" == true ]]; then
+    rm -f "$REPO/.vericore.json"
+  fi
+}
+trap cleanup_kotlin_config EXIT
+
 capture() {
   local name="$1"; shift
   echo "===== $name ====="
@@ -221,6 +241,10 @@ for p in repo.joinpath("output").glob("*.json"):
     json.loads(p.read_text())
 assert "CodeContext" not in "\n".join(p.read_text(errors="ignore") for p in out.glob("*"))
 PY
+
+cleanup_kotlin_config
+KOTLIN_CONFIG_CREATED=false
+trap - EXIT
 
 test -z "$(git -C "$REPO" diff --name-only)"
 test -z "$(git -C "$REPO" diff --cached --name-only)"
