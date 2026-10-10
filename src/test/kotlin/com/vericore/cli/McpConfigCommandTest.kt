@@ -4,6 +4,8 @@ import com.github.ajalt.clikt.testing.test
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertFailsWith
+import com.vericore.core.exceptions.ValidationException
 import kotlin.test.assertTrue
 import java.nio.file.Files
 import kotlinx.serialization.json.Json
@@ -41,6 +43,22 @@ class McpConfigCommandTest {
             assertTrue(target.readText().contains(""""command": "vericore""""))
             assertTrue(result.stdout.contains("Wrote"))
             assertFalse(target.readText().contains("apiKey"))
+        } finally {
+            temp.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun writeRefusesOverwriteWithFriendlyValidationFailure() {
+        val temp = Files.createTempDirectory("vericore-mcp-config-existing").toFile()
+        val target = temp.resolve(".mcp.json")
+        target.writeText("keep-me")
+        try {
+            val error = assertFailsWith<ValidationException> {
+                McpConfigCommand(temp).test("--write")
+            }
+            assertTrue(error.message.orEmpty().contains("Use --force"))
+            assertEquals("keep-me", target.readText())
         } finally {
             temp.deleteRecursively()
         }
