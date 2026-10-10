@@ -15,6 +15,7 @@ import kotlinx.serialization.json.Json
 class CacheManager(private val cacheDir: File = File(DEFAULT_CACHE_DIR)) {
     companion object {
         const val DEFAULT_CACHE_DIR = ".vericore/cache"
+        const val PARSE_CACHE_SCHEMA_VERSION = "2"
     }
 
     init { if (!cacheDir.exists()) cacheDir.mkdirs() }
@@ -60,7 +61,7 @@ class CacheManager(private val cacheDir: File = File(DEFAULT_CACHE_DIR)) {
             }
         }
         val contentHash = digest.digest().joinToString("") { "%02x".format(it) }
-        val metadata = "${file.canonicalPath}:$contentHash"
+        val metadata = "$PARSE_CACHE_SCHEMA_VERSION:${file.canonicalPath}:$contentHash"
         return MessageDigest.getInstance("SHA-256")
             .digest(metadata.toByteArray())
             .joinToString("") { "%02x".format(it) }
