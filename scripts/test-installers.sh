@@ -104,6 +104,26 @@ HOME="$HOME_DIR" PATH="$MOCK_BIN:$PATH" VERICORE_VERSION="0.9.0" \
 [[ "$("$BIN_DIR/vericore" --version)" == *"0.9.0"* ]] || fail "Upgraded CLI did not run."
 
 CURL_CALLS_BEFORE="$(wc -l < "$VERICORE_TEST_CURL_LOG")"
+
+# The launcher directory must not alias the install container, and the installer
+# must not overwrite an unrelated executable already named "vericore".
+if HOME="$HOME_DIR" PATH="$MOCK_BIN:$PATH" VERICORE_VERSION="0.9.0" \
+  VERICORE_INSTALL_ROOT="$INSTALL_ROOT" VERICORE_BIN_DIR="$INSTALL_ROOT" \
+  bash "$UNIX_INSTALLER" >/dev/null 2>&1; then
+  fail "Installer accepted overlapping installation and launcher directories."
+fi
+[[ -f "$INSTALL_ROOT/vericore/lib/vericore-0.9.0.jar" ]] || fail "Overlapping-directory rejection damaged the existing installation."
+
+UNRELATED_BIN="$TEST_ROOT/unrelated-bin"
+mkdir -p "$UNRELATED_BIN"
+printf 'do not replace this file\n' > "$UNRELATED_BIN/vericore"
+if HOME="$HOME_DIR" PATH="$MOCK_BIN:$PATH" VERICORE_VERSION="0.9.0" \
+  VERICORE_INSTALL_ROOT="$INSTALL_ROOT" VERICORE_BIN_DIR="$UNRELATED_BIN" \
+  bash "$UNIX_INSTALLER" >/dev/null 2>&1; then
+  fail "Installer overwrote a pre-existing unrelated launcher file."
+fi
+[[ "$(cat "$UNRELATED_BIN/vericore")" == "do not replace this file" ]] || fail "Installer modified a pre-existing unrelated launcher file."
+
 UNSAFE_HOME="$TEST_ROOT/unsafe-home"
 mkdir -p "$UNSAFE_HOME"
 printf 'keep home data\n' > "$UNSAFE_HOME/sentinel.txt"
