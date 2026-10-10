@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:vericore:schema:engineering-context-snapshot-v1.0",
+  "title": "Vericore Engineering Context Snapshot",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "repositoryCommit",
+    "files",
+    "totalFiles",
+    "totalBytes",
+    "languages",
+    "dirty",
+    "changedPaths",
+    "snapshotDigest"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "repositoryCommit": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "urn:vericore:schema:context-file-v1.0",
+        "title": "Context file",
+        "type": "object",
+        "required": [
+          "path",
+          "sha256",
+          "sizeBytes"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "sizeBytes": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "totalFiles": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "totalBytes": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "languages": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "dirty": {
+      "type": "boolean"
+    },
+    "changedPaths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "snapshotDigest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    }
+  },
+  "additionalProperties": false
+}
