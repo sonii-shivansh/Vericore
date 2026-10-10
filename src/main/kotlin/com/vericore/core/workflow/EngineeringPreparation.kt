@@ -9,6 +9,7 @@ import com.vericore.core.evidence.SemanticEvidenceGraphBuilder
 import com.vericore.core.graph.RobustDependencyGraph
 import com.vericore.core.intelligence.AnalysisSnapshot
 import com.vericore.core.intelligence.AnalysisSnapshotBuilder
+import com.vericore.core.intelligence.EngineeringContextEngine
 import com.vericore.core.intelligence.ChangeSet
 import com.vericore.core.intelligence.DecisionProvenance
 import com.vericore.core.planner.EngineeringPlan
@@ -43,17 +44,19 @@ object EngineeringPreparation {
         require(root.isDirectory) { "Repository path is not a directory: $repoPath" }
         val config = ConfigLoader.loadForRepository(root.path)
 
-        val cached = loadReusablePreparationInputs(root)
+        val scanner = RepositoryScanner(config)
+        val cached = loadReusablePreparationInputs(root, scanner)
         val snapshot: AnalysisSnapshot
         val evidence: GroundedEvidence
         if (cached != null) {
             snapshot = cached.first
             evidence = cached.second
         } else {
-            val files = RepositoryScanner(config).scan(root.path)
+            val files = scanner.scan(root.path)
             require(files.size <= config.maxFilesAnalyze) { "Repository exceeds the maximum file limit: ${config.maxFilesAnalyze}" }
-            val parsed = CodeParallelParser(CacheManager()).parseFiles(files)
-            val parseFailures = files.size - parsed.size
+            val parser = CodeParallelParser(CacheManager())
+            val parsed = parser.parseFiles(files)
+            val parseFailures = parser.lastWarningCount
             val enriched = OptimizedGitAnalyzer().analyze(root.path, parsed)
             val graph = RobustDependencyGraph()
             graph.build(enriched).getOrThrow()
@@ -102,16 +105,34 @@ object EngineeringPreparation {
         )
     }
 
-    private fun loadReusablePreparationInputs(root: File): Pair<AnalysisSnapshot, GroundedEvidence>? {
+    private fun loadReusablePreparationInputs(root: File, scanner: RepositoryScanner): Pair<AnalysisSnapshot, GroundedEvidence>? {
         val snapshotFile = root.resolve("output/analysis-snapshot.json")
         val evidenceFile = root.resolve("output/grounded-evidence.json")
         if (!snapshotFile.isFile || !evidenceFile.isFile) return null
         return runCatching {
             val snapshot = json.decodeFromString<AnalysisSnapshot>(snapshotFile.readText())
             val evidence = json.decodeFromString<GroundedEvidence>(evidenceFile.readText())
-            val currentHead = RepositoryState.head(root.path).orEmpty()
-            require(snapshot.repository.repositoryCommit == currentHead) {
+            val currentHead = RepositoryState.head(root.path)
+            val currentState = EngineeringContextEngine.snapshot(root, scanner)
+            require(currentState.changedPaths.all { changedPath ->
+                changedPath.endsWith(".kt") || changedPath.endsWith(".java")
+            }) {
+                "Cached preparation cannot be reused when non-source repository files have changed"
+            }
+            require(snapshot.repository.path == root.path) {
+                "Cached analysis snapshot belongs to a different repository"
+            }
+            require(snapshot.repository.repositoryCommit == currentHead && currentState.repositoryCommit == currentHead) {
                 "Cached analysis snapshot is stale"
+            }
+            require(
+                !snapshot.repository.repositoryStateDigest.isNullOrBlank() &&
+                    snapshot.repository.repositoryStateDigest == currentState.snapshotDigest
+            ) {
+                "Cached analysis snapshot source state is stale"
+            }
+            require(evidence.isBoundTo(snapshot, root.path)) {
+                "Cached grounded evidence is not bound to the current analysis snapshot"
             }
             snapshot to evidence
         }.getOrNull()
