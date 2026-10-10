@@ -13,34 +13,80 @@
     "generatedAt"
   ],
   "properties": {
-    "schemaVersion": { "const": "1.0" },
-    "project": { "const": "Vericore" },
-    "releaseVersion": { "type": "string", "minLength": 1 },
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "project": {
+      "const": "Vericore"
+    },
+    "releaseVersion": {
+      "type": "string",
+      "minLength": 1
+    },
     "candidate": {
       "type": "object",
-      "required": ["sha", "ref"],
+      "required": [
+        "sha",
+        "ref"
+      ],
       "properties": {
-        "sha": { "type": "string", "minLength": 40 },
-        "ref": { "type": "string", "minLength": 1 }
+        "sha": {
+          "type": "string",
+          "minLength": 40
+        },
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        }
       },
       "additionalProperties": false
     },
     "checks": {
       "type": "object",
-      "minProperties": 1,
+      "minProperties": 13,
       "additionalProperties": {
         "type": "object",
-        "required": ["required", "result", "passed"],
+        "required": [
+          "required",
+          "result",
+          "passed"
+        ],
         "properties": {
-          "required": { "const": true },
-          "result": { "type": "string" },
-          "passed": { "type": "boolean" }
+          "required": {
+            "const": true
+          },
+          "result": {
+            "type": "string"
+          },
+          "passed": {
+            "type": "boolean"
+          }
         },
         "additionalProperties": false
-      }
+      },
+      "required": [
+        "deterministic-audit",
+        "windows-ci",
+        "verification",
+        "platform",
+        "onboarding",
+        "live-e2e-matrix",
+        "live-petclinic",
+        "live-runelite",
+        "output-petclinic",
+        "output-runelite",
+        "docs-parity",
+        "github-action-audit",
+        "installer-regression"
+      ]
     },
-    "overallReady": { "type": "boolean" },
-    "generatedAt": { "type": "string", "format": "date-time" }
+    "overallReady": {
+      "type": "boolean"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
   },
   "additionalProperties": false
 }
