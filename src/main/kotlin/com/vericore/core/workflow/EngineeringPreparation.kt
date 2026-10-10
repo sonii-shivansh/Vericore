@@ -54,8 +54,9 @@ object EngineeringPreparation {
         } else {
             val files = scanner.scan(root.path)
             require(files.size <= config.maxFilesAnalyze) { "Repository exceeds the maximum file limit: ${config.maxFilesAnalyze}" }
-            val parsed = CodeParallelParser(CacheManager()).parseFiles(files)
-            val parseFailures = files.size - parsed.size
+            val parser = CodeParallelParser(CacheManager())
+            val parsed = parser.parseFiles(files)
+            val parseFailures = parser.lastWarningCount
             val enriched = OptimizedGitAnalyzer().analyze(root.path, parsed)
             val graph = RobustDependencyGraph()
             graph.build(enriched).getOrThrow()
