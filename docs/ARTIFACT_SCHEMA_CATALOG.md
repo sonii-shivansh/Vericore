@@ -14,13 +14,18 @@ This catalog is the source of truth for persisted, versioned core artifacts. Sch
 | Agent Change Contract | prepare -> output/agent-change-contract.json | 2.0 | schemas/agent-change-contract.schema.json | SHA-256 fingerprint is an integrity checksum, not a signature |
 | Preparation result | prepare / MCP vericore_prepare_change -> output/engineering-preparation.json | 1.2 | schemas/engineering-preparation.schema.json | Dedicated path avoids collision with EngineeringContextSnapshot |
 | Semantic evidence graph | evidence-graph --json -> output/semantic-evidence-graph.json | 1.0 | schemas/semantic-evidence-graph.schema.json | Ordered nodes/edges, cardinality and digest |
+| Architecture analysis | architecture <path> --json -> output/architecture.json | 1.1 | schemas/architecture-analysis.schema.json | Sorted findings, cycles, layers and dependency edges |
+| Change impact | impact <path> <changed-path> --json -> output/change-impact.json | 1.0 | schemas/change-impact.schema.json | Deterministic reachable impact nodes and summary |
+| PR intelligence | pr-intelligence <path> --json -> output/pr-intelligence.json | 1.0 | schemas/pr-intelligence.schema.json | Deterministic rule findings and aggregate severity |
+| Engineering risks | analyze -> output/engineering-risks.json | core risk model | schemas/engineering-risks.schema.json | Sorted risk list; schema tracks the serialized risk shape |
+| Product inspection | inspect --json -> output/inspection.json | 1.0 | schemas/inspection.schema.json | Snapshot-derived user-facing inspection summary |
 | Verification result | verify -> output/verification.json unless overridden | 1.2 | schemas/engineering-verification.schema.json | Caller can choose another output path |
 | Verification receipt | full verify -> output/verification-receipt.json | 1.0 | schemas/verification-receipt.schema.json | Derived from the same verification result, not a second decision |
 | Release-readiness certificate | Release Audit job | 1.0 | docs/release-readiness.schema.json | Existing schema outside docs/schemas |
 
-## Informational JSON outputs
+## Remaining schema inventory
 
-The CLI also emits versioned informational artifacts such as architecture analysis, change impact, PR intelligence, engineering risks, architecture contracts, and product command results. Their schema versions are defined in their Kotlin serializable models. They remain on the inventory backlog until they have dedicated JSON Schemas and are included in the generated-artifact audit; a version field alone is not full schema validation.
+Architecture-contract outputs, architecture-drift outputs, Engineering Reality, temporal/evolution summaries, ProductCommandResult envelopes, and command-specific error payloads are not all covered by dedicated schemas yet. Their model/version definitions remain in source; add explicit schemas and generated-artifact validation if they become durable interoperability contracts. Phase 0 currently schemas and validates the core persisted artifacts and primary analysis/inspection outputs listed above, rather than claiming every JSON string emitted by every command is schema-governed.
 
 ## Compatibility rules
 
