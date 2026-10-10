@@ -7,8 +7,24 @@ import argparse
 import json
 from datetime import datetime, timezone
 from pathlib import Path
+import re
 
 SCHEMA_VERSION = "1.0"
+REQUIRED_CHECKS = frozenset({
+    "deterministic-audit",
+    "windows-ci",
+    "verification",
+    "platform",
+    "onboarding",
+    "live-e2e-matrix",
+    "live-petclinic",
+    "live-runelite",
+    "output-petclinic",
+    "output-runelite",
+    "docs-parity",
+    "github-action-audit",
+    "installer-regression",
+})
 
 
 def parse_check(value: str) -> tuple[str, str]:
@@ -29,12 +45,16 @@ def main() -> int:
 
     if not args.version.strip():
         parser.error("version must not be empty")
-    if not args.sha.strip():
-        parser.error("sha must not be empty")
+    if not args.ref.strip():
+        parser.error("ref must not be empty")
+    if not re.fullmatch(r"[0-9a-fA-F]{40}", args.sha):
+        parser.error("sha must be a full 40-character Git commit SHA")
 
     checks: dict[str, dict[str, object]] = {}
     invalid_results: list[str] = []
     for name, result in args.check:
+        if name in checks:
+            parser.error(f"duplicate check name: {name}")
         passed = result == "success"
         if result not in {"success", "failure", "cancelled", "skipped", "neutral"}:
             invalid_results.append(f"{name}={result}")
@@ -43,7 +63,14 @@ def main() -> int:
     if invalid_results:
         parser.error("unsupported check result(s): " + ", ".join(invalid_results))
 
-    ready = bool(checks) and all(check["passed"] for check in checks.values())
+    missing = sorted(REQUIRED_CHECKS - checks.keys())
+    unexpected = sorted(checks.keys() - REQUIRED_CHECKS)
+    if missing:
+        parser.error("missing required check(s): " + ", ".join(missing))
+    if unexpected:
+        parser.error("unexpected check name(s): " + ", ".join(unexpected))
+
+    ready = all(checks[name]["passed"] for name in REQUIRED_CHECKS)
     certificate = {
         "schemaVersion": SCHEMA_VERSION,
         "project": "Vericore",
