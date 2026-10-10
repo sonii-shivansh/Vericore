@@ -16,16 +16,37 @@ data class EvidenceCitation(
     val relatedPaths: List<String> = emptyList()
 )
 
+const val GROUNDED_EVIDENCE_SCHEMA_VERSION = "1.1"
+
 @Serializable
 data class GroundedEvidence(
-    val schemaVersion: String = "1.0",
-    val citations: List<EvidenceCitation>
+    val schemaVersion: String = GROUNDED_EVIDENCE_SCHEMA_VERSION,
+    val citations: List<EvidenceCitation>,
+    /** Git commit observed when the source evidence was generated. */
+    val repositoryCommit: String? = null,
+    /** Digest of the exact analyzed source-file state. */
+    val repositoryStateDigest: String? = null,
+    /** Analysis schema used to produce these citations. */
+    val analysisSchemaVersion: String? = null
 ) {
     init {
         require(citations.map { it.id }.distinct().size == citations.size) {
             "Evidence citation IDs must be unique"
         }
     }
+
+    /**
+     * Legacy evidence can still be decoded for read compatibility, but it is not reusable
+     * for a new preparation unless its repository/snapshot identity is explicit and matches.
+     */
+    fun isBoundTo(snapshot: AnalysisSnapshot, expectedRepositoryPath: String): Boolean =
+        schemaVersion == GROUNDED_EVIDENCE_SCHEMA_VERSION &&
+            snapshot.repository.path == expectedRepositoryPath &&
+            repositoryCommit != null &&
+            repositoryCommit == snapshot.repository.repositoryCommit &&
+            repositoryStateDigest != null &&
+            repositoryStateDigest == snapshot.repository.repositoryStateDigest &&
+            analysisSchemaVersion == snapshot.schemaVersion
 }
 
 /**
@@ -119,7 +140,12 @@ object GroundedEvidenceBuilder {
             )
         }
 
-        return GroundedEvidence(citations = citations.take(maxCitations))
+        return GroundedEvidence(
+            citations = citations.take(maxCitations),
+            repositoryCommit = snapshot.repository.repositoryCommit,
+            repositoryStateDigest = snapshot.repository.repositoryStateDigest,
+            analysisSchemaVersion = snapshot.schemaVersion
+        )
     }
 
     private fun graphDetail(base: String, dependents: List<String>): String =
