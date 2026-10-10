@@ -1,0 +1,55 @@
+name: Installer Regression
+
+on:
+  pull_request:
+    paths:
+      - "scripts/install.sh"
+      - "scripts/install.ps1"
+      - "scripts/test-installers.sh"
+      - ".github/workflows/installer-regression.yml"
+      - ".github/workflows/release.yml"
+      - ".github/workflows/release-audit.yml"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/install.sh"
+      - "scripts/install.ps1"
+      - "scripts/test-installers.sh"
+      - ".github/workflows/installer-regression.yml"
+      - ".github/workflows/release.yml"
+      - ".github/workflows/release-audit.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  unix-installer-contract:
+    name: Unix installer contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Validate Bash syntax and release asset contract
+        run: |
+          bash -n scripts/install.sh
+          bash scripts/test-installers.sh
+
+  windows-installer-syntax:
+    name: Windows installer PowerShell syntax
+    runs-on: windows-2025
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Parse PowerShell installer without running it
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          $path = Join-Path $env:GITHUB_WORKSPACE 'scripts/install.ps1'
+          [System.Management.Automation.Language.Parser]::ParseFile($path, [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_.Message }
+            exit 1
+          }
