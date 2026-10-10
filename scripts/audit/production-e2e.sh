@@ -155,7 +155,7 @@ if [[ "${TARGET_REPOSITORY:-}" == "google/kotlin" ]]; then
   cleanup_kotlin_config
   KOTLIN_CONFIG_CREATED=false
 fi
-expect_success 35-prepare "$CLI" prepare "Add a harmless verification marker to the selected source file"   --path "$REPO"   --planned-path "$SOURCE_FILE"   --plan-output "$REPO/output/agent-e2e/engineering-plan.json"   --contract-output "$REPO/output/agent-e2e/agent-change-contract.json"   --output "$REPO/output/agent-e2e/engineering-context.json"
+expect_success 35-prepare "$CLI" prepare "Add a harmless verification marker to the selected source file"   --path "$REPO"   --planned-path "$SOURCE_FILE"   --plan-output "$REPO/output/agent-e2e/engineering-plan.json"   --contract-output "$REPO/output/agent-e2e/agent-change-contract.json"   --output "$REPO/output/agent-e2e/engineering-preparation.json"
 
 cp "$REPO/$SOURCE_FILE" "$OUT/original-source"
 printf '\n// Vericore production E2E verification marker\n' >> "$REPO/$SOURCE_FILE"
