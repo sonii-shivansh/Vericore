@@ -144,14 +144,15 @@ class EngineeringPreparationTest {
 
     private data class RepositoryStateFixture(
         val repositoryCommit: String,
-        val snapshotDigest: String
+        val snapshotDigest: String,
+        val changedPaths: List<String>
     )
 
     private fun currentState(root: File): RepositoryStateFixture {
         val commit = RepositoryState.head(root.path) ?: error("Git HEAD is missing from the fixture")
         val config = ConfigLoader.loadForRepository(root.path)
         val context = EngineeringContextEngine.snapshot(root, RepositoryScanner(config))
-        return RepositoryStateFixture(commit, context.snapshotDigest)
+        return RepositoryStateFixture(commit, context.snapshotDigest, context.changedPaths)
     }
 
     private fun writeCachedInputs(root: File, snapshotDigest: String, evidenceDigest: String) {
