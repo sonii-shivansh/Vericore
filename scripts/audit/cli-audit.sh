@@ -55,7 +55,7 @@ run "$APP" context-snapshot "$audit_fixture" --json >/dev/null
 run "$APP" evolution "$audit_fixture" --months 1 --interval 30 >/dev/null
 rm -rf "$audit_fixture/output"
 run "$APP" prepare "audit release workflow" --path "$audit_fixture" >/dev/null
-[[ -s "$audit_fixture/output/engineering-context.json" && -s "$audit_fixture/output/engineering-plan.json" && -s "$audit_fixture/output/agent-change-contract.json" ]]
+[[ -s "$audit_fixture/output/engineering-preparation.json" && -s "$audit_fixture/output/engineering-plan.json" && -s "$audit_fixture/output/agent-change-contract.json" ]]
 run "$APP" verify --path "$audit_fixture" --plan "$audit_fixture/output/engineering-plan.json" --contract "$audit_fixture/output/agent-change-contract.json" --output "$audit_fixture/output/verification.json" >/dev/null
 [[ -s "$audit_fixture/output/verification.json" ]]
 # Release-candidate regressions for the historical 0.8.1 audit findings.
