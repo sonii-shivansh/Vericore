@@ -1,0 +1,82 @@
+name: Kotlin REST Audit Regression
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/audit/production-e2e.sh"
+      - ".github/workflows/kotlin-rest-audit-regression.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  kotlin-rest-e2e:
+    name: Kotlin REST audit regression
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      JAVA_VERSION: "21"
+      TARGET_REPOSITORY: google/kotlin
+      TARGET_REF: master
+      RUN_AI: "false"
+    steps:
+      - name: Checkout Vericore
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v6
+        with:
+          java-version: ${{ env.JAVA_VERSION }}
+          distribution: temurin
+          cache: gradle
+
+      - name: Build and test Vericore
+        run: |
+          chmod +x ./gradlew scripts/audit/production-e2e.sh
+          ./gradlew --no-daemon clean test installDist
+
+      - name: Clone Kotlin compiler repository
+        run: |
+          set -euo pipefail
+          rm -rf "$RUNNER_TEMP/target"
+          git clone --depth 50 --branch "$TARGET_REF" "https://github.com/$TARGET_REPOSITORY.git" "$RUNNER_TEMP/target"
+          git -C "$RUNNER_TEMP/target" rev-parse HEAD
+          test -d "$RUNNER_TEMP/target/.git"
+
+      - name: Run production E2E and REST audit
+        env:
+          CLI: ${{ github.workspace }}/build/install/vericore/bin/vericore
+          VERICORE_E2E_COMMAND_TIMEOUT_SECONDS: "600"
+        run: |
+          scripts/audit/production-e2e.sh "$RUNNER_TEMP/target" "$RUNNER_TEMP/target/output/production-e2e"
+
+      - name: Validate target repository remained clean
+        working-directory: ${{ runner.temp }}/target
+        run: |
+          git status --short
+          python3 - <<'PY'
+          import subprocess
+          rows = subprocess.check_output(["git", "status", "--porcelain=v1"], text=True).splitlines()
+          unexpected = []
+          for row in rows:
+              code = row[:2]
+              path = row[3:]
+              if code == "??" and (path.startswith("output/") or path.startswith(".vericore/")):
+                  continue
+              unexpected.append(row)
+          assert not unexpected, unexpected
+          PY
+
+      - name: Upload Kotlin REST audit evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: kotlin-rest-audit-evidence-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/target/output/production-e2e/
+            ${{ runner.temp }}/target/output/*.json
+          if-no-files-found: warn
