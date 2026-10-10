@@ -2,6 +2,7 @@ package com.vericore.cli
 
 import com.vericore.core.intelligence.ChangeType
 import com.vericore.core.intelligence.ChangedFile
+import com.vericore.core.exceptions.ValidationException
 import com.vericore.core.planner.EngineeringPlan
 import com.vericore.core.workflow.AgentChangeContract
 import com.vericore.core.workflow.ChangeSafetyAnalyzer
@@ -62,7 +63,8 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
         echo("Verification receipt: ${root.resolve("output/verification-receipt.json").path}")
         echo("Status: ${result.status}")
         if (result.status == com.vericore.core.workflow.SafetyStatus.FAIL) {
-            throw IllegalStateException("Change verification failed: the prepared contract or change scope is invalid")
+            result.reasons.forEach { System.err.println("  - $it") }
+            throw ValidationException("Change verification failed: the prepared contract or change scope is invalid")
         }
     }
 
@@ -98,7 +100,8 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
         writeOutput(json.encodeToString(result))
         echo("Status: ${result.status}")
         if (status == com.vericore.core.workflow.SafetyStatus.FAIL) {
-            throw IllegalStateException("Change verification failed: the prepared contract or change scope is invalid")
+            allReasons.forEach { System.err.println("  - $it") }
+            throw ValidationException("Change verification failed: the prepared contract or change scope is invalid")
         }
     }
 
