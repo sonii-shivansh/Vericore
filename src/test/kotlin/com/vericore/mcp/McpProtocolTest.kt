@@ -66,7 +66,7 @@ class McpProtocolTest {
                 put("arguments", buildJsonObject { put("repoPath", JsonPrimitive(".")) })
             })
         })
-        assertEquals("-32602", response["error"]?.let { it.toString().substringAfter("\\"code\\":").substringBefore(',').trim() })
+        assertEquals("-32602", response["error"]?.let { it.toString().substringAfter("\"code\":").substringBefore(',').trim() })
         assertTrue(response.toString().contains("plan is required"))
     }
 
