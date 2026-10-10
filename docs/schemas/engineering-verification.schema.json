@@ -1,0 +1,312 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:vericore:schema:engineering-verification-v1.2",
+  "title": "Vericore Engineering Verification Result",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "repository",
+    "safety",
+    "prIntelligence",
+    "architecture",
+    "verificationCommands",
+    "verification",
+    "status",
+    "provenance",
+    "contract"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.2"
+    },
+    "repository": {
+      "type": "string",
+      "minLength": 1
+    },
+    "safety": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "changedPaths",
+        "plannedPaths",
+        "unexpectedPaths",
+        "deletedPaths",
+        "status",
+        "reasons"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "1.0"
+        },
+        "changedPaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "plannedPaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unexpectedPaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "deletedPaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "status": {
+          "enum": [
+            "PASS",
+            "REVIEW_REQUIRED",
+            "FAIL"
+          ]
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "prIntelligence": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "changeSummary",
+        "impactedFiles",
+        "impactedPackages",
+        "crossPackageImpacts",
+        "testCandidates",
+        "findings",
+        "aggregateSeverity"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "1.0"
+        },
+        "changeSummary": {
+          "type": "object"
+        },
+        "impactedFiles": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "impactedPackages": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "crossPackageImpacts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "testCandidates": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "findings": {
+          "type": "array"
+        },
+        "aggregateSeverity": {
+          "enum": [
+            "INFO",
+            "LOW",
+            "MEDIUM",
+            "HIGH",
+            "CRITICAL"
+          ]
+        }
+      },
+      "additionalProperties": true
+    },
+    "architecture": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "summary",
+        "findings",
+        "cycles",
+        "layers"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "object"
+        },
+        "findings": {
+          "type": "array"
+        },
+        "cycles": {
+          "type": "array"
+        },
+        "layers": {
+          "type": "object"
+        },
+        "dependencyEdges": {
+          "type": "array"
+        }
+      },
+      "additionalProperties": true
+    },
+    "verificationCommands": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "verification": {
+      "type": "object",
+      "required": [
+        "commands",
+        "commandsDeclared",
+        "commandsExecuted",
+        "allCommandsExecuted",
+        "allCommandsPassed",
+        "executionComplete"
+      ],
+      "properties": {
+        "commands": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "command",
+              "executed",
+              "exitCode",
+              "timedOut",
+              "durationMillis",
+              "stdout",
+              "stderr",
+              "error"
+            ],
+            "properties": {
+              "command": {
+                "type": "string"
+              },
+              "executed": {
+                "type": "boolean"
+              },
+              "exitCode": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "timedOut": {
+                "type": "boolean"
+              },
+              "durationMillis": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "stdout": {
+                "type": "string"
+              },
+              "stderr": {
+                "type": "string"
+              },
+              "error": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "commandsDeclared": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "commandsExecuted": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "allCommandsExecuted": {
+          "type": "boolean"
+        },
+        "allCommandsPassed": {
+          "type": "boolean"
+        },
+        "executionComplete": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "status": {
+      "enum": [
+        "PASS",
+        "REVIEW_REQUIRED",
+        "FAIL"
+      ]
+    },
+    "provenance": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "id",
+        "operation",
+        "repositoryCommit",
+        "analysisSchemaVersion",
+        "evidenceIds",
+        "unknownReason"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "1.0"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "operation": {
+          "type": "string"
+        },
+        "repositoryCommit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "analysisSchemaVersion": {
+          "type": "string"
+        },
+        "evidenceIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unknownReason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "contract": {
+      "type": [
+        "object",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": false
+}
