@@ -58,7 +58,7 @@ jobs:
         shell: pwsh
         run: |
           $testRoot = Join-Path $env:RUNNER_TEMP ('vericore-installer-test-' + [guid]::NewGuid().ToString('N'))
-          $script:mockArchiveName = 'vericore-0.9.0-windows-x64.zip'
+          $mockArchiveName = 'vericore-0.9.0-windows-x64.zip'
           $script:mockCalls = 0
           try {
             $fixtureRoot = Join-Path $testRoot 'fixture'
@@ -76,19 +76,21 @@ jobs:
             )
             Set-Content -LiteralPath (Join-Path $payload 'lib\vericore-0.9.0.jar') -Value 'fixture jar'
             Set-Content -LiteralPath (Join-Path $payload 'jre\bin\java.exe') -Value 'fixture runtime marker'
-            $script:mockArchive = Join-Path $testRoot $script:mockArchiveName
-            Compress-Archive -Path $payload -DestinationPath $script:mockArchive -Force
-            $script:mockSums = Join-Path $testRoot 'SHA256SUMS'
-            $hash = (Get-FileHash -LiteralPath $script:mockArchive -Algorithm SHA256).Hash.ToLowerInvariant()
-            Set-Content -LiteralPath $script:mockSums -Value "$hash  $script:mockArchiveName"
+            $mockArchive = Join-Path $testRoot $mockArchiveName
+            Compress-Archive -Path $payload -DestinationPath $mockArchive -Force
+            $mockSums = Join-Path $testRoot 'SHA256SUMS'
+            $hash = (Get-FileHash -LiteralPath $mockArchive -Algorithm SHA256).Hash.ToLowerInvariant()
+            Set-Content -LiteralPath $mockSums -Value "$hash  $mockArchiveName"
+            $env:VERICORE_TEST_MOCK_ARCHIVE = $mockArchive
+            $env:VERICORE_TEST_MOCK_SUMS = $mockSums
 
             function Invoke-WebRequest {
               param([string]$Uri, [string]$OutFile, [hashtable]$Headers)
               $script:mockCalls++
               if ($Uri.EndsWith('/SHA256SUMS')) {
-                Copy-Item -LiteralPath $script:mockSums -Destination $OutFile -Force
+                Copy-Item -LiteralPath $env:VERICORE_TEST_MOCK_SUMS -Destination $OutFile -Force
               } elseif ($Uri -like '*vericore-0.9.0-windows-x64.zip') {
-                Copy-Item -LiteralPath $script:mockArchive -Destination $OutFile -Force
+                Copy-Item -LiteralPath $env:VERICORE_TEST_MOCK_ARCHIVE -Destination $OutFile -Force
               } else {
                 throw "Unexpected test URL: $Uri"
               }
@@ -152,6 +154,8 @@ jobs:
             }
             Write-Host 'Windows installer install/upgrade and path-safety tests passed.'
           } finally {
+            Remove-Item Env:VERICORE_TEST_MOCK_ARCHIVE -ErrorAction SilentlyContinue
+            Remove-Item Env:VERICORE_TEST_MOCK_SUMS -ErrorAction SilentlyContinue
             if (Test-Path -LiteralPath $testRoot) {
               Remove-Item -LiteralPath $testRoot -Recurse -Force -ErrorAction SilentlyContinue
             }
