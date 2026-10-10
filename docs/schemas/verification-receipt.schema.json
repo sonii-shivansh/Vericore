@@ -1,0 +1,171 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:vericore:schema:verification-receipt-v1.0",
+  "title": "Vericore Verification Receipt",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "repository",
+    "preparedHead",
+    "verifiedHead",
+    "contractFingerprint",
+    "status",
+    "changedPaths",
+    "plannedPaths",
+    "unexpectedPaths",
+    "deletedPaths",
+    "verificationCommands",
+    "verification",
+    "safetyReasons"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "repository": {
+      "type": "string",
+      "minLength": 1
+    },
+    "preparedHead": {
+      "type": "string"
+    },
+    "verifiedHead": {
+      "type": "string"
+    },
+    "contractFingerprint": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "status": {
+      "enum": [
+        "PASS",
+        "REVIEW_REQUIRED",
+        "FAIL"
+      ]
+    },
+    "changedPaths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "plannedPaths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "unexpectedPaths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "deletedPaths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "verificationCommands": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "safetyReasons": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "verification": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "urn:vericore:schema:verification-execution-v1.0",
+      "title": "Verification execution result",
+      "type": "object",
+      "required": [
+        "commands",
+        "commandsDeclared",
+        "commandsExecuted",
+        "allCommandsExecuted",
+        "allCommandsPassed",
+        "executionComplete"
+      ],
+      "properties": {
+        "commands": {
+          "type": "array",
+          "items": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "urn:vericore:schema:verification-command-result-v1.0",
+            "title": "Verification command result",
+            "type": "object",
+            "required": [
+              "command",
+              "executed",
+              "exitCode",
+              "timedOut",
+              "durationMillis",
+              "stdout",
+              "stderr",
+              "error"
+            ],
+            "properties": {
+              "command": {
+                "type": "string"
+              },
+              "executed": {
+                "type": "boolean"
+              },
+              "exitCode": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "timedOut": {
+                "type": "boolean"
+              },
+              "durationMillis": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "stdout": {
+                "type": "string"
+              },
+              "stderr": {
+                "type": "string"
+              },
+              "error": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "commandsDeclared": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "commandsExecuted": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "allCommandsExecuted": {
+          "type": "boolean"
+        },
+        "allCommandsPassed": {
+          "type": "boolean"
+        },
+        "executionComplete": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
