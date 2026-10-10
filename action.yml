@@ -12,7 +12,7 @@ inputs:
     required: false
     default: .
   version:
-    description: Vericore release tag to install, for example v0.8.2. Use latest for the newest published release.
+    description: Vericore release tag to install, for example v0.9.0. Use latest for the newest published release.
     required: false
     default: latest
   args:

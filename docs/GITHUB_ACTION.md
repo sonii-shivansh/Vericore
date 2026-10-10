@@ -17,12 +17,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: sonii-shivansh/Vericore@v0.8.2
+      - uses: sonii-shivansh/Vericore@v0.9.0
         with:
           command: analyze
 ~~~
 
-The examples below use `v0.8.2`, the latest published Vericore release at this revision. Update the reference deliberately when a newer release is published. For stricter supply-chain controls, pin the action to a reviewed immutable commit SHA.
+The examples below use `v0.9.0`, the latest published Vericore release as of 2026-10-11. Later commits on `main` are not included in the published `v0.9.0` action assets. Update the reference deliberately when a new release is published. For stricter supply-chain controls, pin the action to a reviewed immutable commit SHA.
 
 ## PR review automation
 
@@ -66,7 +66,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - uses: sonii-shivansh/Vericore@v0.8.2
+      - uses: sonii-shivansh/Vericore@v0.9.0
         with:
           command: pr-intelligence
           args: --base ${{ github.event.pull_request.base.sha }} --head ${{ github.event.pull_request.head.sha }} --json
@@ -84,7 +84,7 @@ The reusable Action produces `output/pr-intelligence.json`. A separate trusted w
 Additional command arguments can be supplied with args:
 
 ~~~yaml
-- uses: sonii-shivansh/Vericore@v0.8.2
+- uses: sonii-shivansh/Vericore@v0.9.0
   with:
     command: verify
     args: --contract-only
@@ -96,7 +96,7 @@ Additional command arguments can be supplied with args:
 |---|---|---|
 | command | analyze | Vericore command to execute |
 | path | . | Repository path |
-| version | latest | Published release tag, such as v0.8.2 |
+| version | latest | Published release tag, such as v0.9.0 |
 | args | empty | Additional command arguments |
 
 ## Security and portability

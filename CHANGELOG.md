@@ -8,6 +8,10 @@ This file records user-visible changes by release. It follows [Keep a Changelog]
 
 ### Fixed
 
+- Ignore the generated root `.vericore.json` settings file during change-scope verification so first-run initialization does not count as an unexpected source edit.
+- Reject filesystem roots as REST API allowed roots, even when the server is launched from `/` or a Windows drive root.
+- Report controlled verification and MCP configuration failures as actionable validation errors instead of generic stack traces.
+
 - MCP change-safety and verification tools return an invalid-parameters error when the required plan argument is missing, rather than a generic internal error.
 - Verification results include explicit reasons when no verification command runs or a verification command fails.
 

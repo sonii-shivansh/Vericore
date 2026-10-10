@@ -2,6 +2,7 @@ package com.vericore.server
 
 import java.io.File
 import kotlin.io.path.createTempDirectory
+import kotlin.test.assertTrue
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
@@ -31,4 +32,11 @@ class PathSecurityTest {
             directory.deleteRecursively()
         }
     }
+
+    @Test
+    fun `filesystem root is never treated as an allowed repository root`() {
+        val roots = resolveSafeAllowedRoots(listOf(File.separator))
+        assertTrue(roots.none { it.parent == null })
+    }
+
 }

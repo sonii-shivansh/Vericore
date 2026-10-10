@@ -129,7 +129,7 @@ Vericore can run in a workflow using the published action:
 
 ```yaml
 - uses: actions/checkout@v7
-- uses: sonii-shivansh/Vericore@v0.8.2
+- uses: sonii-shivansh/Vericore@v0.9.0
   with:
     command: analyze
 ```

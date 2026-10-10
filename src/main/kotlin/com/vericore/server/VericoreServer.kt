@@ -26,6 +26,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import java.io.File
 import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.UUID
 import kotlinx.serialization.Serializable
@@ -189,10 +190,22 @@ fun sanitizePath(inputPath: String): String? {
         val candidate = Paths.get(inputPath).toRealPath()
         if (!Files.isDirectory(candidate) || !Files.isReadable(candidate)) return null
         val configured = System.getenv("VERICORE_ALLOWED_PATHS") ?: System.getenv("CODECONTEXT_ALLOWED_PATHS")
-        val roots = (configured?.split(File.pathSeparator)?.filter { it.isNotBlank() } ?: listOf(System.getProperty("user.dir"), System.getProperty("java.io.tmpdir"))).mapNotNull { runCatching { Paths.get(it).toRealPath() }.getOrNull() }
+        val rootInputs = configured?.split(File.pathSeparator)?.filter { it.isNotBlank() }
+            ?: listOf(System.getProperty("user.dir"), System.getProperty("java.io.tmpdir"))
+        val roots = resolveSafeAllowedRoots(rootInputs)
         if (roots.any { root -> candidate == root || candidate.startsWith(root) }) candidate.toString() else null
     } catch (_: Exception) { null }
 }
+
+
+/**
+ * Resolve configured repository roots while refusing filesystem roots. A server started
+ * with "/" (or a drive root on Windows) as its working directory must not implicitly
+ * grant access to the entire machine.
+ */
+internal fun resolveSafeAllowedRoots(rootInputs: List<String>): List<Path> =
+    rootInputs.mapNotNull { runCatching { Paths.get(it).toRealPath() }.getOrNull() }
+        .filterNot { it.parent == null }
 
 fun Application.configureRateLimiting() {
     val config = ConfigLoader.load()

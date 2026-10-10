@@ -59,7 +59,10 @@ object ChangeSafetyAnalyzer {
 
     private fun isGeneratedPath(path: String): Boolean {
         val normalized = normalize(path).trimStart('/')
-        return normalized == ".vericore" || normalized == ".codecontext" ||
+        // The root config may be created by `vericore init` in repositories that
+        // do not already ignore it. Treat this tool-owned settings file like generated
+        // metadata so first-run initialization does not look like an unplanned source edit.
+        return normalized == ".vericore" || normalized == ".vericore.json" || normalized == ".codecontext" ||
             generatedPrefixes.any { normalized.startsWith(it) } ||
             normalized == "output" || normalized == "build" || normalized == "target"
     }

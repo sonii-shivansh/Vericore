@@ -1,6 +1,6 @@
 # CLI Reference
 
-> Complete reference for the Vericore command-line interface. The 0.9.0 candidate includes the post-0.8.2 changes documented in the changelog; final release claims remain subject to exact-candidate certification.
+> Complete reference for the Vericore command-line interface. Vericore v0.9.0 is published. The `main` branch may contain unreleased changes; use the tagged release and its changelog when verifying behavior of a packaged binary.
 
 ## Global syntax
 
