@@ -2,7 +2,7 @@
 
 > Working checklist aligned to the Vericore master roadmap. This is an audit snapshot, not a release certificate.
 >
-> Audit baseline: main at b62e1177c899822901f6c177d291e319082830bd (2026-10-10). The branch phase0/complete-foundation is a completion candidate and is not merged yet. Its new schema/golden audit requires its own CI result and post-merge Release Audit.
+> Audit baseline: main at abd55294d94f7cdc47e755d88138885e9f33d010 (2026-10-10). The Phase 0 foundation audit and full post-merge Release Audit passed on this exact commit. This checklist records the evidence-backed closeout state; it is not a release certificate.
 
 ## Exit objective
 
@@ -12,48 +12,44 @@ Make the existing Vericore foundation trustworthy before major feature work. A r
 
 | Foundation area | Current assessment from inspected code/docs | Required evidence to close |
 |---|---|---|
-| CI stability | **Main baseline passed; candidate not yet validated.** Release Audit and Push on main passed for b62e1177c899822901f6c177d291e319082830bd. The Phase 0 foundation workflow is new and has not yet run on its final candidate. | Phase 0 workflow and full Release Audit green on the exact candidate; failures resolved; no pending required checks. |
-| PR certification wiring | **Mismatch to resolve.** REPOSITORY_GOVERNANCE.md describes Release Audit as the authoritative PR certification, but release-audit.yml declares workflow_dispatch, workflow_call, and push to main; it has no pull_request trigger. | Decide whether full Release Audit should run on PRs despite the long live-repository matrix, or whether targeted PR gates plus post-merge/exact-candidate Release Audit are the intended policy. Align workflow triggers, repository rulesets, and governance wording before closing Phase 0. |
+| CI stability | **Complete for Phase 0 closeout.** Phase 0 Foundation passed on the pre-closeout merge, and Release Audit, Push on main, Documentation Parity, and Pages deployment all passed on closeout commit `abd55294d94f7cdc47e755d88138885e9f33d010`. | [Release Audit run](https://github.com/sonii-shivansh/Vericore/actions/runs/38044925894); [Push on main](https://github.com/sonii-shivansh/Vericore/actions/runs/38044925884). |
+| PR certification wiring | **Policy decision recorded: targeted PR gates, full exact-candidate audit after merge.** Release Audit intentionally runs on workflow dispatch, reusable workflow call, and pushes to `main`; it is not represented as a required PR status check. Targeted CI/regression checks and DCO are the PR merge gates; full Release Audit is the post-merge certification gate. This avoids duplicating the expensive external-repository matrix on every PR. | Governance wording and this checklist now agree with `.github/workflows/release-audit.yml`. External GitHub ruleset enforcement is not asserted by repository files and must be verified in Settings separately. |
 | Release certification | **Baseline documented.** The published v0.8.2 record is immutable; RELEASE_READINESS_1.0.0.md states 1.0 is not yet certified. | Keep release artifact/tag identity exact; do not publish a new version until its candidate satisfies the certification gate. |
-| Documentation parity | **Roadmap alignment merged.** Product Direction and Implementation Status now use the Phase 0–9 master sequence, and the docs parity check passed on main. | Keep public behavior claims accurate and pass documentation parity on the completion candidate. |
-| Stable JSON schemas | **Core schemas drafted; candidate validation pending.** JSON Schemas now cover analysis snapshots, grounded evidence, context snapshots/diffs, plans, contracts, preparation, verification/results/receipts, evidence graph, architecture, impact, PR intelligence, engineering risks, inspection, and release readiness. | Run the schema validator against schema syntax and representative serialized artifacts; add migrations/compatibility tests and document remaining command-specific outputs. |
-| Stable artifact schemas | **Partial.** Snapshot, grounded evidence, contracts, receipts, and reports have different versioning maturity. | Define artifact catalog and validation/compatibility tests; keep old fixtures and published-release records immutable where applicable. |
-| Deterministic output | **Stable scanner/hotspot ordering added; candidate test pending.** Scanner output sorts by repository-relative path; hotspot ranking breaks equal-score ties by path; a repeated-snapshot golden check is included in the new audit. | Candidate CI must confirm repeatable normalized snapshot/graph output; add additional cross-platform/shuffled-input checks as needed. |
-| Golden test repositories | **Starter Java fixture added; execution pending.** testdata/phase0/golden-java has a manifest and expected source/graph counts, with a repeatability check in the audit runner. | Candidate CI must validate expected graph structure and repeatability; expand to Kotlin and additional failure modes after this fixture is stable. |
-| Benchmark fixtures | **v0.1 correctness benchmark defined; baseline pending.** benchmark/agent-change-v0.1/cases.json defines contract-level cases and the audit emits candidate-SHA-bound per-case measurements. | Complete the first green run on the candidate and retain its JSON artifact; make no comparative performance claims. |
-| Supported/unsupported boundaries | **Consolidated in docs/SUPPORT_MATRIX.md.** It explicitly documents Java/Kotlin scope, trusted local MCP, unauthenticated local REST, build-command limits, and unimplemented agent/enterprise integrations. | Verify every support statement has matching tests or clearly marked limitations; keep matrix in parity/release review. |
-| Public verification benchmark | **Not established in the inspected tree.** The master roadmap calls for a baseline in Phase 0 and the expanded Agent Change Benchmark in Phase 8. | Publish benchmark design, initial fixtures, baseline results, methodology, failure categories, and explicit limitations; defer broad marketing claims until measured. |
+| Documentation parity | **Roadmap alignment merged.** Product Direction and Implementation Status now use the Phase 0–9 master sequence, and the docs parity check passed on main. | Keep public behavior claims accurate and pass documentation parity on the completion candidate.  |
+| Stable JSON schemas | **Core schema syntax and representative artifact validation passed.** The Phase 0 audit validates schema documents and representative generated artifacts. The verification workflow now asserts grounded evidence schema version `1.1`; the legacy `1.0` compatibility path is tested and stale legacy evidence is regenerated rather than reused. | [Phase 0 Release Audit](https://github.com/sonii-shivansh/Vericore/actions/runs/38044925894); `scripts/audit/phase0-foundation-audit.py`. |
+| Stable artifact schemas | **Catalog and compatibility policy recorded.** See [`ARTIFACT_SCHEMA_CATALOG.md`](ARTIFACT_SCHEMA_CATALOG.md). Core versioned artifacts and legacy grounded-evidence regeneration are covered by the Phase 0 audit; command-specific and legacy formats remain explicitly identified rather than implied to be uniformly versioned. | Catalog plus [Phase 0 audit evidence](https://github.com/sonii-shivansh/Vericore/actions/runs/38044925894). |
+| Deterministic output | **Phase 0 repeatability audit passed.** The golden Java fixture is analyzed repeatedly and normalized output is compared; scanner/hotspot ordering is stable. Broader cross-platform/shuffled-input expansion remains future hardening, not a claim made by this baseline. | [Phase 0 audit evidence](https://github.com/sonii-shivansh/Vericore/actions/runs/38044925894). |
+| Golden test repositories | **Java golden fixture passed.** `testdata/phase0/golden-java` is manifest-backed; expected source/graph structure and repeated normalized analysis passed. Kotlin-specific golden fixtures are a documented future extension. | [Phase 0 audit evidence](https://github.com/sonii-shivansh/Vericore/actions/runs/38044925894). |
+| Benchmark fixtures | **Initial correctness baseline recorded.** The Phase 0 audit passed 76 cases in 30,475.45 ms on GitHub-hosted `ubuntu-24.04`; candidate SHA and runner context are recorded in [`PHASE0_BENCHMARK_BASELINE.md`](PHASE0_BENCHMARK_BASELINE.md), with the full JSON retained as a GitHub Actions artifact. This is not a comparative performance result. | [Baseline result artifact](https://github.com/sonii-shivansh/Vericore/actions/runs/38044925894/artifacts/11667097810); [workflow run](https://github.com/sonii-shivansh/Vericore/actions/runs/38044925894). |
+| Supported/unsupported boundaries | **Consolidated in docs/SUPPORT_MATRIX.md.** It explicitly documents Java/Kotlin scope, trusted local MCP, unauthenticated local REST, build-command limits, and unimplemented agent/enterprise integrations. | Verify every support statement has matching tests or clearly marked limitations; keep matrix in parity/release review.  |
+| Public verification benchmark | **Phase 0 correctness baseline published in-repository.** Design, versioned cases, measured initial result, exact candidate SHA, methodology, and limitations are documented in [`PHASE0_BENCHMARK_BASELINE.md`](PHASE0_BENCHMARK_BASELINE.md). The full machine-readable run is retained as a workflow artifact for its retention period; the summary is version-controlled. Phase 8's expanded benchmark remains out of scope. | [`PHASE0_BENCHMARK_BASELINE.md`](PHASE0_BENCHMARK_BASELINE.md) and linked CI artifact. |
 
 ## Confirmed defects and high-priority regression candidates
 
-These findings come from the inspected source at the baseline above. Fixes remain unmerged until their review and CI gates complete.
+These were the initial findings that drove Phase 0 work. The relevant hardening is now merged and covered by unit/regression and Phase 0 audit checks on the recorded closeout SHA; future regressions remain subject to those tests.
 
 ### Verification command execution
 
-The initial validator checked several shell metacharacters but missed the single ampersand and embedded line breaks. A source-equivalent reproduction showed that a second shell command could execute after the allowed build command. The hardening change must reject unsafe separators, preserve valid nested build directories inside the repository, and prove that rejected commands execute nothing. It must also retain cross-platform regression coverage.
+**Resolved and regression-covered.** Verification-command validation rejects unsafe separators and embedded line breaks before execution; valid in-repository nested build paths remain supported. Unit/regression coverage and the Windows test workflow are part of the CI evidence linked above.
 
 ### Preparation/evidence freshness
 
-AnalysisSnapshot carries a repository source-state digest, but preparation's initial cache-reuse path compared Git HEAD alone. Uncommitted edits can change source content without changing HEAD. Cached grounded evidence also lacked explicit commit/digest binding. Reuse should be allowed only when repository identity, commit, current source digest, and evidence-to-snapshot binding all match; legacy evidence can be decoded for compatibility but should not be trusted as fresh.
+**Resolved and exercised by Phase 0 audit.** Preparation/evidence reuse checks repository identity, commit, current source-state digest, and evidence-to-snapshot binding. The audit mutates source without changing HEAD and confirms evidence is regenerated; legacy evidence is decoded for compatibility but regenerated before reuse.
 
 ### Parser diagnostics
 
-CodeParallelParser counts parseWarning values, including cases where a parser returns a ParsedFile with warnings. prepare and repo-qa computed parse failures as input file count minus returned parsed file count, which can undercount warning-bearing results. Use one documented definition and test identical warning semantics across analyze, prepare, repo-qa, and verify.
+**Resolved in the foundation implementation and covered by the repository test suite.** Parse diagnostics use a consistent warning/failure definition across the relevant commands; future changes must retain shared semantics and regression tests.
 
 ### Parse-cache compatibility
 
-The parse-cache key is based on canonical path and source contents, not a parser/cache schema version. Parser behavior can therefore change while an old cached ParsedFile remains addressable for unchanged input. Add an explicit cache schema version to the key and a regression test proving prior-format entries are ignored.
+**Resolved in the foundation implementation and covered by regression tests.** The parse cache key includes a schema/version boundary so entries created under incompatible parser behavior are not reused. Keep cache version changes explicit when parser semantics change.
 
-## Recommended closure sequence
+## Closeout decision
 
-1. Finish and review the command-execution hardening and source-freshness pull requests.
-2. Fix parser-diagnostic counting and cache invalidation, each with focused regression coverage.
-3. Add stable sorting/tie-breakers and deterministic-output fixtures.
-4. Finish the schema/artifact inventory and compatibility tests.
-5. Align all roadmap/status documents and publish the supported/unsupported matrix.
-6. Establish versioned golden repositories and the first public benchmark baseline.
-7. Run release certification on the exact candidate commit and keep the result linked to that commit.
+**Phase 0 foundation exit criteria are met for the scope defined by this checklist** on closeout commit `abd55294d94f7cdc47e755d88138885e9f33d010`: the exact commit's full Release Audit, Push on main, Documentation Parity, and Pages deployment are green; the schema/golden correctness audit reports 76 passing cases; the first benchmark baseline is recorded; the artifact catalog exists; and PR-vs-post-merge certification policy is documented.
+
+Explicit non-goals are not blockers to Phase 0 closeout: Vericore v1.0.0 release certification, Marketplace publication, and Phase 8's expanded comparative benchmark remain separate future gates. Repository ruleset UI state is not verifiable from this file and is not claimed as confirmed.
 
 ## Definition of done
 
-Phase 0 is not complete merely because the checklist document exists or because one CI run passes. Each area above needs reproducible evidence, open blockers must be explicit, and the final release-readiness decision must be made against the exact candidate SHA.
+Phase 0 completion is evidence-based and scoped to the foundation exit objective. A green CI run alone is insufficient; this closeout ties each criterion to reproducible test code, retained workflow evidence, versioned benchmark metadata, or an explicit policy decision. Do not infer that Phase 0 closeout certifies v1.0.0 or proves unsupported capabilities.
