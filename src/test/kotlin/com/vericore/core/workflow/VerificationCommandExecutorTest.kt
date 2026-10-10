@@ -52,6 +52,49 @@ class VerificationCommandExecutorTest {
     }
 
     @Test
+    fun nestedModuleWrapperExecutesInsideTheValidatedRepositoryDirectory() {
+        if (System.getProperty("os.name").lowercase().contains("win")) return
+        val root = Files.createTempDirectory("vericore-nested-module-").toFile()
+        try {
+            val module = File(root, "java").apply { mkdirs() }
+            val wrapper = File(module, "mvnw")
+            wrapper.writeText("#!/bin/sh\npwd > invoked-directory.txt\nexit 0\n")
+            Files.setPosixFilePermissions(
+                wrapper.toPath(),
+                setOf(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_EXECUTE)
+            )
+            val command = "cd '" + module.canonicalPath + "' && ./mvnw -B test"
+
+            val result = VerificationCommandExecutor.execute(root, listOf(command), timeoutSeconds = 5).single()
+
+            assertTrue(result.executed)
+            assertEquals(0, result.exitCode)
+            assertEquals(module.canonicalPath, File(module, "invoked-directory.txt").readText().trim())
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun buildWorkingDirectoryOutsideRepositoryIsRejected() {
+        if (System.getProperty("os.name").lowercase().contains("win")) return
+        val root = Files.createTempDirectory("vericore-command-root-").toFile()
+        val outside = Files.createTempDirectory("vericore-command-outside-").toFile()
+        try {
+            val marker = File(outside, "SHOULD_NOT_EXIST")
+            val command = "cd '" + outside.canonicalPath + "' && ./mvnw test"
+
+            val result = VerificationCommandExecutor.execute(root, listOf(command), timeoutSeconds = 5).single()
+
+            assertFalse(result.executed)
+            assertFalse(marker.exists())
+        } finally {
+            root.deleteRecursively()
+            outside.deleteRecursively()
+        }
+    }
+
+    @Test
     fun `unsafe command is not executed`() {
         if (System.getProperty("os.name").lowercase().contains("win")) return
         val root = linuxFixture()
