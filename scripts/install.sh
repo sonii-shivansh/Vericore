@@ -46,7 +46,7 @@ if [[ "$VERSION" == "latest" ]]; then
   VERSION="$(printf '%s' "$release_json" | awk -F'"' '/"tag_name"[[:space:]]*:/ { print $4; exit }')"
 fi
 VERSION="${VERSION#v}"
-[[ "$VERSION" =~ ^[0-9]+\\.[0-9]+\\.[0-9]+([-+][0-9A-Za-z.-]+)?$ ]] || fail "Unable to resolve a valid Vericore release version: $VERSION"
+[[ "$VERSION" =~ ^[0-9]+[.][0-9]+[.][0-9]+([-+][0-9A-Za-z.-]+)?$ ]] || fail "Unable to resolve a valid Vericore release version: $VERSION"
 
 ARCHIVE="vericore-${VERSION}-${ASSET}.tar.gz"
 BASE_URL="https://github.com/$REPO/releases/download/v${VERSION}"
