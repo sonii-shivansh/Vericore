@@ -76,6 +76,30 @@ class VerificationCommandExecutorTest {
     }
 
     @Test
+    fun unixRepositoryPathWithSingleQuoteIsParsedWithoutExecutingThePrefix() {
+        if (System.getProperty("os.name").lowercase().contains("win")) return
+        val root = Files.createTempDirectory("vericore-quoted'-path-").toFile()
+        try {
+            val wrapper = File(root, "mvnw")
+            wrapper.writeText("#!/bin/sh\npwd > invoked-directory.txt\nexit 0\n")
+            Files.setPosixFilePermissions(
+                wrapper.toPath(),
+                setOf(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_EXECUTE)
+            )
+            val escaped = root.canonicalPath.replace("'", "'\\''")
+            val command = "cd '" + escaped + "' && ./mvnw -B test"
+
+            val result = VerificationCommandExecutor.execute(root, listOf(command), timeoutSeconds = 5).single()
+
+            assertTrue(result.executed)
+            assertEquals(0, result.exitCode)
+            assertEquals(root.canonicalPath, File(root, "invoked-directory.txt").readText().trim())
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
     fun buildWorkingDirectoryOutsideRepositoryIsRejected() {
         if (System.getProperty("os.name").lowercase().contains("win")) return
         val root = Files.createTempDirectory("vericore-command-root-").toFile()
