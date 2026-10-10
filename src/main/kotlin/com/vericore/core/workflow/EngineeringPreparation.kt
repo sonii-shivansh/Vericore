@@ -113,6 +113,11 @@ object EngineeringPreparation {
             val evidence = json.decodeFromString<GroundedEvidence>(evidenceFile.readText())
             val currentHead = RepositoryState.head(root.path)
             val currentState = EngineeringContextEngine.snapshot(root, scanner)
+            require(currentState.changedPaths.all { changedPath ->
+                changedPath.endsWith(".kt") || changedPath.endsWith(".java")
+            }) {
+                "Cached preparation cannot be reused when non-source repository files have changed"
+            }
             require(snapshot.repository.path == root.path) {
                 "Cached analysis snapshot belongs to a different repository"
             }
