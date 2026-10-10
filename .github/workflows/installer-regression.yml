@@ -29,9 +29,19 @@ permissions:
 
 jobs:
   unix-installer-contract:
-    name: Unix installer contract and regression
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    name: Unix installer contract and regression / ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux x64
+            os: ubuntu-24.04
+          - name: macOS x64
+            os: macos-15-intel
+          - name: macOS arm64
+            os: macos-14
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v7
