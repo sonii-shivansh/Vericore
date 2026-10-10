@@ -95,6 +95,8 @@ For server path validation, configure the narrowest practical value for `VERICOR
 
 ## Project structure
 
+For a fuller tree including automation, benchmark fixtures, schemas, and documentation ownership, see the [Repository Map](REPOSITORY_MAP.md).
+
 ```text
 src/main/kotlin/com/vericore/
 ├── Main.kt
@@ -220,7 +222,7 @@ For AI-assisted features, also document evidence sources, provider boundaries, d
 9. Confirm Agent Change Contract mutation tests pass.
 10. Tag and publish only from the exact candidate certified by the final release audit.
 
-The published `0.8.2` release is documented in [RELEASE_READINESS_0.8.2.md](RELEASE_READINESS_0.8.2.md). The published `0.8.1` and `0.8.0` releases remain documented as historical records. The `release/0.9.0-preparation` branch tracks version alignment and candidate certification; it is not a published release. Do not describe these changes as part of the published `v0.8.2` artifact set.
+The latest published release remains `v0.8.2`, documented in [RELEASE_READINESS_0.8.2.md](RELEASE_READINESS_0.8.2.md). The published `v0.8.1` and `v0.8.0` releases remain historical records. Main now contains `0.9.0` candidate version alignment, but the candidate is **not certified or published** until the exact final SHA passes the required release audit and the release workflow completes. Do not describe changes on main as part of the published `v0.8.2` artifact set.
 
 ## Documentation ownership
 

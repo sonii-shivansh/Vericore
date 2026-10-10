@@ -62,18 +62,22 @@ These are review signals. They do not prove runtime correctness, test sufficienc
 
 ## Evidence-first workflow
 
-```text
-Git working tree / revision pair
-              ↓
-       GitChangeSetBuilder
-              ↓
-       PRIntelligenceAnalyzer
-              ↓
-       Impact / Risk / Architecture / Test signals
-              ↓
-        Versioned PR result
-              ↓
-      Grounded evidence / planner / AI
+```mermaid
+flowchart TD
+    INPUT["Working tree or base/head revision pair"] --> DIFF["GitChangeSetBuilder"]
+    DIFF --> ANALYZER["PRIntelligenceAnalyzer"]
+    ANALYZER --> SIGNALS["Impact · risk · architecture · test candidates"]
+    SIGNALS --> RESULT["Versioned deterministic PR result"]
+    RESULT --> EVIDENCE["Grounded evidence"]
+    EVIDENCE --> PLAN["Read-only planner"]
+    EVIDENCE --> AI["Optional AI explanation"]
+
+    classDef source fill:#eef3fb,stroke:#4c6f9b,color:#203c5c;
+    classDef core fill:#e8f5ec,stroke:#3b7954,color:#1e442d;
+    classDef output fill:#fff4df,stroke:#a66b12,color:#4a310b;
+    class INPUT source;
+    class DIFF,ANALYZER,SIGNALS core;
+    class RESULT,EVIDENCE,PLAN,AI output;
 ```
 
 The deterministic core has no dependency on an LLM or GitHub API. The CLI and server can therefore use the result as a stable review signal even when AI is disabled. This makes it suitable for CI and allows AI layers to explain evidence without becoming the source of truth.

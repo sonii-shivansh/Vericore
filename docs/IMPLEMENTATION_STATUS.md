@@ -75,7 +75,7 @@ GitHub Actions is the authoritative automated execution environment for release 
 
 ## Current release line
 
-**v0.8.2** is the latest published Vericore release, published on 2026-10-04. Main contains post-release development and must not be treated as the contents of the published v0.8.2 artifact set.
+**v0.8.2** is the latest published Vericore release, published on 2026-10-04. Main contains post-release development and has version metadata aligned to the prepared **v0.9.0 candidate**. That candidate is still **unreleased and uncertified**; main must not be treated as the contents of the published v0.8.2 artifact set, and 0.9.0 metadata alone does not authorize publication.
 
 ## Current limitations
 
@@ -96,16 +96,21 @@ GitHub Actions is the authoritative automated execution environment for release 
 
 The master strategic roadmap is documented in [Product Direction](PRODUCT_DIRECTION.md) and follows Phase 0 through Phase 9. It is a plan, not a statement that every listed capability is already shipped.
 
-**Immediate priority: Phase 0 — Foundation Freeze & Truth.** Before adding major features, close the foundation gaps identified by code, regression tests, and release gates:
+**Phase 0 — Foundation Freeze & Truth is complete for its documented scope.** Its exit decision, acceptance evidence, and limitations are recorded in [Phase 0 Foundation Checklist](PHASE0_FOUNDATION_CHECKLIST.md) and [Phase 0 Benchmark Baseline](PHASE0_BENCHMARK_BASELINE.md). That closeout does not certify v0.9.0 or v1.0.0.
 
-1. Complete the current CI/release baseline and preserve the distinction between published v0.8.2 and unreleased main.
-2. Reconcile roadmap/product documentation with the master Phase 0–9 sequence.
-3. Inventory JSON and persisted artifact schemas, versions, and compatibility rules.
-4. Establish deterministic ordering and regression fixtures for equal-score/tied results.
-5. Verify cache and evidence freshness against actual source state.
-6. Make parser diagnostics and other machine-readable quality metrics consistent across commands.
-7. Catalogue golden repositories, benchmark fixtures, and supported/unsupported boundaries.
-8. Define a reproducible baseline for the public verification benchmark.
+**Current operational priority: certify and publish the prepared v0.9.0 candidate.** The version metadata on main is aligned to 0.9.0, but version alignment is not release certification. The final candidate must pass the required gates on its exact SHA and produce the required release evidence before a tag or artifacts are published.
 
-Only after those items have explicit acceptance criteria and supporting evidence should work advance to Phase 1's unified product journey, followed by the agent adapter, stronger contract, independent verification, receipts/provenance, multi-agent and cross-repository work, evidence-first explanation/memory, ecosystem distribution, and enterprise assurance in the sequence defined by the roadmap.
+**Next product focus after the release: Phase 1 — The 60-Second Vericore.** Make the existing capabilities discoverable through a coherent end-user journey without removing lower-level commands or weakening the deterministic verification boundary.
 
+### Ongoing regression expectations
+
+Phase 0 closure does not mean these controls should be removed. Keep them covered as normal maintenance work:
+
+- validate schemas and versioned golden fixtures;
+- preserve deterministic ordering and stable result identities;
+- test evidence freshness after source changes, including working-tree changes that do not move Git `HEAD`;
+- keep parser diagnostics and failure semantics consistent across commands;
+- retain mutation, tampering, stale-state, and repository-binding regression coverage;
+- document supported boundaries and keep benchmark results tied to their exact inputs and candidate SHA.
+
+The operational sequence is therefore: finish the v0.9.0 release gate on the exact final candidate SHA; publish only after certification succeeds; then resume Phase 1 product-journey work. Later phases follow the ordering and acceptance discipline in [Product Direction](PRODUCT_DIRECTION.md).

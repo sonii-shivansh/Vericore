@@ -23,38 +23,25 @@ The goal is to make the **change boundary explicit and verifiable**.
 
 ## The Vericore model
 
-```text
-Human intent
-    │
-    ▼
-┌───────────────┐
-│    PREPARE    │
-│               │
-│ repository    │
-│ evidence      │
-│ plan          │
-│ change        │
-│ contract      │
-└───────┬───────┘
-        │
-        ▼
-   AI agent edits
-      repository
-        │
-        ▼
-┌───────────────┐
-│    VERIFY     │
-│               │
-│ original      │
-│ contract      │
-│ repository    │
-│ state         │
-│ actual scope  │
-└───────┬───────┘
-        │
-   ┌────┼────┐
-   ▼    ▼    ▼
- PASS REVIEW FAIL
+```mermaid
+flowchart TD
+    INTENT["Human intent and planned scope"] --> PREP["PREPARE"]
+    PREP --> FACTS["Deterministic repository facts"]
+    FACTS --> EVIDENCE["Evidence + engineering plan"]
+    EVIDENCE --> CONTRACT["Persist Agent Change Contract"]
+    CONTRACT --> EDIT["Developer or AI agent edits repository"]
+    EDIT --> VERIFY["VERIFY against the original contract"]
+    VERIFY --> RESULT{"What does the evidence show?"}
+    RESULT --> PASS["PASS: defined boundary satisfied"]
+    RESULT --> REVIEW["REVIEW: human judgment needed"]
+    RESULT --> FAIL["FAIL: boundary or contract violated"]
+
+    classDef action fill:#eaf2ff,stroke:#3765a8,color:#132b4f;
+    classDef evidence fill:#e9f7ef,stroke:#2d7c50,color:#173d28;
+    classDef decision fill:#fff4df,stroke:#a66b12,color:#4a310b;
+    class PREP,VERIFY action;
+    class FACTS,EVIDENCE,CONTRACT evidence;
+    class RESULT,PASS,REVIEW,FAIL decision;
 ```
 
 The critical detail is that verification uses the **original persisted contract**. It does not silently create a new contract from the already-mutated repository.

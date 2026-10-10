@@ -27,7 +27,7 @@ The run artifact is evidence of the cases actually executed on that candidate. D
 
 - The v0.1 fixture manifest and expected behaviors are version-controlled.
 - CI produces a machine-readable result for each candidate tested by the Phase 0 Foundation workflow.
-- The first successful run on main after merge is the initial reproducible baseline; retain its workflow link and artifact with the exact commit SHA.
+- The recorded Phase 0 baseline is documented in [Phase 0 Benchmark Baseline](PHASE0_BENCHMARK_BASELINE.md), including the closeout SHA, workflow run, result count, elapsed time, artifact digest, and limits. Treat that record as the initial baseline; later runs must append new candidate/SHA-specific evidence rather than overwriting it.
 - Expand to more repositories/languages only after current cases are stable. Broader coverage for cross-agent and cross-repository omissions belongs to the later ecosystem phase in the master roadmap.
 
 ## Limitations

@@ -17,12 +17,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: sonii-shivansh/Vericore@main
+      - uses: sonii-shivansh/Vericore@v0.8.2
         with:
           command: analyze
 ~~~
 
-For stable consumer workflows, pin the action to a release tag or immutable commit rather than main.
+The examples below use `v0.8.2`, the latest published Vericore release at this revision. Update the reference deliberately when a newer release is published. For stricter supply-chain controls, pin the action to a reviewed immutable commit SHA.
 
 ## PR review automation
 
@@ -66,7 +66,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - uses: sonii-shivansh/Vericore@main
+      - uses: sonii-shivansh/Vericore@v0.8.2
         with:
           command: pr-intelligence
           args: --base ${{ github.event.pull_request.base.sha }} --head ${{ github.event.pull_request.head.sha }} --json
@@ -84,7 +84,7 @@ The reusable Action produces `output/pr-intelligence.json`. A separate trusted w
 Additional command arguments can be supplied with args:
 
 ~~~yaml
-- uses: sonii-shivansh/Vericore@main
+- uses: sonii-shivansh/Vericore@v0.8.2
   with:
     command: verify
     args: --contract-only
@@ -109,5 +109,5 @@ Current action targets are Linux x64, macOS x64, and macOS arm64. Windows suppor
 
 The action is fail-closed: unsupported commands, unsupported runner platforms, missing checksum entries, checksum mismatches, download failures, and Vericore command failures fail the workflow.
 
-For consumer workflows, GitHub recommends pinning third-party actions to a specific release or immutable commit.
+For consumer workflows, use an explicit published release tag or, for stronger integrity guarantees, a reviewed immutable commit SHA.
 

@@ -35,8 +35,10 @@
 ## Documentation
 
 - [ ] Documentation updated for changed behavior/contracts
+- [ ] Markdown links and diagrams reviewed when docs change
 - [ ] Machine-readable contracts/schemas updated when applicable
 - [ ] Changelog updated when user-visible
+- [ ] Historical release and benchmark records preserved unless adding a new versioned record
 
 ## Reviewer Notes
 

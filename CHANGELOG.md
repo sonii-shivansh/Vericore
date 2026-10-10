@@ -1,63 +1,41 @@
 # Changelog
 
-## V2-005 — Documentation and release UX hardening
-
-- Added a CI-enforced CLI documentation parity audit so runtime command changes cannot silently leave `docs/CLI.md` stale.
-
-## V2-003 — First-run onboarding
-
-- Formalized the existing `setup` + `doctor` first-run onboarding contract in the implementation roadmap.
-- Clean-environment onboarding E2E validates that the installed CLI exposes both onboarding commands.
-
-## V2-004 — Cross-platform installation and verification hardening
-
-- Added platform-aware Maven/Gradle wrapper detection for Windows (`mvnw.cmd`, `gradlew.bat`).
-- Generated `prepare` verification commands now use native Windows `cmd` syntax while retaining the existing Unix shell form.
-- Hardened verification-command validation to accept only the platform-native wrapper/system build executables.
-- Added Windows prepare-to-verify E2E coverage to the Windows CI path.
-
-
-All notable changes to Vericore are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/) and the project uses [Semantic Versioning](https://semver.org/).
+This file records user-visible changes by release. It follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and uses [Semantic Versioning](https://semver.org/).
 
 > Releases `0.1.0` through `0.6.0` were published under the project's former name. `0.7.0` is the first release line with Vericore as the canonical product identity.
 
 ## [0.9.0] — Unreleased
 
-### Verification security
+Changes below are part of the unreleased `0.9.0` development line. They do not become part of a public release until the candidate is certified, tagged, and published.
 
-- Reject shell control operators and line breaks in verification commands before execution.
-- Execute only the validated build-command body, not the persisted directory-prefix string.
-- Add regression tests for Unix ampersand/newline separators and Windows CMD separators/line breaks.
+### Added
 
-### Analysis/evidence freshness
+- One-command installers for Linux x64, macOS x64, macOS arm64, and Windows x64, with published-archive SHA-256 verification and bundled-runtime installation.
+- First-run `doctor` behavior that works after installation, supports `--path`, distinguishes warnings from actionable failures, and is covered by clean-environment onboarding E2E validation.
+- MCP prepare/contract-retrieval/verify integration that persists the preparation, plan, and Agent Change Contract artifacts used by the CLI.
+- A dedicated agent-verification end-to-end gate covering MCP preparation, repository modification, contract retrieval, and verification.
+- Live/black-box validation workflows for the VCORE-001 through VCORE-004 remediation tracks.
+- CI-enforced CLI documentation parity so runtime command changes cannot silently leave `docs/CLI.md` stale.
 
-- Bind reusable grounded-evidence artifacts to the analysis schema, repository commit, and source-state digest.
-- Reject stale cached snapshots and evidence before planning; retain read compatibility for legacy evidence without treating it as fresh.
+### Changed
 
-### V3 — Agent Verification
+- Preparation accepts explicit planned paths before source edits, enabling a more bounded prepare → change → verify workflow.
+- Verification-command validation accepts only platform-native Maven/Gradle wrapper or system build executables; generated commands use native Windows `cmd` syntax on Windows.
+- Repository analysis and dependency-graph handling were strengthened, including same-package dependency coverage and parser robustness.
+- Engineering-plan scope handling, working-tree mutation checks, onboarding documentation, and release-audit contracts were tightened.
+- Analysis and grounded-evidence artifacts are bound to the analysis schema, repository commit, and source-state digest; stale evidence is rejected before planning, while legacy evidence is not treated as fresh.
 
-- MCP `vericore_prepare_change` now persists the same preparation, plan, and Agent Change Contract artifacts as the CLI.
-- MCP/CLI preparation accepts explicit planned paths before source edits, making prepare → change → verify a bounded agent workflow.
-- Added a dedicated V3-001 end-to-end gate covering MCP preparation, repository modification, contract retrieval, and verification.
+### Fixed
 
+- Unsafe shell separators and embedded line breaks in verification commands are rejected before execution.
+- Verification executes the validated build-command body rather than a persisted directory-prefix string.
+- Regression coverage checks Unix ampersand/newline separators and Windows CMD separators/line breaks.
+- Windows Maven/Gradle wrapper detection recognizes `mvnw.cmd` and `gradlew.bat`, with prepare-to-verify E2E coverage in the Windows CI path.
 
-Changes after the published `0.8.2` release only. The current `main` branch is ahead of `v0.8.2` with post-release hardening that is intentionally not part of the published artifact set.
+### Validation and documentation
 
-### V2 product hardening currently on `main`
-
-- Added one-command installers for Linux x64, macOS x64, macOS arm64, and Windows x64 with SHA-256 verification and bundled-runtime installation.
-- Added first-run Doctor behavior that works immediately after installation, supports `--path`, distinguishes warnings from actionable failures, and is covered by clean-environment onboarding E2E validation.
-- Updated CLI, Getting Started, and release-audit contracts so documentation and automated behavior match the V2 installation/onboarding surface.
-
-### Post-release hardening currently on `main`
-
-- Added dedicated live/black-box validation workflows for the VCORE-001 through VCORE-004 remediation tracks.
-- Strengthened repository analysis and dependency-graph handling, including same-package dependency coverage and parser robustness.
-- Added explicit build-system detection and safer verification-command execution for the prepare → verify workflow.
-- Tightened engineering-plan scope handling and working-tree mutation checks.
-- Expanded live-repository, onboarding, MCP, and regression validation around these boundaries.
-
-These changes remain unreleased until a new version is tagged and published.
+- Clean-environment onboarding, MCP, live-repository, output-quality, cross-platform, and regression checks cover the relevant boundaries.
+- CLI, Getting Started, and release-audit documentation track the implemented installation and onboarding contracts.
 
 ## [0.8.2] — 2026-10-04
 

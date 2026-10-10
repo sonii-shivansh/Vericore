@@ -74,6 +74,14 @@ See [DCO.md](DCO.md) for details.
 - Preserve cancellation, bounded concurrency, and deterministic tests.
 - Add KDoc for public APIs where useful.
 
+## Documentation expectations
+
+- Update the canonical guide or contract in the same pull request as behavior changes.
+- Use [Documentation Hub](docs/INDEX.md) and [Repository Map](docs/REPOSITORY_MAP.md) to find the owning page and package.
+- Prefer Mermaid diagrams for architecture and sequence flows when a visual explains the behavior better than prose; keep diagrams synchronized with the implementation.
+- Preserve published release records, benchmark baselines, and dated engineering plans as historical evidence. Add a new versioned record instead of rewriting prior results.
+- Mark roadmap items, optional capabilities, and known limitations explicitly. Do not claim that a workflow passed unless its run and exact commit have been verified.
+
 ## Tests
 
 Tests are grouped under `src/test/kotlin/com/vericore` and include core analysis, server/security, verification, property/edge-case coverage, and end-to-end behavior.
