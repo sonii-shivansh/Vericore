@@ -58,6 +58,19 @@ class McpProtocolTest {
     }
 
     @Test
+    fun verifyChangeWithoutPlanReturnsInvalidParameters() {
+        val response = McpProtocol.handle(buildJsonObject {
+            put("jsonrpc", JsonPrimitive("2.0")); put("id", JsonPrimitive(7)); put("method", JsonPrimitive("tools/call"))
+            put("params", buildJsonObject {
+                put("name", JsonPrimitive("vericore_verify_change"))
+                put("arguments", buildJsonObject { put("repoPath", JsonPrimitive(".")) })
+            })
+        })
+        assertEquals("-32602", response["error"]?.let { it.toString().substringAfter("\"code\":").substringBefore(',').trim() })
+        assertTrue(response.toString().contains("plan is required"))
+    }
+
+    @Test
     fun unknownMethodReturnsJsonRpcMethodNotFoundError() {
         val response = McpProtocol.handle(buildJsonObject { put("jsonrpc", JsonPrimitive("2.0")); put("id", JsonPrimitive(3)); put("method", JsonPrimitive("does/not/exist")) })
         assertEquals("-32601", response["error"]?.let { it.toString().substringAfter("\"code\":").substringBefore(',').trim() })
