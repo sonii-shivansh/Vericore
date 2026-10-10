@@ -29,6 +29,11 @@ All notable changes to Vericore are documented here. The format follows [Keep a 
 - Execute only the validated build-command body, not the persisted directory-prefix string.
 - Add regression tests for Unix ampersand/newline separators and Windows CMD separators/line breaks.
 
+### Analysis/evidence freshness
+
+- Bind reusable grounded-evidence artifacts to the analysis schema, repository commit, and source-state digest.
+- Reject stale cached snapshots and evidence before planning; retain read compatibility for legacy evidence without treating it as fresh.
+
 ### V3 — Agent Verification
 
 - MCP `vericore_prepare_change` now persists the same preparation, plan, and Agent Change Contract artifacts as the CLI.
