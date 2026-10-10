@@ -13,10 +13,11 @@ Vericore is a local-first engineering-intelligence system for Java and Kotlin re
 If you are new to the codebase, read these in order:
 
 1. [Getting Started](GETTING_STARTED.md)
-2. This document
-3. [Engineering Reality](ENGINEERING_REALITY.md)
-4. [Change Safety](CHANGE_SAFETY.md)
-5. [Development](DEVELOPMENT.md)
+2. [Repository Map](REPOSITORY_MAP.md)
+3. This document
+4. [Engineering Reality](ENGINEERING_REALITY.md)
+5. [Change Safety](CHANGE_SAFETY.md)
+6. [Development](DEVELOPMENT.md)
 
 ## System flow
 
@@ -103,6 +104,8 @@ See [Change Safety](CHANGE_SAFETY.md).
 
 ## Source layout
 
+For the top-level tree, test fixtures, workflow families, scripts, and documentation ownership, see the [Repository Map](REPOSITORY_MAP.md). The abbreviated source map below focuses on application packages.
+
 ```text
 src/main/kotlin/com/vericore/
 ├── Main.kt
@@ -120,6 +123,7 @@ src/main/kotlin/com/vericore/
 │   ├── qa/             # repository Q&A and retrieval
 │   ├── reality/        # cross-artifact state identity
 │   ├── scanner/        # repository discovery and Git signals
+│   ├── session/        # session recording
 │   ├── temporal/       # history/evolution analysis
 │   └── workflow/       # prepare/verify and change-safety contracts
 ├── enterprise/         # organization-oriented capabilities
