@@ -14,6 +14,8 @@ This document is the version-controlled source of truth for the GitHub repositor
 
 The canonical icon is the project icon used by the website. Do not create a second logo variant unless branding is intentionally changed.
 
+The repository has completed Phase 0 foundation closeout and has merged v0.9.0 version-alignment preparation. The candidate is still unreleased until final exact-SHA certification succeeds.
+
 ## Repository-file controls
 
 - DCO verification runs independently on pull requests targeting main.
@@ -75,7 +77,7 @@ Do not require CodeQL yet. It should become merge-blocking only after its config
 
 - Do not rewrite published release tags or artifacts.
 - v0.8.2 is the current published release.
-- main contains post-v0.8.2 development and is not automatically a release candidate.
+- main contains post-v0.8.2 development, including v0.9.0 candidate preparation; it is not a published release and is not certified merely because version metadata is aligned.
 - Future releases should originate from the release workflow after normal verification gates pass.
 - Release artifacts should remain reproducible and accompanied by checksums where the release workflow provides them.
 
