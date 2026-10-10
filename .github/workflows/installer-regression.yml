@@ -7,6 +7,8 @@ on:
       - "scripts/install.sh"
       - "scripts/install.ps1"
       - "scripts/test-installers.sh"
+      - "scripts/audit/release-readiness.py"
+      - "scripts/audit/test_release_readiness.py"
       - ".github/workflows/installer-regression.yml"
       - ".github/workflows/release.yml"
       - ".github/workflows/release-audit.yml"
@@ -16,6 +18,8 @@ on:
       - "scripts/install.sh"
       - "scripts/install.ps1"
       - "scripts/test-installers.sh"
+      - "scripts/audit/release-readiness.py"
+      - "scripts/audit/test_release_readiness.py"
       - ".github/workflows/installer-regression.yml"
       - ".github/workflows/release.yml"
       - ".github/workflows/release-audit.yml"
@@ -35,6 +39,7 @@ jobs:
         run: |
           bash -n scripts/install.sh
           bash scripts/test-installers.sh
+          python3 scripts/audit/test_release_readiness.py
 
   windows-installer-syntax:
     name: Windows installer safety and upgrade regression
