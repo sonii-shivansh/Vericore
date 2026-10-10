@@ -79,7 +79,7 @@ if [[ -e "$LAUNCHER_PATH" || -L "$LAUNCHER_PATH" ]]; then
   if [[ ! -L "$LAUNCHER_PATH" ]]; then
     fail "Refusing to overwrite an existing non-Vericore launcher path: $LAUNCHER_PATH"
   fi
-  LINK_TARGET="$(readlink -f -- "$LAUNCHER_PATH" 2>/dev/null || true)"
+  LINK_TARGET="$(readlink "$LAUNCHER_PATH" 2>/dev/null || true)"
   EXPECTED_TARGET="$INSTALL_ROOT/vericore/bin/vericore"
   if [[ -z "$LINK_TARGET" || "$LINK_TARGET" != "$EXPECTED_TARGET" ]]; then
     fail "Refusing to replace a launcher symlink not owned by this installation: $LAUNCHER_PATH"
