@@ -75,7 +75,7 @@ GitHub Actions is the authoritative automated execution environment for release 
 
 ## Current release line
 
-**v0.8.2** is the latest published Vericore release, published on 2026-10-04. Main contains post-release development and has version metadata aligned to the prepared **v0.9.0 candidate**. That candidate is still **unreleased and uncertified**; main must not be treated as the contents of the published v0.8.2 artifact set, and 0.9.0 metadata alone does not authorize publication.
+**v0.9.0** is the latest published Vericore release, published on 2026-10-10 from tag `v0.9.0`. `main` contains post-release follow-up work that is not included in the published v0.9.0 artifacts; each later candidate must be validated and certified on its exact SHA before publication.
 
 ## Current limitations
 
@@ -98,7 +98,7 @@ The master strategic roadmap is documented in [Product Direction](PRODUCT_DIRECT
 
 **Phase 0 — Foundation Freeze & Truth is complete for its documented scope.** Its exit decision, acceptance evidence, and limitations are recorded in [Phase 0 Foundation Checklist](PHASE0_FOUNDATION_CHECKLIST.md) and [Phase 0 Benchmark Baseline](PHASE0_BENCHMARK_BASELINE.md). That closeout does not certify v0.9.0 or v1.0.0.
 
-**Current operational priority: certify and publish the prepared v0.9.0 candidate.** The version metadata on main is aligned to 0.9.0, but version alignment is not release certification. The final candidate must pass the required gates on its exact SHA and produce the required release evidence before a tag or artifacts are published.
+**Current operational priority: validate post-release fixes and maintain exact-SHA release discipline.** The v0.9.0 publication is complete. Follow-up commits on `main` are unreleased development; they must pass the required gates on the exact candidate SHA before a new patch tag or artifacts are published.
 
 **Next product focus after the release: Phase 1 — The 60-Second Vericore.** Make the existing capabilities discoverable through a coherent end-user journey without removing lower-level commands or weakening the deterministic verification boundary.
 
@@ -113,4 +113,4 @@ Phase 0 closure does not mean these controls should be removed. Keep them covere
 - retain mutation, tampering, stale-state, and repository-binding regression coverage;
 - document supported boundaries and keep benchmark results tied to their exact inputs and candidate SHA.
 
-The operational sequence is therefore: finish the v0.9.0 release gate on the exact final candidate SHA; publish only after certification succeeds; then resume Phase 1 product-journey work. Later phases follow the ordering and acceptance discipline in [Product Direction](PRODUCT_DIRECTION.md).
+The operational sequence is therefore: validate post-release fixes, certify any intended next release on its exact candidate SHA, publish without rewriting prior tags, then continue product-journey work. Later phases follow the ordering and acceptance discipline in [Product Direction](PRODUCT_DIRECTION.md).
