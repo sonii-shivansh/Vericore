@@ -262,12 +262,18 @@ jobs:
             --check "live-petclinic=${{ needs.live-petclinic.result }}" \
             --check "live-runelite=${{ needs.live-runelite.result }}" \
             --check "output-petclinic=${{ needs.output-petclinic.result }}" \
-            --check "output-runelite=${{ needs.output-runelite.result }}"
+            --check "output-runelite=${{ needs.output-runelite.result }}" \
             --check "docs-parity=${{ needs.docs-parity.result }}" \
             --check "github-action-audit=${{ needs.github-action-audit.result }}" \
             --check "installer-regression=${{ needs.installer-regression.result }}"
           ready="$(python3 -c 'import json; print(str(json.load(open("'"$output"'"))["overallReady"]).lower())')"
           echo "ready=$ready" >> "$GITHUB_OUTPUT"
+      - name: Validate certificate JSON Schema
+        shell: bash
+        run: |
+          certificate="release-readiness-${{ steps.version.outputs.version }}.json"
+          jsonschema -i "$certificate" docs/release-readiness.schema.json
+
       - name: Validate certificate schema and candidate binding
         shell: bash
         env:
