@@ -204,7 +204,7 @@ class Audit:
 
             # A legacy 1.0 evidence file can be decoded, but must never be reused as
             # current evidence because it has no repository/source-state binding.
-            evidence_path.write_text(json.dumps({"schemaVersion": "1.0", "citations": []}) + "\\n", encoding="utf-8")
+            evidence_path.write_text(json.dumps({"schemaVersion": "1.0", "citations": []}) + "\n", encoding="utf-8")
             self.command(
                 "prepare-rejects-legacy-evidence",
                 ["prepare", "Update Service safely", "--path", str(fixture),
