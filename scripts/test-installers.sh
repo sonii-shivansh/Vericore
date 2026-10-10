@@ -45,10 +45,10 @@ assert_not_contains "$WINDOWS_INSTALLER" 'Remove-Item -Recurse -Force $InstallRo
 assert_not_contains "$WINDOWS_INSTALLER" 'releases/latest/download'
 
 TEST_ROOT="$(mktemp -d)"
-trap 'rm -rf "$TEST_ROOT"' EXIT
+HOME_DIR="$(mktemp -d "$HOME/.vericore-installer-home.XXXXXX")"
+trap 'rm -rf "$TEST_ROOT" "$HOME_DIR"' EXIT
 MOCK_BIN="$TEST_ROOT/mock-bin"
 FIXTURE="$TEST_ROOT/fixture"
-HOME_DIR="$TEST_ROOT/home"
 BIN_DIR="$HOME_DIR/.local/bin"
 INSTALL_ROOT="$HOME_DIR/.local/share/vericore"
 mkdir -p "$MOCK_BIN" "$FIXTURE/vericore/bin" "$FIXTURE/vericore/lib" "$HOME_DIR"
@@ -121,7 +121,7 @@ if HOME="$HOME_DIR" PATH="$MOCK_BIN:$PATH" VERICORE_VERSION="0.9.0" \
 fi
 [[ -f "$INSTALL_ROOT/vericore/lib/vericore-0.9.0.jar" ]] || fail "Overlapping-directory rejection damaged the existing installation."
 
-UNRELATED_BIN="$TEST_ROOT/unrelated-bin"
+UNRELATED_BIN="$HOME_DIR/unrelated-bin"
 mkdir -p "$UNRELATED_BIN"
 printf 'do not replace this file\n' > "$UNRELATED_BIN/vericore"
 if HOME="$HOME_DIR" PATH="$MOCK_BIN:$PATH" VERICORE_VERSION="0.9.0" \
@@ -131,7 +131,7 @@ if HOME="$HOME_DIR" PATH="$MOCK_BIN:$PATH" VERICORE_VERSION="0.9.0" \
 fi
 [[ "$(cat "$UNRELATED_BIN/vericore")" == "do not replace this file" ]] || fail "Installer modified a pre-existing unrelated launcher file."
 
-UNSAFE_HOME="$TEST_ROOT/unsafe-home"
+UNSAFE_HOME="$HOME_DIR/unsafe-home"
 mkdir -p "$UNSAFE_HOME"
 printf 'keep home data\n' > "$UNSAFE_HOME/sentinel.txt"
 if HOME="$UNSAFE_HOME" PATH="$MOCK_BIN:$PATH" VERICORE_VERSION="0.9.0" \
@@ -141,7 +141,7 @@ if HOME="$UNSAFE_HOME" PATH="$MOCK_BIN:$PATH" VERICORE_VERSION="0.9.0" \
 fi
 [[ -f "$UNSAFE_HOME/sentinel.txt" ]] || fail "Unsafe HOME test deleted a sentinel file."
 
-UNSAFE_CONTAINER="$TEST_ROOT/not-dedicated"
+UNSAFE_CONTAINER="$HOME_DIR/not-dedicated"
 mkdir -p "$UNSAFE_CONTAINER"
 printf 'keep this file\n' > "$UNSAFE_CONTAINER/notes.txt"
 if HOME="$HOME_DIR" PATH="$MOCK_BIN:$PATH" VERICORE_VERSION="0.9.0" \
@@ -151,7 +151,7 @@ if HOME="$HOME_DIR" PATH="$MOCK_BIN:$PATH" VERICORE_VERSION="0.9.0" \
 fi
 [[ -f "$UNSAFE_CONTAINER/notes.txt" ]] || fail "Installer deleted data from a non-dedicated container."
 
-UNRECOGNIZED_CONTAINER="$TEST_ROOT/unrecognized-root"
+UNRECOGNIZED_CONTAINER="$HOME_DIR/unrecognized-root"
 mkdir -p "$UNRECOGNIZED_CONTAINER/vericore"
 printf 'keep non-Vericore contents\n' > "$UNRECOGNIZED_CONTAINER/vericore/important.txt"
 if HOME="$HOME_DIR" PATH="$MOCK_BIN:$PATH" VERICORE_VERSION="0.9.0" \
