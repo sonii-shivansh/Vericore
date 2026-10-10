@@ -35,7 +35,7 @@ class RepositoryScannerTest {
             val files = scanner.scan(root.path)
 
             assertEquals(listOf("App.kt", "Zebra.kt"), files.map { it.name })
-            assertTrue(files.single().canonicalPath.startsWith(root.canonicalPath))
+            assertTrue(files.all { it.canonicalPath.startsWith(root.canonicalPath) })
         } finally {
             root.deleteRecursively()
         }
