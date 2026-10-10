@@ -53,12 +53,12 @@ Machine-readable schemas live in [`docs/schemas/`](schemas/). They are interface
 
 ## Release documentation
 
-Release-readiness files have different purposes. Historical files are preserved as records; the current candidate tracker is not a publication certificate.
+Release-readiness files have different purposes. Published-release records are historical evidence for the exact tag and commit; later commits require their own certification.
 
 | Document | How to interpret it |
 |---|---|
-| [v0.9.0 Release Readiness](RELEASE_READINESS_0.9.0.md) | Current pre-1.0 candidate tracker; must be updated with the final audited SHA and evidence |
-| [v0.8.2 Release Readiness](RELEASE_READINESS_0.8.2.md) | Historical record for the latest published release as of this documentation update |
+| [v0.9.0 Release Readiness](RELEASE_READINESS_0.9.0.md) | Historical certification record for the published v0.9.0 tag; does not certify later commits |
+| [v0.8.2 Release Readiness](RELEASE_READINESS_0.8.2.md) | Historical record for the v0.8.2 release |
 | [v0.8.1 Release Readiness](RELEASE_READINESS_0.8.1.md) | Historical release record |
 | [v0.8.0 Release Readiness](RELEASE_READINESS_0.8.0.md) | Historical release record |
 | [v1.0.0 Release Readiness](RELEASE_READINESS_1.0.0.md) | Longer-term pre-1.0 planning checklist; not a published-release claim |
