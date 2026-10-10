@@ -1,8 +1,8 @@
 # Vericore v0.9.0 Release Readiness
 
-> **Purpose: Pre-publication release control checklist (snapshot: 2026-10-10).**
+> **Purpose: Historical release certification record (snapshot: 2026-10-10).**
 >
-> This file is a control document, not the live certification result. On the snapshot date, `v0.9.0` was unpublished. The earlier `release/0.9.0-preparation` branch was merged through PR #234, and candidate work is on `main`. The full audit on `306e3fb718b01ddd6dd0f9ed3a52747ae985885e` passed its then-configured jobs, but it does not certify later candidate changes or satisfy the expanded certificate gate set added for this release. Do not infer readiness from this checklist or a green run on another SHA: the authoritative result is the machine-readable Release Audit certificate bound to the exact candidate commit and must report `overallReady: true`.
+> `v0.9.0` was published from tag `v0.9.0`, pointing to commit `19309e96c6d14298cd439cf01ee936715eead19a`. The Release Audit run [38065287251](https://github.com/sonii-shivansh/Vericore/actions/runs/38065287251) completed successfully and its machine-readable readiness certificate reported `overallReady: true` for that exact candidate. This document records the pre-publication gate contract; it is not a claim that later commits are certified.
 
 ## Release intent
 
@@ -11,7 +11,7 @@
 - Release type: substantial pre-1.0 feature, integration, hardening, and installation release
 - Candidate branch: `main` (the version-alignment preparation has been merged)
 - Candidate SHA: freeze and record the final SHA after all documentation and code changes are merged, immediately before exact-candidate certification
-- Public release: not yet created
+- Public release: published on 2026-10-10 as `v0.9.0`
 
 ## Scope to review and document
 
@@ -54,15 +54,9 @@
 - [ ] Release workflow resolves version and candidate correctly from the exact `v0.9.0` tag
 - [ ] Four platform archives and `SHA256SUMS` are produced and verified
 
-## Publication sequence
+## Publication record
 
-1. Complete this preparation PR and merge only after its checks pass.
-2. Run and inspect the full Release Audit on the resulting `main` candidate SHA.
-3. Resolve every failure; do not waive or silently skip a required gate.
-4. Finalize the changelog and public release notes from verified behavior.
-5. Confirm the release workflow and exact candidate version contract on the intended tag.
-6. Create/push `v0.9.0` only when all required checks are green. The repository's tag-triggered Release workflow publishes the four platform archives and SHA-256 checksums.
-7. Verify the published release page, assets, checksums, tag SHA, and post-publication workflow results.
+The publication sequence was completed for the `v0.9.0` tag on 2026-10-10. The exact-candidate Release Audit passed, the release workflow completed successfully, and the four-platform artifact/checksum contract was validated by the release workflow. Any follow-up code change must be certified separately on its own commit; the historical certificate does not certify follow-up commits.
 
 ## Known product boundaries to state accurately
 
