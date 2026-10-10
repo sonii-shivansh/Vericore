@@ -93,6 +93,7 @@ class EngineeringPreparationTest {
             git.commit()
                 .setMessage("initial source state")
                 .setAuthor("Vericore Test", "vericore-test@example.invalid")
+                .setCommitter("Vericore Test", "vericore-test@example.invalid")
                 .call()
         }
         return root
