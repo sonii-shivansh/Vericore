@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:vericore:schema:engineering-context-diff-v1.0",
+  "title": "Vericore Engineering Context Diff",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "beforeCommit",
+    "afterCommit",
+    "summary",
+    "changes"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "beforeCommit": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "afterCommit": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "summary": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "urn:vericore:schema:context-diff-summary-v1.0",
+      "title": "Context diff summary",
+      "type": "object",
+      "required": [
+        "added",
+        "removed",
+        "modified",
+        "unchanged"
+      ],
+      "properties": {
+        "added": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "removed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "modified": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unchanged": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "changes": {
+      "type": "array",
+      "items": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "urn:vericore:schema:context-diff-change-v1.0",
+        "title": "Context diff change",
+        "type": "object",
+        "required": [
+          "type",
+          "path"
+        ],
+        "properties": {
+          "type": {
+            "enum": [
+              "ADDED",
+              "REMOVED",
+              "MODIFIED"
+            ]
+          },
+          "path": {
+            "type": "string"
+          },
+          "beforeSha256": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "afterSha256": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
