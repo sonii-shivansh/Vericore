@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:vericore:schema:engineering-verification-v1.2",
+  "$id": "urn:vericore:schema:engineering-verification-v1.3",
   "title": "Vericore Engineering Verification Result",
   "type": "object",
   "required": [
@@ -12,12 +12,13 @@
     "verificationCommands",
     "verification",
     "status",
+    "reasons",
     "provenance",
     "contract"
   ],
   "properties": {
     "schemaVersion": {
-      "const": "1.2"
+      "const": "1.3"
     },
     "repository": {
       "type": "string",
@@ -254,6 +255,12 @@
         "REVIEW_REQUIRED",
         "FAIL"
       ]
+    },
+    "reasons": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     },
     "provenance": {
       "type": "object",
