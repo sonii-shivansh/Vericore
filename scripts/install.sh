@@ -45,6 +45,47 @@ case "$INSTALL_ROOT" in
     ;;
 esac
 
+# BIN_DIR contains a launcher symlink, so never let it alias the distribution
+# container or overwrite a pre-existing unrelated file/symlink named vericore.
+if [[ -z "$BIN_DIR" ]]; then
+  fail "VERICORE_BIN_DIR must not be empty."
+fi
+BIN_PARENT_INPUT="$(dirname -- "$BIN_DIR")"
+BIN_BASE="$(basename -- "$BIN_DIR")"
+case "$BIN_BASE" in
+  ""|"."|".."|"/") fail "VERICORE_BIN_DIR must name a dedicated directory." ;;
+esac
+mkdir -p -- "$BIN_PARENT_INPUT"
+BIN_PARENT="$(cd -P -- "$BIN_PARENT_INPUT" && pwd)"
+BIN_DIR="$BIN_PARENT/$BIN_BASE"
+if [[ -L "$BIN_DIR" ]]; then
+  fail "The launcher directory must not be a symbolic link: $BIN_DIR"
+fi
+mkdir -p -- "$BIN_DIR"
+BIN_DIR="$(cd -P -- "$BIN_DIR" && pwd)"
+if [[ "$BIN_DIR" == "/" || "$BIN_DIR" == "$HOME_CANON" || "$HOME_CANON" == "$BIN_DIR/"* ]]; then
+  fail "Refusing an unsafe launcher directory (filesystem root, home directory, or its ancestor): $BIN_DIR"
+fi
+case "$BIN_DIR" in
+  /usr|/usr/*|/opt|/opt/*|/etc|/etc/*|/var|/var/*|/bin|/bin/*|/sbin|/sbin/*|/System|/System/*|/Applications|/Applications/*|/Library|/Library/*|/private|/private/*|/root|/root/*)
+    fail "Refusing to write a launcher under a protected system path: $BIN_DIR"
+    ;;
+esac
+if [[ "$BIN_DIR" == "$INSTALL_ROOT" || "$BIN_DIR" == "$INSTALL_ROOT/"* || "$INSTALL_ROOT" == "$BIN_DIR/"* ]]; then
+  fail "VERICORE_BIN_DIR and VERICORE_INSTALL_ROOT must not overlap: $BIN_DIR and $INSTALL_ROOT"
+fi
+LAUNCHER_PATH="$BIN_DIR/vericore"
+if [[ -e "$LAUNCHER_PATH" || -L "$LAUNCHER_PATH" ]]; then
+  if [[ ! -L "$LAUNCHER_PATH" ]]; then
+    fail "Refusing to overwrite an existing non-Vericore launcher path: $LAUNCHER_PATH"
+  fi
+  LINK_TARGET="$(readlink -f -- "$LAUNCHER_PATH" 2>/dev/null || true)"
+  EXPECTED_TARGET="$INSTALL_ROOT/vericore/bin/vericore"
+  if [[ -z "$LINK_TARGET" || "$LINK_TARGET" != "$EXPECTED_TARGET" ]]; then
+    fail "Refusing to replace a launcher symlink not owned by this installation: $LAUNCHER_PATH"
+  fi
+fi
+
 # The container may contain only the managed distribution. This prevents an
 # update from silently taking ownership of arbitrary files in a custom target.
 shopt -s dotglob nullglob
@@ -176,9 +217,8 @@ if ! mv -- "$STAGED_INSTALL" "$INSTALL_ROOT/vericore"; then
 fi
 NEW_INSTALLED=1
 
-mkdir -p -- "$BIN_DIR"
-ln -sfn "$INSTALL_ROOT/vericore/bin/vericore" "$BIN_DIR/vericore"
-chmod +x "$INSTALL_ROOT/vericore/bin/vericore" "$BIN_DIR/vericore"
+ln -sfn "$INSTALL_ROOT/vericore/bin/vericore" "$LAUNCHER_PATH"
+chmod +x "$INSTALL_ROOT/vericore/bin/vericore" "$LAUNCHER_PATH"
 
 if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
   echo "Installed to $BIN_DIR/vericore."
