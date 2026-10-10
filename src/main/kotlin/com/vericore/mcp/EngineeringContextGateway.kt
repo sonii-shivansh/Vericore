@@ -41,7 +41,7 @@ object EngineeringContextGateway {
         val root = repository(repoPath)
         val result = runBlocking { EngineeringPreparation.prepare(root.path, changeSummary, plannedPaths) }
         val output = root.resolve("output").apply { mkdirs() }
-        output.resolve("engineering-context.json").writeText(json.encodeToString(com.vericore.core.workflow.EngineeringPreparationResult.serializer(), result))
+        output.resolve("engineering-preparation.json").writeText(json.encodeToString(com.vericore.core.workflow.EngineeringPreparationResult.serializer(), result))
         output.resolve("engineering-plan.json").writeText(json.encodeToString(EngineeringPlan.serializer(), result.plan))
         output.resolve("agent-change-contract.json").writeText(json.encodeToString(AgentChangeContract.serializer(), result.contract))
         return json.encodeToJsonElement(com.vericore.core.workflow.EngineeringPreparationResult.serializer(), result).jsonObject
