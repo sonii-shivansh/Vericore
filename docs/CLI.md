@@ -1,6 +1,6 @@
 # CLI Reference
 
-> Complete reference for the Vericore command-line interface. Examples below describe the current 0.8.2 command surface and the post-0.8.2 changes currently present on `main`.
+> Complete reference for the Vericore command-line interface. The 0.9.0 candidate includes the post-0.8.2 changes documented in the changelog; final release claims remain subject to exact-candidate certification.
 
 ## Global syntax
 
