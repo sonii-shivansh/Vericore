@@ -33,6 +33,9 @@ jobs:
           ./gradlew --no-daemon clean test installDist
       - name: Install pinned JSON Schema validator
         run: python3 -m pip install --disable-pip-version-check -r scripts/audit/requirements-schema.txt
+
+      - name: Test release-readiness certificate fail-closed behavior
+        run: python3 scripts/audit/test_release_readiness.py
       - name: Phase 0 schemas, golden repository, and verification benchmark
         env:
           GITHUB_SHA: ${{ github.sha }}
