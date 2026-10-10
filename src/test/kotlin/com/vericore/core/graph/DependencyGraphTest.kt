@@ -9,6 +9,19 @@ import java.nio.file.Files
 
 class DependencyGraphTest :
         FunSpec({
+            test("hotspot ranking uses path as a deterministic tie breaker") {
+                val graph = RobustDependencyGraph()
+                graph.pageRankScores["/repo/zeta.kt"] = 0.5
+                graph.pageRankScores["/repo/alpha.kt"] = 0.5
+                graph.pageRankScores["/repo/beta.kt"] = 0.9
+
+                graph.getTopHotspots(3).map { it.first } shouldBe listOf(
+                    "/repo/beta.kt",
+                    "/repo/alpha.kt",
+                    "/repo/zeta.kt"
+                )
+            }
+
             test("Graph should link simple imports") {
                 val fileA = File("src/com/A.kt")
                 val fileB = File("src/com/B.kt")
