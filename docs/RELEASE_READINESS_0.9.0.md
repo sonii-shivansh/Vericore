@@ -2,15 +2,15 @@
 
 > **Status: Preparation in progress — not certified and not published.**
 >
-> This checklist is the release work tracker. A green Phase 0 audit or a green check on a different SHA does not certify v0.9.0. The release workflow must pass on the exact candidate commit and on the eventual immutable tag before publication.
+> This checklist is the release work tracker. The earlier `release/0.9.0-preparation` branch was merged through PR #234; this file now tracks the unreleased candidate on main. A green Phase 0 audit or a green check on a different SHA does not certify v0.9.0. Freeze and record the final candidate SHA, run the full release audit on that exact commit, then verify the immutable tag/release workflow before publication.
 
 ## Release intent
 
 - Target version: `0.9.0`
 - Previous public release: `v0.8.2`
 - Release type: substantial pre-1.0 feature, integration, hardening, and installation release
-- Candidate branch: `release/0.9.0-preparation`
-- Candidate SHA: assigned after this preparation is reviewed and merged
+- Candidate branch: `main` (the version-alignment preparation has been merged)
+- Candidate SHA: freeze and record the final SHA after all documentation and code changes are merged, immediately before exact-candidate certification
 - Public release: not yet created
 
 ## Scope to review and document
