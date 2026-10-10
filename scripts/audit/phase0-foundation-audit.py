@@ -201,6 +201,43 @@ class Audit:
                 env,
             )
             evidence = self.validate_artifact("grounded-evidence-schema", evidence_path, "grounded-evidence.schema.json")
+
+            # A legacy 1.0 evidence file can be decoded, but must never be reused as
+            # current evidence because it has no repository/source-state binding.
+            evidence_path.write_text(json.dumps({"schemaVersion": "1.0", "citations": []}) + "\\n", encoding="utf-8")
+            self.command(
+                "prepare-rejects-legacy-evidence",
+                ["prepare", "Update Service safely", "--path", str(fixture),
+                 "--planned-path", "src/main/java/example/Service.java"],
+                fixture,
+                env,
+            )
+            legacy_recovery = self.validate_artifact(
+                "legacy-evidence-regeneration-schema",
+                output_dir / "engineering-preparation.json",
+                "engineering-preparation.schema.json",
+            )
+            regenerated = legacy_recovery["evidence"]
+            started = time.perf_counter()
+            legacy_rejected = (
+                regenerated["schemaVersion"] == "1.1"
+                and bool(regenerated["citations"])
+                and regenerated["repositoryStateDigest"] == snapshot["repository"].get("repositoryStateDigest")
+            )
+            self.record(
+                "legacy-evidence-not-reused",
+                "legacy 1.0 evidence is decoded for compatibility but regenerated before reuse",
+                "regenerated" if legacy_rejected else "legacy-evidence-reused",
+                started,
+                legacy_rejected,
+            )
+            self.command(
+                "repo-qa-refreshes-grounded-evidence",
+                ["repo-qa", "Which files depend on Service?", "--path", str(fixture), "--evidence-output", str(evidence_path)],
+                fixture,
+                env,
+            )
+            evidence = self.validate_artifact("grounded-evidence-schema-refreshed", evidence_path, "grounded-evidence.schema.json")
             started = time.perf_counter()
             evidence_bound = (
                 evidence["schemaVersion"] == "1.1"
