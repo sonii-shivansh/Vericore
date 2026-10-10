@@ -3,6 +3,7 @@ package com.vericore.cli
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
+import com.vericore.core.exceptions.ValidationException
 import java.io.File
 
 /** Emits or writes a client-ready stdio MCP server configuration for Vericore. */
@@ -31,8 +32,8 @@ class McpConfigCommand(private val workingDirectory: File = File(".")) : CliktCo
         }
 
         val target = workingDirectory.resolve(".mcp.json")
-        require(!target.exists() || force) {
-            "${target.path} already exists. Use --force only if you intend to replace it."
+        if (target.exists() && !force) {
+            throw ValidationException("${target.path} already exists. Use --force only if you intend to replace it.")
         }
         target.writeText("$config${System.lineSeparator()}")
         echo("Wrote ${target.path}. MCP clients can use the project-level configuration.")
