@@ -82,14 +82,14 @@ object VerificationCommandExecutor {
      * redirections, globbing, and line breaks on both Unix and Windows.
      */
     private fun validatedRepositoryBuildCommand(repository: File, command: String): String? {
-        if (command.any { it == '\\r' || it == '\\n' }) return null
+        if (command.any { it == '\r' || it == '\n' }) return null
 
         val normalized = command.trim()
         val root = repository.canonicalPath
         val prefix = if (isWindows()) {
-            "cd /d \\\"" + root + "\\\" && "
+            "cd /d \"" + root + "\" && "
         } else {
-            "cd '" + root.replace("'", "'\\\\''") + "' && "
+            "cd '" + root.replace("'", "'\\''") + "' && "
         }
         if (!normalized.startsWith(prefix)) return null
 
@@ -97,9 +97,9 @@ object VerificationCommandExecutor {
         if (actual.isEmpty()) return null
 
         val commandPattern = if (isWindows()) {
-            Regex("""^(?:mvnw\\.cmd|gradlew\\.bat|mvn|gradle)(?: [A-Za-z0-9_./:=+-]+)*$""")
+            Regex("""^(?:mvnw\.cmd|gradlew\.bat|mvn|gradle)(?: [A-Za-z0-9_./:=+-]+)*$""")
         } else {
-            Regex("""^(?:\\./mvnw|\\./gradlew|mvn|gradle)(?: [A-Za-z0-9_./:=+-]+)*$""")
+            Regex("""^(?:\./mvnw|\./gradlew|mvn|gradle)(?: [A-Za-z0-9_./:=+-]+)*$""")
         }
         return actual.takeIf(commandPattern::matches)
     }
