@@ -25,6 +25,7 @@
 | Contribute to Vericore | [Development](DEVELOPMENT.md) |
 | Check implemented capabilities | [Implementation Status](IMPLEMENTATION_STATUS.md) |
 | Review the latest published release record | [0.8.2 Release Readiness](RELEASE_READINESS_0.8.2.md) |
+| Prepare the next public release | [0.9.0 Release Readiness](RELEASE_READINESS_0.9.0.md) |
 | Review the previous release record | [0.8.1 Release Readiness](RELEASE_READINESS_0.8.1.md) |
 | Review the earlier release record | [0.8.0 Release Readiness](RELEASE_READINESS_0.8.0.md) |
 
