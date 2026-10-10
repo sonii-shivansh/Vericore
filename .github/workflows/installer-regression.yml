@@ -98,7 +98,13 @@ jobs:
             $installRoot = Join-Path $testRoot 'safe-install\Vericore'
             $sentinel = Join-Path $testRoot 'unrelated-user-data.txt'
             Set-Content -LiteralPath $sentinel -Value 'must survive upgrade'
-            & $installer -InstallRoot $installRoot -Version '0.9.0'
+            try {
+              & $installer -InstallRoot $installRoot -Version '0.9.0'
+            } catch {
+              Write-Host ("Installer error: " + $_.Exception.ToString())
+              Write-Host ("Installer stack: " + $_.ScriptStackTrace)
+              throw
+            }
             if (-not (Test-Path -LiteralPath (Join-Path $installRoot 'bin\vericore.bat'))) {
               throw 'Fresh install did not create the expected launcher.'
             }
