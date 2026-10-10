@@ -39,10 +39,10 @@ object VerificationCommandExecutor {
         }
 
         return try {
-            // The directory prefix is validated as repository identity metadata, not executed
-            // by the shell. ProcessBuilder already supplies the working directory.
-            val process = ProcessBuilder(shell(), shellArgument(), validatedCommand)
-                .directory(repository)
+            // The directory prefix is parsed as metadata and never executed by the shell.
+            // ProcessBuilder supplies the already-validated in-repository working directory.
+            val process = ProcessBuilder(shell(), shellArgument(), validatedCommand.invocation)
+                .directory(validatedCommand.workingDirectory)
                 .redirectErrorStream(false)
                 .start()
             val stdoutThread = Thread { readAndStore(process.inputStream) }
@@ -76,32 +76,71 @@ object VerificationCommandExecutor {
         }
     }
 
+    private data class ValidatedRepositoryBuildCommand(
+        val workingDirectory: File,
+        val invocation: String
+    )
+
     /**
-     * Validates the persisted command format but returns only the build invocation body.
-     * The body grammar intentionally excludes shell control operators, expansions, quotes,
-     * redirections, globbing, and line breaks on both Unix and Windows.
+     * Parses the persisted directory-prefix + build-command form without executing the
+     * directory change. Only an existing directory canonically contained inside the
+     * repository is accepted, and the remaining invocation must match a narrow grammar.
      */
-    private fun validatedRepositoryBuildCommand(repository: File, command: String): String? {
+    private fun validatedRepositoryBuildCommand(repository: File, command: String): ValidatedRepositoryBuildCommand? {
         if (command.any { it == '\r' || it == '\n' }) return null
 
         val normalized = command.trim()
-        val root = repository.canonicalPath
-        val prefix = if (isWindows()) {
-            "cd /d \"" + root + "\" && "
-        } else {
-            "cd '" + root.replace("'", "'\\''") + "' && "
-        }
-        if (!normalized.startsWith(prefix)) return null
+        val separatorIndex = normalized.indexOf(" && ")
+        if (separatorIndex <= 0) return null
 
-        val actual = normalized.removePrefix(prefix).trim()
-        if (actual.isEmpty()) return null
+        val directoryCommand = normalized.substring(0, separatorIndex)
+        val encodedPath = if (isWindows()) {
+            if (!directoryCommand.startsWith("cd /d ")) return null
+            val token = directoryCommand.removePrefix("cd /d ")
+            if (token.length < 2 || token.first() != '"' || token.last() != '"') return null
+            val path = token.substring(1, token.length - 1)
+            if (path.contains('"')) return null
+            path
+        } else {
+            if (!directoryCommand.startsWith("cd ")) return null
+            decodeSingleQuotedPath(directoryCommand.removePrefix("cd ")) ?: return null
+        }
+
+        val workingDirectory = runCatching { File(encodedPath).canonicalFile }.getOrNull() ?: return null
+        val repositoryRoot = runCatching { repository.canonicalFile.toPath().normalize() }.getOrNull() ?: return null
+        val workingPath = workingDirectory.toPath().normalize()
+        if (!workingDirectory.isDirectory || !workingPath.startsWith(repositoryRoot)) return null
+
+        val invocation = normalized.substring(separatorIndex + 4).trim()
+        if (invocation.isEmpty()) return null
 
         val commandPattern = if (isWindows()) {
             Regex("""^(?:mvnw\.cmd|gradlew\.bat|mvn|gradle)(?: [A-Za-z0-9_./:=+-]+)*$""")
         } else {
             Regex("""^(?:\./mvnw|\./gradlew|mvn|gradle)(?: [A-Za-z0-9_./:=+-]+)*$""")
         }
-        return actual.takeIf(commandPattern::matches)
+        if (!commandPattern.matches(invocation)) return null
+        return ValidatedRepositoryBuildCommand(workingDirectory, invocation)
+    }
+
+    /** Decode the exact single-quote escaping emitted by EngineeringPlanner. */
+    private fun decodeSingleQuotedPath(token: String): String? {
+        if (token.length < 2 || token.first() != '\'' || token.last() != '\'') return null
+        val result = StringBuilder()
+        var index = 1
+        val contentEnd = token.length - 1
+        while (index < contentEnd) {
+            if (token.startsWith("'\\''", index)) {
+                result.append('\'')
+                index += 4
+            } else {
+                val character = token[index]
+                if (character == '\'') return null
+                result.append(character)
+                index++
+            }
+        }
+        return result.toString()
     }
 
     private fun shell(): String = if (isWindows()) "cmd" else "sh"
