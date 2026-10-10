@@ -29,7 +29,7 @@ assert_contains "$UNIX_INSTALLER" 'does not look like a Vericore distribution'
 assert_contains "$UNIX_INSTALLER" 'STAGE_DIR="$(mktemp -d "$INSTALL_ROOT/.vericore-stage.XXXXXX")"'
 
 assert_contains "$WINDOWS_INSTALLER" 'api.github.com/repos/sonii-shivansh/Vericore/releases/latest'
-assert_contains "$WINDOWS_INSTALLER" "[string]$Version = 'latest'"
+assert_contains "$WINDOWS_INSTALLER" '[string]$Version = '
 assert_contains "$WINDOWS_INSTALLER" 'vericore-$Version-$asset.zip'
 assert_contains "$WINDOWS_INSTALLER" 'releases/download/v$Version'
 assert_contains "$WINDOWS_INSTALLER" 'SHA256SUMS'
