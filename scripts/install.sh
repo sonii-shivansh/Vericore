@@ -2,8 +2,8 @@
 set -euo pipefail
 
 REPO="sonii-shivansh/Vericore"
-INSTALL_ROOT="\${VERICORE_INSTALL_ROOT:-$HOME/.local/share/vericore}"
-BIN_DIR="\${VERICORE_BIN_DIR:-$HOME/.local/bin}"
+INSTALL_ROOT="${VERICORE_INSTALL_ROOT:-$HOME/.local/share/vericore}"
+BIN_DIR="${VERICORE_BIN_DIR:-$HOME/.local/bin}"
 
 fail() {
   echo "Vericore installer error: $*" >&2
@@ -63,7 +63,7 @@ if [[ -e "$EXISTING_INSTALL" || -L "$EXISTING_INSTALL" ]]; then
   shopt -s nullglob
   existing_jars=("$EXISTING_INSTALL/lib"/vericore-*.jar)
   shopt -u nullglob
-  if (( \${#existing_jars[@]} == 0 )); then
+  if (( ${#existing_jars[@]} == 0 )); then
     fail "Refusing to replace an unrecognized installation without a Vericore application jar: $EXISTING_INSTALL"
   fi
 fi
@@ -96,18 +96,18 @@ case "$OS/$ARCH" in
     ;;
 esac
 
-VERSION="\${VERICORE_VERSION:-latest}"
+VERSION="${VERICORE_VERSION:-latest}"
 if [[ "$VERSION" == "latest" ]]; then
   release_json="$(curl -fL --retry 3 --retry-delay 1 --silent --show-error \
     -H "Accept: application/vnd.github+json" \
     "https://api.github.com/repos/$REPO/releases/latest")"
   VERSION="$(printf '%s' "$release_json" | awk -F'"' '/"tag_name"[[:space:]]*:/ { print $4; exit }')"
 fi
-VERSION="\${VERSION#v}"
+VERSION="${VERSION#v}"
 [[ "$VERSION" =~ ^[0-9]+[.][0-9]+[.][0-9]+([-+][0-9A-Za-z.-]+)?$ ]] || fail "Unable to resolve a valid Vericore release version: $VERSION"
 
-ARCHIVE="vericore-\${VERSION}-\${ASSET}.tar.gz"
-BASE_URL="https://github.com/$REPO/releases/download/v\${VERSION}"
+ARCHIVE="vericore-${VERSION}-${ASSET}.tar.gz"
+BASE_URL="https://github.com/$REPO/releases/download/v${VERSION}"
 TMP_DIR="$(mktemp -d)"
 STAGE_DIR=""
 BACKUP_PATH="$INSTALL_ROOT/.vericore-backup.$$"
@@ -164,7 +164,7 @@ STAGED_INSTALL="$STAGE_DIR/vericore"
 shopt -s nullglob
 staged_jars=("$STAGED_INSTALL/lib"/vericore-*.jar)
 shopt -u nullglob
-(( \${#staged_jars[@]} > 0 )) || fail "Downloaded archive does not contain the Vericore application jar."
+(( ${#staged_jars[@]} > 0 )) || fail "Downloaded archive does not contain the Vericore application jar."
 
 if [[ -e "$INSTALL_ROOT/vericore" || -L "$INSTALL_ROOT/vericore" ]]; then
   [[ ! -e "$BACKUP_PATH" && ! -L "$BACKUP_PATH" ]] || fail "Installer backup path already exists: $BACKUP_PATH"
