@@ -38,7 +38,7 @@ assert_contains "$UNIX_INSTALLER" 'ln -sfn'
 assert_not_contains "$UNIX_INSTALLER" 'ARCHIVE="vericore-${ASSET}.tar.gz"'
 
 assert_contains "$WINDOWS_INSTALLER" 'api.github.com/repos/sonii-shivansh/Vericore/releases/latest'
-assert_contains "$WINDOWS_INSTALLER" "[string]$Version = 'latest'"
+assert_contains "$WINDOWS_INSTALLER" "[string]\$Version = 'latest'"
 assert_contains "$WINDOWS_INSTALLER" 'vericore-$Version-$asset.zip'
 assert_contains "$WINDOWS_INSTALLER" 'releases/download/v$Version'
 assert_contains "$WINDOWS_INSTALLER" 'SHA256SUMS'
