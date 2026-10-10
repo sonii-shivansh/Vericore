@@ -1,6 +1,7 @@
 [CmdletBinding()]
 param(
-    [string]$InstallRoot = "$env:LOCALAPPDATA\Vericore"
+    [string]$InstallRoot = "$env:LOCALAPPDATA\Vericore",
+    [string]$Version = 'latest'
 )
 
 $ErrorActionPreference = 'Stop'
@@ -15,8 +16,20 @@ if ($arch -ne 'AMD64') {
 }
 
 $asset = 'windows-x64'
-$archive = "vericore-$asset.zip"
-$baseUrl = 'https://github.com/sonii-shivansh/Vericore/releases/latest/download'
+if ($Version -eq 'latest') {
+    $release = Invoke-RestMethod -Uri 'https://api.github.com/repos/sonii-shivansh/Vericore/releases/latest' -Headers @{
+        Accept = 'application/vnd.github+json'
+        'X-GitHub-Api-Version' = '2022-11-28'
+        'User-Agent' = 'VericoreInstaller'
+    }
+    $Version = [string]$release.tag_name
+}
+$Version = $Version -replace '^v', ''
+if ($Version -notmatch '^[0-9]+[.][0-9]+[.][0-9]+([-+][0-9A-Za-z.-]+)?$') {
+    Fail "Unable to resolve a valid Vericore release version: $Version"
+}
+$archive = "vericore-$Version-$asset.zip"
+$baseUrl = "https://github.com/sonii-shivansh/Vericore/releases/download/v$Version"
 $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("vericore-install-" + [guid]::NewGuid().ToString('N'))
 $archivePath = Join-Path $tempRoot $archive
 $checksumsPath = Join-Path $tempRoot 'SHA256SUMS'
@@ -25,7 +38,7 @@ $extractRoot = Join-Path $tempRoot 'extract'
 try {
     New-Item -ItemType Directory -Path $tempRoot -Force | Out-Null
 
-    Write-Host "Downloading latest Vericore release for Windows x64..."
+    Write-Host "Downloading Vericore $Version for Windows x64..."
     Invoke-WebRequest -Uri "$baseUrl/$archive" -OutFile $archivePath
     Invoke-WebRequest -Uri "$baseUrl/SHA256SUMS" -OutFile $checksumsPath
 
@@ -62,8 +75,8 @@ try {
         [Environment]::SetEnvironmentVariable('Path', $newPath, 'User')
     }
 
-    $version = (& (Join-Path $binDir 'vericore.bat') --version).Trim()
-    Write-Host "Installed Vericore $version to $binDir"
+    $cliVersion = (& (Join-Path $binDir 'vericore.bat') --version).Trim()
+    Write-Host "Installed Vericore $cliVersion to $binDir"
     Write-Host "Open a new PowerShell window for the updated PATH to take effect."
 }
 finally {

@@ -38,12 +38,22 @@ case "$OS/$ARCH" in
     ;;
 esac
 
-ARCHIVE="vericore-${ASSET}.tar.gz"
-BASE_URL="https://github.com/$REPO/releases/latest/download"
+VERSION="${VERICORE_VERSION:-latest}"
+if [[ "$VERSION" == "latest" ]]; then
+  release_json="$(curl -fL --retry 3 --retry-delay 1 --silent --show-error \
+    -H "Accept: application/vnd.github+json" \
+    "https://api.github.com/repos/$REPO/releases/latest")"
+  VERSION="$(printf '%s' "$release_json" | awk -F'"' '/"tag_name"[[:space:]]*:/ { print $4; exit }')"
+fi
+VERSION="${VERSION#v}"
+[[ "$VERSION" =~ ^[0-9]+[.][0-9]+[.][0-9]+([-+][0-9A-Za-z.-]+)?$ ]] || fail "Unable to resolve a valid Vericore release version: $VERSION"
+
+ARCHIVE="vericore-${VERSION}-${ASSET}.tar.gz"
+BASE_URL="https://github.com/$REPO/releases/download/v${VERSION}"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
-echo "Downloading latest Vericore release for $ASSET..."
+echo "Downloading Vericore $VERSION for $ASSET..."
 curl -fL --retry 3 --retry-delay 1 -o "$TMP_DIR/$ARCHIVE" "$BASE_URL/$ARCHIVE"
 curl -fL --retry 3 --retry-delay 1 -o "$TMP_DIR/SHA256SUMS" "$BASE_URL/SHA256SUMS"
 
