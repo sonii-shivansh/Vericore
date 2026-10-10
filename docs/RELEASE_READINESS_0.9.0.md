@@ -74,4 +74,4 @@ DCO and pull-request required checks are separate contribution controls. They mu
 
 ## Certification rule
 
-Before publication, every required gate must pass on the exact candidate SHA, and the tag-triggered Release workflow must validate the tag/version contract and artifact set. Do not create the `v0.9.0` tag or publish artifacts while any required gate is pending or failing. Consult the exact-SHA certificate for live readiness; the snapshot above is historical context, not a live status claim.
+For the original publication, every required gate had to pass on the exact candidate SHA, and the tag-triggered Release workflow had to validate the tag/version contract and artifact set. That requirement was satisfied for commit `19309e96c6d14298cd439cf01ee936715eead19a`, as recorded above. This historical certificate does not certify any subsequent code changes; follow-up changes require their own CI and release decision.
