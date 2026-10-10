@@ -156,7 +156,7 @@ Use `vericore_recommendations` when an agent needs actionable engineering priori
 Preparation persists repository-scoped artifacts, including:
 
 ```text
-output/engineering-context.json
+output/engineering-preparation.json
 output/engineering-plan.json
 output/agent-change-contract.json
 ```
