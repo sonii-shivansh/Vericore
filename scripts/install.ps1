@@ -135,6 +135,7 @@ $extractRoot = Join-Path $tempRoot 'extract'
 $stageRoot = Join-Path $installParent ('.Vericore.stage.' + [guid]::NewGuid().ToString('N'))
 $backupRoot = Join-Path $installParent ('.Vericore.backup.' + [guid]::NewGuid().ToString('N'))
 $backupMoved = $false
+$newInstallActivated = $false
 $installComplete = $false
 
 try {
@@ -181,6 +182,7 @@ try {
     }
     try {
         Move-Item -LiteralPath $stageRoot -Destination $installRoot
+        $newInstallActivated = $true
     } catch {
         if ($backupMoved -and -not (Test-Path -LiteralPath $installRoot) -and (Test-Path -LiteralPath $backupRoot)) {
             Move-Item -LiteralPath $backupRoot -Destination $installRoot
@@ -210,7 +212,7 @@ try {
     Write-Host 'Open a new PowerShell window for the updated PATH to take effect.'
 }
 finally {
-    if (-not $installComplete -and (Test-Path -LiteralPath $installRoot) -and (Test-Path -LiteralPath $backupRoot)) {
+    if (-not $installComplete -and $newInstallActivated -and (Test-Path -LiteralPath $installRoot)) {
         Remove-Item -LiteralPath $installRoot -Recurse -Force
     }
     if (-not $installComplete -and $backupMoved -and (Test-Path -LiteralPath $backupRoot) -and -not (Test-Path -LiteralPath $installRoot)) {
