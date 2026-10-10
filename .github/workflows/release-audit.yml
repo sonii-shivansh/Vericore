@@ -97,6 +97,21 @@ jobs:
           path: output/
           if-no-files-found: ignore
 
+  docs-parity:
+    name: Documentation parity
+    needs: deterministic-audit
+    uses: ./.github/workflows/docs-parity.yml
+
+  github-action-audit:
+    name: GitHub Action clean-runner audit
+    needs: deterministic-audit
+    uses: ./.github/workflows/github-action-audit.yml
+
+  installer-regression:
+    name: Installer path-safety regression
+    needs: deterministic-audit
+    uses: ./.github/workflows/installer-regression.yml
+
   windows-ci:
     name: Windows CI
     needs: deterministic-audit
@@ -199,7 +214,7 @@ jobs:
   readiness_certificate:
     name: Generate release readiness certificate
     if: always()
-    needs: [deterministic-audit, windows-ci, verification, platform, onboarding, live-e2e, live-petclinic, live-runelite, output-petclinic, output-runelite]
+    needs: [deterministic-audit, windows-ci, verification, platform, onboarding, live-e2e, live-petclinic, live-runelite, output-petclinic, output-runelite, docs-parity, github-action-audit, installer-regression]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     outputs:
@@ -245,6 +260,9 @@ jobs:
             --check "live-runelite=${{ needs.live-runelite.result }}" \
             --check "output-petclinic=${{ needs.output-petclinic.result }}" \
             --check "output-runelite=${{ needs.output-runelite.result }}"
+            --check "docs-parity=${{ needs.docs-parity.result }}" \
+            --check "github-action-audit=${{ needs.github-action-audit.result }}" \
+            --check "installer-regression=${{ needs.installer-regression.result }}"
           ready="$(python3 -c 'import json; print(str(json.load(open("'"$output"'"))["overallReady"]).lower())')"
           echo "ready=$ready" >> "$GITHUB_OUTPUT"
       - name: Validate certificate schema and candidate binding
