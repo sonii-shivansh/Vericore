@@ -28,7 +28,8 @@ object VerificationCommandExecutor {
 
     private fun executeOne(repository: File, command: String, timeoutSeconds: Long): VerificationCommandResult {
         val started = System.nanoTime()
-        if (!isSafeRepositoryBuildCommand(repository, command)) {
+        val validatedCommand = validatedRepositoryBuildCommand(repository, command)
+        if (validatedCommand == null) {
             return VerificationCommandResult(
                 command = command,
                 executed = false,
@@ -38,7 +39,9 @@ object VerificationCommandExecutor {
         }
 
         return try {
-            val process = ProcessBuilder(shell(), shellArgument(), command)
+            // The directory prefix is validated as repository identity metadata, not executed
+            // by the shell. ProcessBuilder already supplies the working directory.
+            val process = ProcessBuilder(shell(), shellArgument(), validatedCommand)
                 .directory(repository)
                 .redirectErrorStream(false)
                 .start()
@@ -73,27 +76,34 @@ object VerificationCommandExecutor {
         }
     }
 
-    private fun isSafeRepositoryBuildCommand(repository: File, command: String): Boolean {
+    /**
+     * Validates the persisted command format but returns only the build invocation body.
+     * The body grammar intentionally excludes shell control operators, expansions, quotes,
+     * redirections, globbing, and line breaks on both Unix and Windows.
+     */
+    private fun validatedRepositoryBuildCommand(repository: File, command: String): String? {
+        if (command.any { it == '\\r' || it == '\\n' }) return null
+
         val normalized = command.trim()
         val root = repository.canonicalPath
         val prefix = if (isWindows()) {
-            "cd /d \"" + root + "\" && "
+            "cd /d \\\"" + root + "\\\" && "
         } else {
-            "cd '" + root.replace("'", "'\\''") + "' && "
+            "cd '" + root.replace("'", "'\\\\''") + "' && "
         }
-        if (!normalized.startsWith(prefix)) return false
+        if (!normalized.startsWith(prefix)) return null
+
         val actual = normalized.removePrefix(prefix).trim()
-        if (actual.isEmpty()) return false
-        if (actual.contains(';') || actual.contains("&&") || actual.contains("||") || actual.contains('|') ||
-            actual.contains('`') || actual.contains("\$(") || actual.contains('>') || actual.contains('<')) return false
-        val executable = actual.substringBefore(' ').trim()
-        val allowed = if (isWindows()) {
-            setOf("mvnw.cmd", "gradlew.bat", "mvn", "gradle")
+        if (actual.isEmpty()) return null
+
+        val commandPattern = if (isWindows()) {
+            Regex("""^(?:mvnw\\.cmd|gradlew\\.bat|mvn|gradle)(?: [A-Za-z0-9_./:=+-]+)*$""")
         } else {
-            setOf("./mvnw", "./gradlew", "mvn", "gradle")
+            Regex("""^(?:\\./mvnw|\\./gradlew|mvn|gradle)(?: [A-Za-z0-9_./:=+-]+)*$""")
         }
-        return executable in allowed
+        return actual.takeIf(commandPattern::matches)
     }
+
     private fun shell(): String = if (isWindows()) "cmd" else "sh"
     private fun shellArgument(): String = if (isWindows()) "/c" else "-lc"
     private fun isWindows(): Boolean = System.getProperty("os.name").lowercase().contains("win")
