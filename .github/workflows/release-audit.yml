@@ -268,6 +268,9 @@ jobs:
             --check "installer-regression=${{ needs.installer-regression.result }}"
           ready="$(python3 -c 'import json; print(str(json.load(open("'"$output"'"))["overallReady"]).lower())')"
           echo "ready=$ready" >> "$GITHUB_OUTPUT"
+      - name: Install pinned JSON Schema validator
+        run: python3 -m pip install --disable-pip-version-check -r scripts/audit/requirements-schema.txt
+
       - name: Validate certificate JSON Schema
         shell: bash
         run: |
