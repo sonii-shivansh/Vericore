@@ -222,7 +222,7 @@ For AI-assisted features, also document evidence sources, provider boundaries, d
 9. Confirm Agent Change Contract mutation tests pass.
 10. Tag and publish only from the exact candidate certified by the final release audit.
 
-The latest published release remains `v0.8.2`, documented in [RELEASE_READINESS_0.8.2.md](RELEASE_READINESS_0.8.2.md). The published `v0.8.1` and `v0.8.0` releases remain historical records. Main now contains `0.9.0` candidate version alignment, but the candidate is **not certified or published** until the exact final SHA passes the required release audit and the release workflow completes. Do not describe changes on main as part of the published `v0.8.2` artifact set.
+The latest published release is `v0.9.0`, documented in [RELEASE_READINESS_0.9.0.md](RELEASE_READINESS_0.9.0.md). The published `v0.8.2`, `v0.8.1`, and `v0.8.0` releases remain historical records. `main` may contain post-release changes not included in the v0.9.0 artifacts. Do not describe changes on `main` as part of a published release unless they are included in that exact tag and artifact set.
 
 ## Documentation ownership
 
