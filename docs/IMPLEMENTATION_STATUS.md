@@ -102,16 +102,15 @@ The master strategic roadmap is documented in [Product Direction](PRODUCT_DIRECT
 
 **Next product focus after the release: Phase 1 — The 60-Second Vericore.** Make the existing capabilities discoverable through a coherent end-user journey without removing lower-level commands or weakening the deterministic verification boundary.
 
-The following Phase 0 criteria remain useful as ongoing regression requirements, not open Phase 0 exit tasks:
+### Ongoing regression expectations
 
-1. Complete the current CI/release baseline and preserve the distinction between published v0.8.2 and unreleased main.
-2. Reconcile roadmap/product documentation with the master Phase 0–9 sequence.
-3. Inventory JSON and persisted artifact schemas, versions, and compatibility rules.
-4. Establish deterministic ordering and regression fixtures for equal-score/tied results.
-5. Verify cache and evidence freshness against actual source state.
-6. Make parser diagnostics and other machine-readable quality metrics consistent across commands.
-7. Catalogue golden repositories, benchmark fixtures, and supported/unsupported boundaries.
-8. Define a reproducible baseline for the public verification benchmark.
+Phase 0 closure does not mean these controls should be removed. Keep them covered as normal maintenance work:
 
-Only after those items have explicit acceptance criteria and supporting evidence should work advance to Phase 1's unified product journey, followed by the agent adapter, stronger contract, independent verification, receipts/provenance, multi-agent and cross-repository work, evidence-first explanation/memory, ecosystem distribution, and enterprise assurance in the sequence defined by the roadmap.
+- validate schemas and versioned golden fixtures;
+- preserve deterministic ordering and stable result identities;
+- test evidence freshness after source changes, including working-tree changes that do not move Git `HEAD`;
+- keep parser diagnostics and failure semantics consistent across commands;
+- retain mutation, tampering, stale-state, and repository-binding regression coverage;
+- document supported boundaries and keep benchmark results tied to their exact inputs and candidate SHA.
 
+The operational sequence is therefore: finish the v0.9.0 release gate on the exact final candidate SHA; publish only after certification succeeds; then resume Phase 1 product-journey work. Later phases follow the ordering and acceptance discipline in [Product Direction](PRODUCT_DIRECTION.md).
