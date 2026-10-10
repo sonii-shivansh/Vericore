@@ -64,11 +64,11 @@ class VerificationCommandExecutorTest {
     }
 
     @Test
-    fun `single ampersand command is rejected before execution`() {
+    fun singleAmpersandCommandIsRejectedBeforeExecution() {
         if (System.getProperty("os.name").lowercase().contains("win")) return
         val root = linuxFixture()
         val marker = File(root, "SHOULD_NOT_EXIST")
-        val command = "cd '${root.canonicalPath}' && ./mvnw test & touch ${marker.absolutePath}"
+        val command = "cd '" + root.canonicalPath + "' && ./mvnw test & touch " + marker.absolutePath
 
         val result = VerificationCommandExecutor.execute(root, listOf(command), timeoutSeconds = 5).single()
 
@@ -77,11 +77,11 @@ class VerificationCommandExecutorTest {
     }
 
     @Test
-    fun `newline separated command is rejected before execution`() {
+    fun newlineSeparatedCommandIsRejectedBeforeExecution() {
         if (System.getProperty("os.name").lowercase().contains("win")) return
         val root = linuxFixture()
         val marker = File(root, "SHOULD_NOT_EXIST")
-        val command = "cd '${root.canonicalPath}' && ./mvnw test\\n touch ${marker.absolutePath}"
+        val command = "cd '" + root.canonicalPath + "' && ./mvnw test\n touch " + marker.absolutePath
 
         val result = VerificationCommandExecutor.execute(root, listOf(command), timeoutSeconds = 5).single()
 
@@ -90,19 +90,19 @@ class VerificationCommandExecutorTest {
     }
 
     @Test
-    fun `Windows shell separators and line breaks are rejected before execution`() {
+    fun windowsShellSeparatorsAndLineBreaksAreRejectedBeforeExecution() {
         if (!System.getProperty("os.name").lowercase().contains("win")) return
         val root = Files.createTempDirectory("vericore-windows-command-guard-").toFile()
         try {
-            val prefix = "cd /d \\\"${root.canonicalPath}\\\" && "
+            val prefix = "cd /d \"" + root.canonicalPath + "\" && "
             val commands = listOf(
                 prefix + "mvnw.cmd -B test & echo VERICORE_INJECTED_SENTINEL",
-                prefix + "mvnw.cmd -B test\\r\\necho VERICORE_INJECTED_SENTINEL"
+                prefix + "mvnw.cmd -B test\r\necho VERICORE_INJECTED_SENTINEL"
             )
 
             for (command in commands) {
                 val result = VerificationCommandExecutor.execute(root, listOf(command), timeoutSeconds = 5).single()
-                assertFalse(result.executed, "Rejected command must not start a shell: $command")
+                assertFalse(result.executed, "Rejected command must not start a shell: " + command)
             }
         } finally {
             root.deleteRecursively()
