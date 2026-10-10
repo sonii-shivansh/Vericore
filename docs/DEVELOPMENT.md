@@ -63,6 +63,7 @@ GitHub Actions is the authoritative clean-environment validation path. When loca
 ./build/install/vericore/bin/vericore repo-qa "why is this component risky?" --path . --evidence-output output/grounded-evidence.json
 ./build/install/vericore/bin/vericore plan "change the component" --evidence output/grounded-evidence.json --output output/engineering-plan.json
 ./build/install/vericore/bin/vericore prepare "change the component"
+# Preparation output: output/engineering-preparation.json
 # make the change
 ./build/install/vericore/bin/vericore verify
 ```
