@@ -76,7 +76,7 @@ The final release must have:
 
 - [x] CLI documentation parity is automated.
 - [x] Implementation status distinguishes shipped capability from future work.
-- [x] Current release documentation distinguishes `v0.8.2` from unreleased `main` hardening.
+- [x] Current release documentation identifies published `v0.9.0` and distinguishes post-release `main` changes from its immutable artifacts.
 - [ ] All public documentation is reviewed against the 1.0 candidate.
 - [ ] Changelog contains the final 1.0 release scope.
 - [ ] Release notes describe only behavior actually present in the candidate artifacts.
@@ -116,4 +116,4 @@ Only after every required gate is green should the project:
 5. publish the GitHub Marketplace Action against the stable release;
 6. run the final post-publication verification.
 
-Until then, `v0.8.2` remains the latest published release and `main` remains unreleased development work.
+As of 2026-10-11, `v0.9.0` is the latest published release. Commits after its tag are unreleased development work until a new exact-SHA release certification and publication completes.
