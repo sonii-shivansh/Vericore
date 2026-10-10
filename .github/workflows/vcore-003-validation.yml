@@ -85,7 +85,7 @@ jobs:
             --path "$fixture" \
             --plan-output "$fixture/output/engineering-plan.json" \
             --contract-output "$fixture/output/agent-change-contract.json" \
-            --output "$fixture/output/engineering-context.json"
+            --output "$fixture/output/engineering-preparation.json"
 
           "$CLI" verify \
             --path "$fixture" \
