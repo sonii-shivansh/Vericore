@@ -155,7 +155,7 @@ jobs:
           assert "question" in result
           assert "evidence" in result
           assert isinstance(result["evidence"], list)
-          assert evidence["schemaVersion"] == "1.0"
+          assert evidence["schemaVersion"] == "1.1"
           assert isinstance(evidence["citations"], list)
           assert evidence["citations"]
           PY
