@@ -87,7 +87,7 @@ jobs:
               $script:mockCalls++
               if ($Uri.EndsWith('/SHA256SUMS')) {
                 Copy-Item -LiteralPath $script:mockSums -Destination $OutFile -Force
-              } elseif ($Uri.EndsWith($script:mockArchiveName)) {
+              } elseif ($Uri -like '*vericore-0.9.0-windows-x64.zip') {
                 Copy-Item -LiteralPath $script:mockArchive -Destination $OutFile -Force
               } else {
                 throw "Unexpected test URL: $Uri"
