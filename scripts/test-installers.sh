@@ -135,7 +135,7 @@ UNSAFE_HOME="$HOME_DIR/unsafe-home"
 mkdir -p "$UNSAFE_HOME"
 printf 'keep home data\n' > "$UNSAFE_HOME/sentinel.txt"
 if HOME="$UNSAFE_HOME" PATH="$MOCK_BIN:$PATH" VERICORE_VERSION="0.9.0" \
-  VERICORE_INSTALL_ROOT="$UNSAFE_HOME" VERICORE_BIN_DIR="$TEST_ROOT/bin" \
+  VERICORE_INSTALL_ROOT="$UNSAFE_HOME" VERICORE_BIN_DIR="$BIN_DIR" \
   bash "$UNIX_INSTALLER" >/dev/null 2>&1; then
   fail "Installer accepted HOME as its installation container."
 fi
@@ -145,7 +145,7 @@ UNSAFE_CONTAINER="$HOME_DIR/not-dedicated"
 mkdir -p "$UNSAFE_CONTAINER"
 printf 'keep this file\n' > "$UNSAFE_CONTAINER/notes.txt"
 if HOME="$HOME_DIR" PATH="$MOCK_BIN:$PATH" VERICORE_VERSION="0.9.0" \
-  VERICORE_INSTALL_ROOT="$UNSAFE_CONTAINER" VERICORE_BIN_DIR="$TEST_ROOT/bin" \
+  VERICORE_INSTALL_ROOT="$UNSAFE_CONTAINER" VERICORE_BIN_DIR="$BIN_DIR" \
   bash "$UNIX_INSTALLER" >/dev/null 2>&1; then
   fail "Installer accepted a container containing unrelated data."
 fi
@@ -155,14 +155,14 @@ UNRECOGNIZED_CONTAINER="$HOME_DIR/unrecognized-root"
 mkdir -p "$UNRECOGNIZED_CONTAINER/vericore"
 printf 'keep non-Vericore contents\n' > "$UNRECOGNIZED_CONTAINER/vericore/important.txt"
 if HOME="$HOME_DIR" PATH="$MOCK_BIN:$PATH" VERICORE_VERSION="0.9.0" \
-  VERICORE_INSTALL_ROOT="$UNRECOGNIZED_CONTAINER" VERICORE_BIN_DIR="$TEST_ROOT/bin" \
+  VERICORE_INSTALL_ROOT="$UNRECOGNIZED_CONTAINER" VERICORE_BIN_DIR="$BIN_DIR" \
   bash "$UNIX_INSTALLER" >/dev/null 2>&1; then
   fail "Installer accepted an unrecognized existing vericore directory."
 fi
 [[ -f "$UNRECOGNIZED_CONTAINER/vericore/important.txt" ]] || fail "Installer deleted an unrecognized vericore directory."
 
 if HOME="$HOME_DIR" PATH="$MOCK_BIN:$PATH" VERICORE_VERSION="0.9.0" \
-  VERICORE_INSTALL_ROOT="/" VERICORE_BIN_DIR="$TEST_ROOT/bin" \
+  VERICORE_INSTALL_ROOT="/" VERICORE_BIN_DIR="$BIN_DIR" \
   bash "$UNIX_INSTALLER" >/dev/null 2>&1; then
   fail "Installer accepted filesystem root as its installation container."
 fi
