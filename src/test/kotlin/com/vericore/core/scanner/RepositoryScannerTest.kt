@@ -10,6 +10,10 @@ class RepositoryScannerTest {
     fun `default scanner loads config from target repository and excludes generated output`() {
         val root = Files.createTempDirectory("codecontext-scanner-").toFile()
         try {
+            root.resolve("src/main/Zebra.kt").apply {
+                parentFile.mkdirs()
+                writeText("class Zebra")
+            }
             root.resolve("src/main/App.kt").apply {
                 parentFile.mkdirs()
                 writeText("class App")
@@ -30,7 +34,7 @@ class RepositoryScannerTest {
             val scanner = RepositoryScanner()
             val files = scanner.scan(root.path)
 
-            assertEquals(listOf("App.kt"), files.map { it.name })
+            assertEquals(listOf("App.kt", "Zebra.kt"), files.map { it.name })
             assertTrue(files.single().canonicalPath.startsWith(root.canonicalPath))
         } finally {
             root.deleteRecursively()
