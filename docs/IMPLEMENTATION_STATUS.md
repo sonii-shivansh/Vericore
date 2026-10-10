@@ -96,7 +96,13 @@ GitHub Actions is the authoritative automated execution environment for release 
 
 The master strategic roadmap is documented in [Product Direction](PRODUCT_DIRECTION.md) and follows Phase 0 through Phase 9. It is a plan, not a statement that every listed capability is already shipped.
 
-**Immediate priority: Phase 0 — Foundation Freeze & Truth.** Before adding major features, close the foundation gaps identified by code, regression tests, and release gates:
+**Phase 0 — Foundation Freeze & Truth is complete for its documented scope.** Its exit decision, acceptance evidence, and limitations are recorded in [Phase 0 Foundation Checklist](PHASE0_FOUNDATION_CHECKLIST.md) and [Phase 0 Benchmark Baseline](PHASE0_BENCHMARK_BASELINE.md). That closeout does not certify v0.9.0 or v1.0.0.
+
+**Current operational priority: certify and publish the prepared v0.9.0 candidate.** The version metadata on main is aligned to 0.9.0, but version alignment is not release certification. The final candidate must pass the required gates on its exact SHA and produce the required release evidence before a tag or artifacts are published.
+
+**Next product focus after the release: Phase 1 — The 60-Second Vericore.** Make the existing capabilities discoverable through a coherent end-user journey without removing lower-level commands or weakening the deterministic verification boundary.
+
+The following Phase 0 criteria remain useful as ongoing regression requirements, not open Phase 0 exit tasks:
 
 1. Complete the current CI/release baseline and preserve the distinction between published v0.8.2 and unreleased main.
 2. Reconcile roadmap/product documentation with the master Phase 0–9 sequence.
