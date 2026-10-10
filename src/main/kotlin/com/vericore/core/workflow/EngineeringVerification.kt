@@ -36,6 +36,7 @@ data class EngineeringVerificationResult(
     val verificationCommands: List<String>,
     val verification: VerificationExecutionResult,
     val status: SafetyStatus,
+    val reasons: List<String> = emptyList(),
     val provenance: DecisionProvenance = DecisionProvenance.create("verify", null, "1.0", emptyList()),
     val contract: AgentChangeContractResult? = null
 )
@@ -107,6 +108,22 @@ object EngineeringVerification {
             safety.status == SafetyStatus.REVIEW_REQUIRED || pr.aggregateSeverity.name == "CRITICAL" -> SafetyStatus.REVIEW_REQUIRED
             else -> SafetyStatus.PASS
         }
+        val verificationReasons = buildList {
+            addAll(reasons)
+            addAll(safety.reasons)
+            if (execution.commands.isEmpty()) {
+                add("No verification commands were executed; verification cannot pass without a successful verification command.")
+            } else {
+                execution.commands.filter { !it.executed || it.timedOut || it.exitCode != 0 }.forEach { command ->
+                    val outcome = when {
+                        !command.executed -> "was not executed"
+                        command.timedOut -> "timed out"
+                        else -> "exited with code ${command.exitCode}"
+                    }
+                    add("Verification command '${command.command}' $outcome.")
+                }
+            }
+        }.distinct()
         val provenance = DecisionProvenance.capture(root.path, "verify", snapshot.schemaVersion, contract.evidenceIds)
         return EngineeringVerificationResult(
             repository = root.path,
@@ -116,6 +133,7 @@ object EngineeringVerification {
             verificationCommands = contract.verificationCommands,
             verification = execution,
             status = status,
+            reasons = verificationReasons,
             provenance = provenance,
             contract = contractResult
         )
