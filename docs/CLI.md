@@ -483,7 +483,7 @@ vericore prepare "add payment validation" --plan-output output/payment-plan.json
 ### Default outputs
 
 ```text
-output/engineering-context.json
+output/engineering-preparation.json
 output/engineering-plan.json
 output/agent-change-contract.json
 ```
