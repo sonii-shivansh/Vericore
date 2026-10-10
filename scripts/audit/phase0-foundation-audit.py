@@ -144,7 +144,8 @@ class Audit:
             self.command("inspect", ["inspect", "--path", str(fixture), "--json"], fixture, env)
             self.validate_artifact("inspection-schema", output_dir / "inspection.json", "inspection.schema.json")
             self.command("architecture", ["architecture", str(fixture), "--json"], fixture, env)
-            self.validate_artifact("architecture-schema", output_dir / "architecture.json", "architecture-analysis.schema.json")
+            architecture = self.validate_artifact("architecture-schema", output_dir / "architecture.json", "architecture-analysis.schema.json")
+            self.assert_golden_architecture(architecture, manifest, fixture)
             self.command("impact", ["impact", str(fixture), "src/main/java/example/Service.java", "--json"], fixture, env)
             self.validate_artifact("change-impact-schema", output_dir / "change-impact.json", "change-impact.schema.json")
             self.command("pr-intelligence", ["pr-intelligence", str(fixture), "--json"], fixture, env)
@@ -384,7 +385,67 @@ class Audit:
             started = time.perf_counter()
             self.record("stale-head-fails-closed", "FAIL", stale["status"], started, stale["status"] == "FAIL")
 
-    def assert_golden_snapshot(self, snapshot: object, manifest: object, fixture: Path) -> None:
+        self.run_kotlin_golden(env)
+
+    def run_kotlin_golden(self, env: dict[str, str]) -> None:
+        manifest_path = ROOT / "testdata" / "phase0" / "golden-kotlin" / "manifest.json"
+        manifest = self.load_json(manifest_path)
+        with tempfile.TemporaryDirectory(prefix="vericore-phase0-kotlin-") as temp_dir:
+            fixture = Path(temp_dir) / "golden-kotlin"
+            shutil.copytree(ROOT / "testdata" / "phase0" / "golden-kotlin", fixture)
+            output_dir = fixture / "output"
+            output_dir.mkdir(exist_ok=True)
+            (fixture / "gradlew").chmod(0o755)
+            self.git(fixture, "init", "-q")
+            self.git(fixture, "config", "user.name", "Vericore Phase 0")
+            self.git(fixture, "config", "user.email", "phase0@example.invalid")
+            self.git(fixture, "add", "--", ".")
+            self.git(fixture, "commit", "-qm", "golden Kotlin fixture")
+
+            snapshot_path = output_dir / "analysis-snapshot.json"
+            self.command("kotlin-golden-analyze-first", ["analyze", str(fixture), "--clear-cache"], fixture, env)
+            first = self.validate_artifact("kotlin-golden-snapshot-schema-first", snapshot_path, "analysis-snapshot.schema.json")
+            self.assert_golden_snapshot(first, manifest, fixture, "kotlin-golden")
+
+            self.command("kotlin-golden-architecture", ["architecture", str(fixture), "--json"], fixture, env)
+            architecture = self.validate_artifact("kotlin-golden-architecture-schema", output_dir / "architecture.json", "architecture-analysis.schema.json")
+            self.assert_golden_architecture(architecture, manifest, fixture, "kotlin-golden")
+
+            self.command("kotlin-golden-analyze-repeat", ["analyze", str(fixture), "--clear-cache"], fixture, env)
+            second = self.validate_artifact("kotlin-golden-snapshot-schema-repeat", snapshot_path, "analysis-snapshot.schema.json")
+            normalized_first = copy.deepcopy(first)
+            normalized_second = copy.deepcopy(second)
+            normalized_first.get("repository", {}).pop("analyzedAtEpochMillis", None)
+            normalized_second.get("repository", {}).pop("analyzedAtEpochMillis", None)
+            started = time.perf_counter()
+            self.record(
+                "kotlin-golden-analysis-determinism",
+                "same normalized Kotlin analysis snapshot for the same fixture and commit",
+                "identical" if normalized_first == normalized_second else "different",
+                started,
+                normalized_first == normalized_second,
+                "Only repository observation time is normalized.",
+            )
+
+    def assert_golden_architecture(self, architecture: object, manifest: object, fixture: Path, prefix: str = "golden") -> None:
+        expected_edges = sorted(
+            (item["source"], item["target"]) for item in manifest["expectedAnalysis"]["dependencyEdges"]
+        )
+        actual_edges = sorted(
+            (edge["source"].replace("\\\\", "/"), edge["target"].replace("\\\\", "/"))
+            for edge in architecture["dependencyEdges"]
+        )
+        started = time.perf_counter()
+        self.record(
+            f"{prefix}-architecture-edges",
+            json.dumps(expected_edges),
+            json.dumps(actual_edges),
+            started,
+            actual_edges == expected_edges,
+            "Architecture edges must match the explicit fixture manifest.",
+        )
+
+    def assert_golden_snapshot(self, snapshot: object, manifest: object, fixture: Path, prefix: str = "golden") -> None:
         expected = manifest["expectedAnalysis"]
         metrics = snapshot["metrics"]
         architecture = snapshot["architecture"]
@@ -403,7 +464,7 @@ class Audit:
         )
         started = time.perf_counter()
         self.record(
-            "golden-analysis-expectations",
+            f"{prefix}-analysis-expectations",
             json.dumps(expected, sort_keys=True),
             json.dumps({
                 "totalFiles": metrics["totalFiles"], "totalNodes": metrics["totalNodes"],
