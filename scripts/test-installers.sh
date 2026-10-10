@@ -15,8 +15,8 @@ assert_not_contains() { local file="$1" pattern="$2"; if grep -Fq -- "$pattern" 
 # Source contracts plus an offline fake-release integration test.
 assert_contains "$UNIX_INSTALLER" 'api.github.com/repos/$REPO/releases/latest'
 assert_contains "$UNIX_INSTALLER" 'VERICORE_INSTALL_ROOT'
-assert_contains "$UNIX_INSTALLER" 'ARCHIVE="vericore-\${VERSION}-\${ASSET}.tar.gz"'
-assert_contains "$UNIX_INSTALLER" 'releases/download/v\${VERSION}'
+assert_contains "$UNIX_INSTALLER" 'ARCHIVE="vericore-${VERSION}-${ASSET}.tar.gz"'
+assert_contains "$UNIX_INSTALLER" 'releases/download/v${VERSION}'
 assert_contains "$UNIX_INSTALLER" 'SHA256SUMS'
 assert_contains "$UNIX_INSTALLER" 'SHA-256 verification failed'
 assert_contains "$UNIX_INSTALLER" 'Linux/x86_64'
@@ -52,7 +52,7 @@ INSTALL_ROOT="$HOME_DIR/.local/share/vericore"
 mkdir -p "$MOCK_BIN" "$FIXTURE/vericore/bin" "$FIXTURE/vericore/lib" "$HOME_DIR"
 cat > "$FIXTURE/vericore/bin/vericore" <<'CLI'
 #!/usr/bin/env bash
-if [[ "\${1:-}" == "--version" ]]; then
+if [[ "${1:-}" == "--version" ]]; then
   echo "Vericore 0.9.0"
 else
   echo "fake cli"
