@@ -1,0 +1,4 @@
+#!/bin/sh
+# Deterministic fixture-only wrapper. It does not build production code.
+printf '%s\n' "$*" >> "${VERICORE_FIXTURE_COMMAND_LOG:-verification-commands.log}"
+exit 0
