@@ -8,6 +8,8 @@
 |---|---|
 | **Understand Vericore quickly** | **[README](../README.md)** |
 | **Understand why Vericore exists** | **[Why Vericore?](WHY_VERICORE.md)** |
+| **Understand the master roadmap** | [Product Direction](PRODUCT_DIRECTION.md) |
+| Track foundation work | [Phase 0 Foundation Checklist](PHASE0_FOUNDATION_CHECKLIST.md) |
 | Install and run Vericore | [Getting Started](GETTING_STARTED.md) |
 | **Use a command** | **[CLI Reference](CLI.md)** |
 | Understand the system | [Architecture](ARCHITECTURE.md) |
