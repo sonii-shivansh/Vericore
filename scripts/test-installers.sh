@@ -62,7 +62,14 @@ fi
 CLI
 chmod +x "$FIXTURE/vericore/bin/vericore"
 printf 'fixture application jar\n' > "$FIXTURE/vericore/lib/vericore-0.9.0.jar"
-ARCHIVE="$TEST_ROOT/vericore-0.9.0-linux-x64.tar.gz"
+case "$(uname -s)/$(uname -m)" in
+  Linux/x86_64|Linux/amd64) TEST_ASSET="linux-x64" ;;
+  Darwin/x86_64|Darwin/amd64) TEST_ASSET="macos-x64" ;;
+  Darwin/arm64|Darwin/aarch64) TEST_ASSET="macos-arm64" ;;
+  *) fail "Unsupported installer test host: $(uname -s)/$(uname -m)" ;;
+esac
+ARCHIVE_NAME="vericore-0.9.0-${TEST_ASSET}.tar.gz"
+ARCHIVE="$TEST_ROOT/$ARCHIVE_NAME"
 tar -czf "$ARCHIVE" -C "$FIXTURE" vericore
 if command -v sha256sum >/dev/null 2>&1; then
   ARCHIVE_SHA="$(sha256sum "$ARCHIVE" | awk '{print $1}')"
@@ -71,6 +78,7 @@ else
 fi
 printf '%s  %s\n' "$ARCHIVE_SHA" "$(basename "$ARCHIVE")" > "$TEST_ROOT/SHA256SUMS"
 export VERICORE_TEST_ARCHIVE="$ARCHIVE"
+export VERICORE_TEST_ARCHIVE_NAME="$ARCHIVE_NAME"
 export VERICORE_TEST_SUMS="$TEST_ROOT/SHA256SUMS"
 export VERICORE_TEST_CURL_LOG="$TEST_ROOT/curl.log"
 cat > "$MOCK_BIN/curl" <<'CURL'
@@ -90,7 +98,7 @@ done
 printf '%s\n' "$url" >> "$VERICORE_TEST_CURL_LOG"
 case "$url" in
   */SHA256SUMS) cp "$VERICORE_TEST_SUMS" "$destination" ;;
-  */vericore-0.9.0-linux-x64.tar.gz) cp "$VERICORE_TEST_ARCHIVE" "$destination" ;;
+  */"$VERICORE_TEST_ARCHIVE_NAME") cp "$VERICORE_TEST_ARCHIVE" "$destination" ;;
   *) echo "Unexpected mocked curl URL: $url" >&2; exit 22 ;;
 esac
 CURL
