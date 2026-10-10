@@ -53,7 +53,7 @@ BASE_URL="https://github.com/$REPO/releases/download/v${VERSION}"
 TMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
-echo "Downloading latest Vericore release for $ASSET..."
+echo "Downloading Vericore $VERSION for $ASSET..."
 curl -fL --retry 3 --retry-delay 1 -o "$TMP_DIR/$ARCHIVE" "$BASE_URL/$ARCHIVE"
 curl -fL --retry 3 --retry-delay 1 -o "$TMP_DIR/SHA256SUMS" "$BASE_URL/SHA256SUMS"
 
