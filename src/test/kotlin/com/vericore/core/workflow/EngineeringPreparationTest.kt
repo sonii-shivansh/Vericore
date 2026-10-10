@@ -22,6 +22,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
+import kotlin.test.assertTrue
 
 class EngineeringPreparationTest {
     private val json = Json { encodeDefaults = true; ignoreUnknownKeys = true }
@@ -58,8 +59,16 @@ class EngineeringPreparationTest {
         try {
             val before = currentState(root)
             writeSource(root, "after")
+            Git.open(root).use { git ->
+                git.add().addFilepattern("src/main/java/example/Service.java").call()
+                git.commit()
+                    .setMessage("change service source")
+                    .setAuthor("Vericore Test", "vericore-test@example.invalid")
+                    .setCommitter("Vericore Test", "vericore-test@example.invalid")
+                    .call()
+            }
             val current = currentState(root)
-            assertEquals(before.repositoryCommit, current.repositoryCommit)
+            assertNotEquals(before.repositoryCommit, current.repositoryCommit)
             assertNotEquals(before.snapshotDigest, current.snapshotDigest)
 
             writeCachedInputs(root, current.snapshotDigest, before.snapshotDigest)
@@ -77,6 +86,32 @@ class EngineeringPreparationTest {
         }
     }
 
+    @Test
+    fun invalidatesCacheWhenProjectConfigChangesWithoutChangingSourceDigest() = runBlocking {
+        val root = gitFixture()
+        try {
+            val before = currentState(root)
+            writeCachedInputs(root, before.snapshotDigest, before.snapshotDigest)
+            root.resolve(".vericore.json").writeText("""{"excludePaths":["generated"]}""")
+            val after = currentState(root)
+
+            assertEquals(before.repositoryCommit, after.repositoryCommit)
+            assertEquals(before.snapshotDigest, after.snapshotDigest)
+            assertTrue(after.changedPaths.contains(".vericore.json"))
+
+            val result = EngineeringPreparation.prepare(
+                root.path,
+                "validate the service change",
+                listOf("src/main/java/example/Service.java")
+            )
+
+            assertFalse(result.evidence.citations.any { it.id == "stale.evidence" })
+            assertEquals(after.snapshotDigest, result.evidence.repositoryStateDigest)
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
     private fun gitFixture(): File {
         val root = Files.createTempDirectory("vericore-preparation-freshness-").toFile()
         root.resolve("pom.xml").writeText(
@@ -87,6 +122,7 @@ class EngineeringPreparationTest {
               <version>1.0</version>
             </project>""".trimIndent()
         )
+        root.resolve(".vericore.json").writeText("""{"excludePaths":["build"]}""")
         writeSource(root, "before")
         Git.init().setDirectory(root).call().use { git ->
             git.add().addFilepattern(".").call()
