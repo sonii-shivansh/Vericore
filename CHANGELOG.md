@@ -23,6 +23,12 @@ All notable changes to Vericore are documented here. The format follows [Keep a 
 
 ## [Unreleased]
 
+### Verification security
+
+- Reject shell control operators and line breaks in verification commands before execution.
+- Execute only the validated build-command body, not the persisted directory-prefix string.
+- Add regression tests for Unix ampersand/newline separators and Windows CMD separators/line breaks.
+
 ### V3 — Agent Verification
 
 - MCP `vericore_prepare_change` now persists the same preparation, plan, and Agent Change Contract artifacts as the CLI.
