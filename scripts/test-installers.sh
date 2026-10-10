@@ -23,6 +23,8 @@ assert_contains "$UNIX_INSTALLER" 'Linux/x86_64'
 assert_contains "$UNIX_INSTALLER" 'Darwin/arm64'
 assert_contains "$UNIX_INSTALLER" 'Unsupported platform'
 assert_contains "$UNIX_INSTALLER" 'ln -sfn'
+assert_contains "$UNIX_INSTALLER" 'readlink "$LAUNCHER_PATH"'
+assert_not_contains "$UNIX_INSTALLER" 'readlink -f'
 assert_not_contains "$UNIX_INSTALLER" 'rm -rf "$INSTALL_ROOT"'
 assert_contains "$UNIX_INSTALLER" 'Installation container is not dedicated to Vericore'
 assert_contains "$UNIX_INSTALLER" 'does not look like a Vericore distribution'
@@ -62,7 +64,12 @@ chmod +x "$FIXTURE/vericore/bin/vericore"
 printf 'fixture application jar\n' > "$FIXTURE/vericore/lib/vericore-0.9.0.jar"
 ARCHIVE="$TEST_ROOT/vericore-0.9.0-linux-x64.tar.gz"
 tar -czf "$ARCHIVE" -C "$FIXTURE" vericore
-printf '%s  %s\n' "$(sha256sum "$ARCHIVE" | awk '{print $1}')" "$(basename "$ARCHIVE")" > "$TEST_ROOT/SHA256SUMS"
+if command -v sha256sum >/dev/null 2>&1; then
+  ARCHIVE_SHA="$(sha256sum "$ARCHIVE" | awk '{print $1}')"
+else
+  ARCHIVE_SHA="$(shasum -a 256 "$ARCHIVE" | awk '{print $1}')"
+fi
+printf '%s  %s\n' "$ARCHIVE_SHA" "$(basename "$ARCHIVE")" > "$TEST_ROOT/SHA256SUMS"
 export VERICORE_TEST_ARCHIVE="$ARCHIVE"
 export VERICORE_TEST_SUMS="$TEST_ROOT/SHA256SUMS"
 export VERICORE_TEST_CURL_LOG="$TEST_ROOT/curl.log"
