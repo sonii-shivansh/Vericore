@@ -17,8 +17,8 @@ The canonical icon is the project icon used by the website. Do not create a seco
 ## Repository-file controls
 
 - DCO verification runs independently on pull requests targeting main.
-- Release Audit is the authoritative full release-candidate certification workflow.
-- Current workflow trigger caveat: release-audit.yml runs on workflow dispatch, workflow_call, and pushes to main; it does not directly trigger on pull_request. Until that is deliberately changed, do not describe Release Audit as an enforced PR status check.
+- Release Audit is the authoritative full release-candidate certification workflow and runs on `workflow_dispatch`, `workflow_call`, and pushes to `main`; it intentionally does not run on every pull request because its matrix includes long-running live external-repository and output-quality jobs.
+- PRs use targeted CI/regression checks and DCO. The full Release Audit certifies the exact post-merge `main` candidate. Do not describe Release Audit as an enforced PR status check.
 - Reusable CI, verification, platform, onboarding, regression, and live-repository workflows are components of Release Audit; they are not a substitute for exact-candidate release certification.
 - Dependabot configuration covers Gradle and GitHub Actions.
 - Security vulnerability reporting is governed by SECURITY.md.
@@ -59,13 +59,13 @@ Preferred merge policy:
 
 ### Required status checks
 
-The target merge gates should be selected and verified against the actual workflow triggers and GitHub ruleset:
+The intended merge/certification model is:
 
 1. Check commit sign-offs — independent DCO governance.
-2. Pull-request CI/regression checks that are configured to run for the changed code paths.
-3. Release Audit on the exact release candidate and after main changes, as currently configured.
+2. Pull-request CI/regression checks configured for changed code paths.
+3. Full Release Audit on the exact post-merge `main` commit; release candidates can also be audited via `workflow_dispatch`.
 
-The current workflow configuration does not directly trigger Release Audit on pull requests. If Release Audit is intended to be a required PR check, add and validate that trigger deliberately; the workflow includes long-running external repository and output-quality jobs, so its cost and feedback time should be considered. Until then, do not state that Release Audit is a PR-required check unless a matching external GitHub ruleset is verified.
+This is a deliberate tradeoff: avoid duplicating the long-running external-repository and output-quality matrix on every PR while retaining full exact-candidate post-merge certification. The repository workflow files document this model; actual branch-protection/ruleset enforcement must be verified in GitHub Settings and is not inferred from this document.
 
 Do not add every reusable workflow as an individual required check when Release Audit already composes them.
 
