@@ -10,6 +10,9 @@
 | **Understand why Vericore exists** | **[Why Vericore?](WHY_VERICORE.md)** |
 | **Understand the master roadmap** | [Product Direction](PRODUCT_DIRECTION.md) |
 | Track foundation work | [Phase 0 Foundation Checklist](PHASE0_FOUNDATION_CHECKLIST.md) |
+| Understand artifact versions and compatibility | [Artifact Schema Catalog](ARTIFACT_SCHEMA_CATALOG.md) |
+| Check platform/interface support boundaries | [Support Matrix](SUPPORT_MATRIX.md) |
+| Inspect verification benchmark methodology | [Verification Benchmark](VERIFICATION_BENCHMARK.md) |
 | Install and run Vericore | [Getting Started](GETTING_STARTED.md) |
 | **Use a command** | **[CLI Reference](CLI.md)** |
 | Understand the system | [Architecture](ARCHITECTURE.md) |
