@@ -48,7 +48,9 @@ object EngineeringVerification {
         val config = ConfigLoader.loadForRepository(root.path)
         val files = RepositoryScanner(config).scan(root.path)
         require(files.size <= config.maxFilesAnalyze) { "Repository exceeds the maximum file limit: ${config.maxFilesAnalyze}" }
-        val parsed = CodeParallelParser(CacheManager()).parseFiles(files)
+        val parser = CodeParallelParser(CacheManager())
+        val parsed = parser.parseFiles(files)
+        val parseFailures = parser.lastWarningCount
         val enriched = OptimizedGitAnalyzer().analyze(root.path, parsed)
         val graph = RobustDependencyGraph()
         graph.build(enriched).getOrThrow()
@@ -63,7 +65,14 @@ object EngineeringVerification {
         val churn = enriched.associate { it.file.absolutePath.replace('\\', '/') to it.gitMetadata.changeFrequency }
         val packages = enriched.associate { it.file.absolutePath.replace('\\', '/') to it.packageName }
         val impact = ChangeImpactEngine.analyze(graph.graph, changedAbsolute, graph.pageRankScores, churn, packages)
-        val snapshot = AnalysisSnapshotBuilder.build(root.path, enriched, graph.graph, graph.pageRankScores, graph.hasCycles)
+        val snapshot = AnalysisSnapshotBuilder.build(
+            repositoryPath = root.path,
+            parsedFiles = enriched,
+            graph = graph.graph,
+            pageRankScores = graph.pageRankScores,
+            hasCycles = graph.hasCycles,
+            parseFailures = parseFailures
+        )
         val risks = com.vericore.core.intelligence.EngineeringRiskEngine.calculate(snapshot)
         val toRelativePath: (String) -> String = { path ->
             val candidate = File(path).toPath()

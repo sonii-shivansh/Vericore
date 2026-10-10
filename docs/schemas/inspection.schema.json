@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:vericore:schema:inspection-v1.0",
+  "title": "Vericore Product Inspection",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "repository",
+    "analyzedAtEpochMillis",
+    "languages",
+    "metrics",
+    "hotspots",
+    "highRiskFiles",
+    "criticalRiskFiles",
+    "recommendations"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "repository": {
+      "type": "string"
+    },
+    "analyzedAtEpochMillis": {
+      "type": "integer"
+    },
+    "languages": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "repositoryCommit": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "metrics": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "urn:vericore:schema:inspection-metrics-v1.0",
+      "title": "Inspection metrics",
+      "type": "object",
+      "required": [
+        "files",
+        "nodes",
+        "edges",
+        "parseFailures",
+        "cyclesDetected",
+        "packages",
+        "crossPackageEdges"
+      ],
+      "properties": {
+        "files": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "nodes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "edges": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "parseFailures": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cyclesDetected": {
+          "type": "boolean"
+        },
+        "packages": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "crossPackageEdges": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "hotspots": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "score",
+          "churn",
+          "dependents",
+          "dependencies"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "score": {
+            "type": "number"
+          },
+          "churn": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "dependents": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "dependencies": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "highRiskFiles": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "criticalRiskFiles": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "recommendations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "priority",
+          "title",
+          "action"
+        ],
+        "properties": {
+          "priority": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "action": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": false
+}

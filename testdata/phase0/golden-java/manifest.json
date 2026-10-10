@@ -1,0 +1,32 @@
+{
+  "fixtureId": "phase0.golden.java.v1",
+  "fixtureVersion": "1.0.0",
+  "language": "Java",
+  "sourceFiles": [
+    "src/main/java/example/Controller.java",
+    "src/main/java/example/Service.java"
+  ],
+  "expectedAnalysis": {
+    "totalFiles": 2,
+    "totalNodes": 2,
+    "totalEdges": 1,
+    "parseFailures": 0,
+    "cycleDetected": false,
+    "packageCount": 1,
+    "languages": [
+      "Java"
+    ],
+    "dependencyEdges": [
+      {
+        "source": "src/main/java/example/Controller.java",
+        "target": "src/main/java/example/Service.java"
+      }
+    ]
+  },
+  "invariants": [
+    "source paths are sorted by repository-relative path",
+    "hotspots are ordered by descending score then path",
+    "the fixture is analyzed without an AI provider",
+    "only explicitly documented variable fields are normalized in golden comparisons"
+  ]
+}

@@ -41,6 +41,7 @@ class RepositoryScanner(
 
                 matchesSupportedExtension && !isToolGeneratedRootPath && !excludedByConfig
             }
+            .sortedBy { it.relativeTo(root).invariantSeparatorsPath }
             .toList()
     }
 }

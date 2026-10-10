@@ -116,7 +116,7 @@ jobs:
           "$CLI" repo-qa "what are the main files?" --path . > output/repo-qa.json
           test -s output/repo-qa.json
           "$CLI" prepare "refactor the greeting service safely"
-          test -s output/engineering-context.json
+          test -s output/engineering-preparation.json
           test -s output/engineering-plan.json
           "$CLI" verify --output output/verify.json
           test -s output/verify.json

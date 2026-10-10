@@ -24,7 +24,7 @@ class PrepareCommand : CliktCommand(name = "prepare", help = "Prepare an evidenc
         val root = File(path).canonicalFile
         val result = runBlocking { EngineeringPreparation.prepare(root.path, changeSummary, plannedPaths) }
         val json = Json { prettyPrint = true; encodeDefaults = true }
-        val artifactPath = output ?: root.resolve("output/engineering-context.json").path
+        val artifactPath = output ?: root.resolve("output/engineering-preparation.json").path
         val artifact = File(artifactPath).let { if (it.isAbsolute) it else root.resolve(it.path) }.apply { parentFile?.mkdirs() }
         artifact.writeText(json.encodeToString(result))
         val planPath = planOutput ?: root.resolve("output/engineering-plan.json").path

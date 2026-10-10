@@ -1,0 +1,210 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:vericore:schema:analysis-snapshot-v1.1",
+  "title": "Vericore Analysis Snapshot",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "repository",
+    "metrics",
+    "files",
+    "hotspots",
+    "architecture"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.1"
+    },
+    "repository": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "urn:vericore:schema:repository-snapshot-v1.1",
+      "title": "Repository snapshot",
+      "type": "object",
+      "required": [
+        "path",
+        "analyzedAtEpochMillis",
+        "languages"
+      ],
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "analyzedAtEpochMillis": {
+          "type": "integer"
+        },
+        "languages": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "repositoryCommit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "repositoryStateDigest": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "metrics": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "urn:vericore:schema:analysis-metrics-v1.1",
+      "title": "Analysis metrics",
+      "type": "object",
+      "required": [
+        "totalFiles",
+        "totalNodes",
+        "totalEdges",
+        "cycleDetected"
+      ],
+      "properties": {
+        "totalFiles": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "totalNodes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "totalEdges": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cycleDetected": {
+          "type": "boolean"
+        },
+        "parseFailures": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "files": {
+      "type": "array",
+      "items": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "urn:vericore:schema:file-snapshot-v1.1",
+        "title": "File snapshot",
+        "type": "object",
+        "required": [
+          "path",
+          "packageName",
+          "importCount",
+          "churn",
+          "authors",
+          "pageRank",
+          "dependents",
+          "dependencies"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "packageName": {
+            "type": "string"
+          },
+          "importCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "churn": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "authors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "pageRank": {
+            "type": "number"
+          },
+          "dependents": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "dependencies": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "hotspots": {
+      "type": "array",
+      "items": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "urn:vericore:schema:hotspot-snapshot-v1.1",
+        "title": "Hotspot snapshot",
+        "type": "object",
+        "required": [
+          "path",
+          "score",
+          "churn",
+          "dependents",
+          "dependencies"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "score": {
+            "type": "number"
+          },
+          "churn": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "dependents": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "dependencies": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "architecture": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "urn:vericore:schema:architecture-snapshot-v1.1",
+      "title": "Architecture snapshot",
+      "type": "object",
+      "required": [
+        "hasCycles",
+        "packageCount",
+        "crossPackageEdges"
+      ],
+      "properties": {
+        "hasCycles": {
+          "type": "boolean"
+        },
+        "packageCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "crossPackageEdges": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

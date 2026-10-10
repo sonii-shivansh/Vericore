@@ -1,0 +1,125 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:vericore:schema:semantic-evidence-graph-v1.0",
+  "title": "Vericore Semantic Evidence Graph Artifact",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "repositoryId",
+    "observedCommit",
+    "digest",
+    "nodeCount",
+    "edgeCount",
+    "nodes",
+    "edges"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "repositoryId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "observedCommit": {
+      "type": "string",
+      "minLength": 1
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "nodeCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "edgeCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "urn:vericore:schema:evidence-node-v1.0",
+        "title": "Evidence node",
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "repositoryId",
+          "observedCommit",
+          "producer",
+          "contentDigest",
+          "sourceRef"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "REPOSITORY",
+              "SOURCE",
+              "ANALYSIS",
+              "ARCHITECTURE",
+              "HOTSPOT",
+              "TEMPORAL",
+              "REPO_QA",
+              "GROUNDING"
+            ]
+          },
+          "repositoryId": {
+            "type": "string"
+          },
+          "observedCommit": {
+            "type": "string"
+          },
+          "producer": {
+            "type": "string"
+          },
+          "contentDigest": {
+            "type": "string"
+          },
+          "sourceRef": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "urn:vericore:schema:evidence-edge-v1.0",
+        "title": "Evidence edge",
+        "type": "object",
+        "required": [
+          "fromId",
+          "toId",
+          "type"
+        ],
+        "properties": {
+          "fromId": {
+            "type": "string"
+          },
+          "toId": {
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "DERIVED_FROM",
+              "SUPPORTS"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

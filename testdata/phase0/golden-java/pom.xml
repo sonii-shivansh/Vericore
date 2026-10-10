@@ -1,0 +1,6 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.vericore.fixtures</groupId>
+  <artifactId>phase0-golden-java</artifactId>
+  <version>0.1.0</version>
+</project>

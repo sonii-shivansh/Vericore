@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:vericore:schema:engineering-risks-v1.0",
+  "title": "Vericore Engineering Risk List",
+  "type": "array",
+  "items": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "urn:vericore:schema:engineering-risk-v1.0",
+    "title": "Engineering risk",
+    "type": "object",
+    "required": [
+      "path",
+      "score",
+      "level",
+      "reasons"
+    ],
+    "properties": {
+      "path": {
+        "type": "string"
+      },
+      "score": {
+        "type": "number",
+        "minimum": 0,
+        "maximum": 100
+      },
+      "level": {
+        "enum": [
+          "LOW",
+          "MEDIUM",
+          "HIGH",
+          "CRITICAL"
+        ]
+      },
+      "reasons": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        }
+      }
+    },
+    "additionalProperties": false
+  }
+}

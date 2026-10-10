@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:vericore:schema:grounded-evidence-v1.1",
+  "title": "Vericore Grounded Evidence",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "citations",
+    "repositoryCommit",
+    "repositoryStateDigest",
+    "analysisSchemaVersion"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.1"
+    },
+    "citations": {
+      "type": "array",
+      "items": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "urn:vericore:schema:evidence-citation-v1.0",
+        "title": "Evidence citation",
+        "type": "object",
+        "required": [
+          "id",
+          "type",
+          "detail"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "type": {
+            "type": "string",
+            "minLength": 1
+          },
+          "path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "detail": {
+            "type": "string"
+          },
+          "metrics": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "relatedPaths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "repositoryCommit": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "repositoryStateDigest": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "analysisSchemaVersion": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": false
+}

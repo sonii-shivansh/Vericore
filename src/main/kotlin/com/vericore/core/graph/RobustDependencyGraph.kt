@@ -83,5 +83,8 @@ class RobustDependencyGraph {
     }
 
     fun getTopHotspots(limit: Int = 10): List<Pair<String, Double>> =
-        pageRankScores.entries.sortedByDescending { it.value }.take(limit).map { it.key to it.value }
+        pageRankScores.entries
+            .sortedWith(compareByDescending<Map.Entry<String, Double>> { it.value }.thenBy { it.key })
+            .take(limit)
+            .map { it.key to it.value }
 }

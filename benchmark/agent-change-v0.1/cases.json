@@ -1,0 +1,52 @@
+{
+  "benchmarkId": "vericore-agent-change",
+  "benchmarkVersion": "0.1.0",
+  "scope": "Correctness/contract baseline; not a comparative leaderboard",
+  "cases": [
+    {
+      "id": "analysis-determinism",
+      "kind": "cli",
+      "expected": "same normalized snapshot for same fixture and commit"
+    },
+    {
+      "id": "artifact-schemas",
+      "kind": "cli",
+      "expected": "every generated core artifact validates against the published schema"
+    },
+    {
+      "id": "evidence-stale-source",
+      "kind": "cli",
+      "expected": "source edit without HEAD change invalidates cached evidence"
+    },
+    {
+      "id": "planned-mutation",
+      "kind": "cli",
+      "expected": "in-scope source change with successful declared commands returns PASS or REVIEW_REQUIRED, with all commands executed and passed"
+    },
+    {
+      "id": "no-mutation",
+      "kind": "cli",
+      "expected": "verify must fail if no planned source change occurred"
+    },
+    {
+      "id": "unexpected-path",
+      "kind": "cli",
+      "expected": "verify must fail if a source path outside the plan changes"
+    },
+    {
+      "id": "stale-head",
+      "kind": "cli",
+      "expected": "verify must fail if repository HEAD changes after preparation"
+    },
+    {
+      "id": "shell-separator",
+      "kind": "unit-regression",
+      "expected": "shell separators and CR/LF are rejected before any secondary command can execute"
+    }
+  ],
+  "metricDefinitions": {
+    "expectedOutcomeMatch": "count of executed cases whose observed outcome matches their declared expectation",
+    "mismatch": "count of executed cases whose observed outcome contradicts its declared expectation",
+    "elapsedMs": "wall-clock duration recorded per CLI case; compare only across equivalent runner profiles"
+  }
+}

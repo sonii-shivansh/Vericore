@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:vericore:schema:pr-intelligence-v1.0",
+  "title": "Vericore PR Intelligence",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "changeSummary",
+    "impactedFiles",
+    "impactedPackages",
+    "crossPackageImpacts",
+    "testCandidates",
+    "findings",
+    "aggregateSeverity"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "changeSummary": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "urn:vericore:schema:change-summary-v1.0",
+      "title": "Change summary",
+      "type": "object",
+      "required": [
+        "filesChanged",
+        "filesAdded",
+        "filesModified",
+        "filesDeleted",
+        "filesRenamed",
+        "filesCopied",
+        "additions",
+        "deletions"
+      ],
+      "properties": {
+        "filesChanged": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "filesAdded": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "filesModified": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "filesDeleted": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "filesRenamed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "filesCopied": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "additions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "deletions": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "impactedFiles": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "impactedPackages": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "crossPackageImpacts": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "testCandidates": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "urn:vericore:schema:pr-finding-v1.0",
+        "title": "PR finding",
+        "type": "object",
+        "required": [
+          "ruleId",
+          "severity",
+          "paths",
+          "evidence",
+          "reason"
+        ],
+        "properties": {
+          "ruleId": {
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "INFO",
+              "LOW",
+              "MEDIUM",
+              "HIGH",
+              "CRITICAL"
+            ]
+          },
+          "paths": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "evidence": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "aggregateSeverity": {
+      "enum": [
+        "INFO",
+        "LOW",
+        "MEDIUM",
+        "HIGH",
+        "CRITICAL"
+      ]
+    }
+  },
+  "additionalProperties": false
+}

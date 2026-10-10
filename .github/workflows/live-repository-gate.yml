@@ -135,7 +135,7 @@ jobs:
           "$CLI" plan "Improve the repository safely" --evidence output/grounded-evidence.json --output output/engineering-plan.json
           "$CLI" prepare "Improve the repository safely"
           test -s output/engineering-plan.json
-          test -s output/engineering-context.json
+          test -s output/engineering-preparation.json
           test -s output/agent-change-contract.json
           python3 - <<'PY'
           import json

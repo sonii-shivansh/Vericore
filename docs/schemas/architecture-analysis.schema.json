@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:vericore:schema:architecture-analysis-v1.1",
+  "title": "Vericore Architecture Analysis",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "summary",
+    "findings",
+    "cycles",
+    "layers",
+    "dependencyEdges"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.1"
+    },
+    "summary": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "urn:vericore:schema:architecture-summary-v1.1",
+      "title": "Architecture summary",
+      "type": "object",
+      "required": [
+        "filesAnalyzed",
+        "dependencyEdges",
+        "findings",
+        "cycles",
+        "crossLayerDependencies",
+        "highCouplingFiles"
+      ],
+      "properties": {
+        "filesAnalyzed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "dependencyEdges": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "findings": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "cycles": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "crossLayerDependencies": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "highCouplingFiles": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "urn:vericore:schema:architecture-finding-v1.1",
+        "title": "Architecture finding",
+        "type": "object",
+        "required": [
+          "ruleId",
+          "severity",
+          "source",
+          "target",
+          "relationship",
+          "evidence",
+          "category"
+        ],
+        "properties": {
+          "ruleId": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "target": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "relationship": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "cycles": {
+      "type": "array",
+      "items": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "urn:vericore:schema:architecture-cycle-v1.1",
+        "title": "Architecture cycle",
+        "type": "object",
+        "required": [
+          "members"
+        ],
+        "properties": {
+          "members": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "layers": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": 0
+      }
+    },
+    "dependencyEdges": {
+      "type": "array",
+      "items": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "urn:vericore:schema:architecture-dependency-edge-v1.1",
+        "title": "Architecture dependency edge",
+        "type": "object",
+        "required": [
+          "source",
+          "target"
+        ],
+        "properties": {
+          "source": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

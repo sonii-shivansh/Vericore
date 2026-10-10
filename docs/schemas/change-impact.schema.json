@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:vericore:schema:change-impact-v1.0",
+  "title": "Vericore Change Impact",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "changedPaths",
+    "nodes",
+    "summary"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "changedPaths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "urn:vericore:schema:impact-node-v1.0",
+        "title": "Impact node",
+        "type": "object",
+        "required": [
+          "path",
+          "relationship",
+          "depth",
+          "score",
+          "reasons"
+        ],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "relationship": {
+            "enum": [
+              "CHANGED",
+              "DIRECT_DEPENDENT",
+              "TRANSITIVE_DEPENDENT",
+              "TEST_CANDIDATE"
+            ]
+          },
+          "depth": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "score": {
+            "type": "number"
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "summary": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "urn:vericore:schema:impact-summary-v1.0",
+      "title": "Impact summary",
+      "type": "object",
+      "required": [
+        "changedFiles",
+        "impactedFiles",
+        "impactedPackages",
+        "crossPackageImpacts",
+        "testCandidates",
+        "maxDepth"
+      ],
+      "properties": {
+        "changedFiles": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "impactedFiles": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "impactedPackages": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "crossPackageImpacts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "testCandidates": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "maxDepth": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -42,7 +42,8 @@ vericore verify \
 
 | Artifact | Purpose |
 |---|---|
-| `output/engineering-context.json` | Repository state, evidence, and context used by planning |
+| `output/engineering-preparation.json` | Preparation result, evidence, plan, contract, and provenance |
+| `output/engineering-context.json` | Context snapshot from `context-snapshot`; never overwritten by `prepare` |
 | `output/engineering-plan.json` | Deterministic, evidence-backed implementation plan |
 | `output/agent-change-contract.json` | Persisted repository-bound verification contract |
 

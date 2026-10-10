@@ -83,7 +83,7 @@ jobs:
           /usr/bin/time -v timeout --signal=TERM --kill-after=30s 8m \
             "$CLI" prepare "Improve the repository safely"
           test -s output/engineering-plan.json
-          test -s output/engineering-context.json
+          test -s output/engineering-preparation.json
           test -s output/agent-change-contract.json
       - name: Report repository state
         if: always()

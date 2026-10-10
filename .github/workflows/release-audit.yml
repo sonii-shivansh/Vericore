@@ -31,6 +31,22 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew --no-daemon clean test installDist
+      - name: Install pinned JSON Schema validator
+        run: python3 -m pip install --disable-pip-version-check -r scripts/audit/requirements-schema.txt
+      - name: Phase 0 schemas, golden repository, and verification benchmark
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          python3 scripts/audit/phase0-foundation-audit.py \
+            --cli ./build/install/vericore/bin/vericore \
+            --output "$RUNNER_TEMP/vericore-phase0-benchmark-results.json"
+      - name: Upload Phase 0 benchmark evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: vericore-phase0-foundation-results
+          path: ${{ runner.temp }}/vericore-phase0-benchmark-results.json
+          if-no-files-found: warn
       - name: Resolve application version
         id: version
         shell: bash

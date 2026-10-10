@@ -1,0 +1,343 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:vericore:schema:engineering-preparation-v1.2",
+  "title": "Vericore Engineering Preparation Result",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "repository",
+    "changeSet",
+    "evidence",
+    "plan",
+    "contract",
+    "provenance",
+    "evidenceGraphDigest",
+    "evidenceGraphNodeCount",
+    "evidenceGraphEdgeCount"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.2"
+    },
+    "repository": {
+      "type": "string",
+      "minLength": 1
+    },
+    "changeSet": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "urn:vericore:schema:preparation-change-set-v1.0",
+      "title": "Preparation change set",
+      "type": "object",
+      "required": [
+        "files",
+        "source"
+      ],
+      "properties": {
+        "files": {
+          "type": "array",
+          "items": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "urn:vericore:schema:changed-file-v1.0",
+            "title": "Changed file",
+            "type": "object",
+            "required": [
+              "path",
+              "changeType",
+              "oldPath",
+              "additions",
+              "deletions"
+            ],
+            "properties": {
+              "path": {
+                "type": "string"
+              },
+              "changeType": {
+                "enum": [
+                  "ADDED",
+                  "MODIFIED",
+                  "DELETED",
+                  "RENAMED",
+                  "COPIED"
+                ]
+              },
+              "oldPath": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "additions": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "deletions": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "source": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "evidence": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "$id": "urn:vericore:schema:preparation-grounded-evidence-v1.1",
+      "title": "Preparation grounded evidence",
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "citations",
+        "repositoryCommit",
+        "repositoryStateDigest",
+        "analysisSchemaVersion"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "1.1"
+        },
+        "citations": {
+          "type": "array"
+        },
+        "repositoryCommit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "repositoryStateDigest": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "analysisSchemaVersion": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "plan": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "changeSummary",
+        "repository",
+        "affectedComponents",
+        "plannedPaths",
+        "concerns",
+        "riskLevel",
+        "steps",
+        "verificationCommands",
+        "evidenceIds",
+        "uncertainties",
+        "contractFingerprint",
+        "buildSystem"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "1.0"
+        },
+        "changeSummary": {
+          "type": "string"
+        },
+        "repository": {
+          "type": "string"
+        },
+        "affectedComponents": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "plannedPaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "concerns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "riskLevel": {
+          "enum": [
+            "LOW",
+            "MEDIUM",
+            "HIGH",
+            "UNKNOWN"
+          ]
+        },
+        "steps": {
+          "type": "array"
+        },
+        "verificationCommands": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "evidenceIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "uncertainties": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "contractFingerprint": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "buildSystem": {
+          "enum": [
+            "MAVEN",
+            "GRADLE",
+            "UNKNOWN"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "contract": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "changeSummary",
+        "repository",
+        "preparedHead",
+        "plannedPaths",
+        "expectedChangeTypes",
+        "expectedComponents",
+        "verificationCommands",
+        "evidenceIds",
+        "architectureExpectations",
+        "fingerprint"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "2.0"
+        },
+        "changeSummary": {
+          "type": "string"
+        },
+        "repository": {
+          "type": "string"
+        },
+        "preparedHead": {
+          "type": "string"
+        },
+        "plannedPaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "expectedChangeTypes": {
+          "type": "object"
+        },
+        "expectedComponents": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "verificationCommands": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "evidenceIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "architectureExpectations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "fingerprint": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "provenance": {
+      "type": "object",
+      "required": [
+        "schemaVersion",
+        "id",
+        "operation",
+        "repositoryCommit",
+        "analysisSchemaVersion",
+        "evidenceIds",
+        "unknownReason"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "1.0"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "operation": {
+          "type": "string"
+        },
+        "repositoryCommit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "analysisSchemaVersion": {
+          "type": "string"
+        },
+        "evidenceIds": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unknownReason": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "evidenceGraphDigest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "evidenceGraphNodeCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "evidenceGraphEdgeCount": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "additionalProperties": false
+}

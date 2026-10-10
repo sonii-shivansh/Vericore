@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:vericore:schema:engineering-plan-v1.0",
+  "title": "Vericore Engineering Plan",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "changeSummary",
+    "repository",
+    "affectedComponents",
+    "plannedPaths",
+    "concerns",
+    "riskLevel",
+    "steps",
+    "verificationCommands",
+    "evidenceIds",
+    "uncertainties",
+    "contractFingerprint",
+    "buildSystem"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "changeSummary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "repository": {
+      "type": "string"
+    },
+    "affectedComponents": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "plannedPaths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "concerns": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "riskLevel": {
+      "enum": [
+        "LOW",
+        "MEDIUM",
+        "HIGH",
+        "UNKNOWN"
+      ]
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "urn:vericore:schema:engineering-plan-step-v1.0",
+        "title": "Engineering plan step",
+        "type": "object",
+        "required": [
+          "id",
+          "description",
+          "rationale",
+          "evidenceIds",
+          "verification"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "rationale": {
+            "type": "string"
+          },
+          "evidenceIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "verification": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "verificationCommands": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "evidenceIds": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "uncertainties": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "contractFingerprint": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "buildSystem": {
+      "enum": [
+        "MAVEN",
+        "GRADLE",
+        "UNKNOWN"
+      ]
+    }
+  },
+  "additionalProperties": false
+}

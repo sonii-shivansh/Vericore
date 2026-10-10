@@ -8,6 +8,7 @@ import com.vericore.core.graph.RobustDependencyGraph
 import com.vericore.core.intelligence.AnalysisSnapshot
 import com.vericore.core.intelligence.AnalysisSnapshotBuilder
 import com.vericore.core.intelligence.EngineeringContextSnapshot
+import com.vericore.core.intelligence.EngineeringContextEngine
 import com.vericore.core.parser.ParsedFile
 import com.vericore.core.qa.RepositoryEvidenceRetriever
 import com.vericore.core.qa.RepositoryQuestionClassifier
@@ -55,10 +56,11 @@ class RepositoryQACommand : CliktCommand(name = "repo-qa", help = "Retrieve grou
         }
 
         val files = RepositoryScanner().scan(root.path)
+        val parser = CodeParallelParser(CacheManager())
         val parsedFiles: List<ParsedFile> = runBlocking {
-            CodeParallelParser(CacheManager()).parseFiles(files)
+            parser.parseFiles(files)
         }
-        val parseFailures = files.size - parsedFiles.size
+        val parseFailures = parser.lastWarningCount
         val enriched = try {
             OptimizedGitAnalyzer().analyze(root.path, parsedFiles)
         } catch (_: Exception) {
@@ -122,8 +124,16 @@ class RepositoryQACommand : CliktCommand(name = "repo-qa", help = "Retrieve grou
             require(currentState.second.all { it.startsWith("output/") || it == "output" }) {
                 "Repository has source changes outside generated output"
             }
+            val currentContext = EngineeringContextEngine.snapshot(root, RepositoryScanner())
+            require(snapshot.repository.path == root.path) { "Cached analysis snapshot belongs to a different repository" }
             require(snapshot.repository.repositoryCommit == currentState.first) { "Cached analysis snapshot is stale" }
-            json.decodeFromString<GroundedEvidence>(evidenceFile.readText())
+            require(
+                !snapshot.repository.repositoryStateDigest.isNullOrBlank() &&
+                    snapshot.repository.repositoryStateDigest == currentContext.snapshotDigest
+            ) { "Cached analysis snapshot source state is stale" }
+            val evidence = json.decodeFromString<GroundedEvidence>(evidenceFile.readText())
+            require(evidence.isBoundTo(snapshot, root.path)) { "Cached grounded evidence is stale or belongs to another snapshot" }
+            evidence
         }.getOrNull()
     }
 
@@ -136,7 +146,13 @@ class RepositoryQACommand : CliktCommand(name = "repo-qa", help = "Retrieve grou
             require(currentState.second.all { it.startsWith("output/") || it == "output" }) {
                 "Repository has source changes outside generated output"
             }
+            val currentContext = EngineeringContextEngine.snapshot(root, RepositoryScanner())
+            require(snapshot.repository.path == root.path) { "Cached analysis snapshot belongs to a different repository" }
             require(snapshot.repository.repositoryCommit == currentState.first) { "Cached analysis snapshot is stale" }
+            require(
+                !snapshot.repository.repositoryStateDigest.isNullOrBlank() &&
+                    snapshot.repository.repositoryStateDigest == currentContext.snapshotDigest
+            ) { "Cached analysis snapshot source state is stale" }
             snapshot
         }.getOrNull()
     }
@@ -153,8 +169,14 @@ class RepositoryQACommand : CliktCommand(name = "repo-qa", help = "Retrieve grou
         if (!contextFile.isFile) return null
         return runCatching {
             val snapshot = json.decodeFromString<EngineeringContextSnapshot>(contextFile.readText())
-            val currentCommit = Git.open(root).use { git -> git.repository.resolve("HEAD")?.name }
-            if (snapshot.repositoryCommit != null && snapshot.repositoryCommit == currentCommit) snapshot else null
+            val currentState = currentRepositoryState(root)
+            require(currentState.second.all { it.startsWith("output/") || it == "output" }) {
+                "Repository has source changes outside generated output"
+            }
+            val currentContext = EngineeringContextEngine.snapshot(root, RepositoryScanner())
+            require(snapshot.repositoryCommit == currentState.first) { "Cached engineering context is stale" }
+            require(snapshot.snapshotDigest == currentContext.snapshotDigest) { "Cached engineering context source state is stale" }
+            snapshot
         }.getOrNull()
     }
 
