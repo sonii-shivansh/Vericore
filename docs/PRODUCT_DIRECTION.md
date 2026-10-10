@@ -40,45 +40,79 @@ Product-level commands should make the same core information easy to find:
 - optional AI interpretation
 - next step
 
-## Roadmap
+## Master roadmap
 
-### Phase 0 — Public foundation
-- concise discovery-first README
-- clear product explanation
-- task-oriented Getting Started
-- coherent documentation hub
-- implementation status separated from future work
-- technical documents kept as authoritative references
+The strategic roadmap follows **Phase 0 through Phase 9**. Phase names and sequencing below are the project roadmap; present-day implementation status and known limitations remain documented in [Implementation Status](IMPLEMENTATION_STATUS.md).
 
-### Phase 1 — Understandability
-- finish the unified public command experience
-- consistent machine-readable product output
-- short reproducible 60-second product journey
-- strong verification receipt/output
-- incremental verification where it improves speed without weakening determinism
+### Phase 0 — Foundation Freeze & Truth
 
-### Phase 2 — Agent-native workflow
-- native integrations for major coding-agent environments
-- agent-facing skills and commands
-- polished MCP onboarding
-- reliable prepare → agent change → verify workflows
+Make the existing foundation trustworthy before major feature work.
 
-### Phase 3 — Verification moat
-- stronger change contracts
-- protected paths and expected operations
-- explainable deterministic verification results
-- verification receipts suitable for CI/PR artifacts
-- architecture and dependency expectations tied to verification
+- Stabilize current CI and release certification.
+- Align documentation with actual behavior.
+- Establish stable JSON and artifact schema contracts.
+- Make generated output deterministic.
+- Maintain golden test repositories and benchmark fixtures.
+- Define supported and unsupported boundaries.
+- Establish the baseline for a public verification benchmark.
 
-### Phase 4 — Evidence-grounded intelligence
-- project memory built from verified repository evidence
-- feature-gap analysis
-- broader cross-repository intelligence where evidence boundaries remain explicit
-- repeatable benchmarks and public evaluation examples
+No large new feature should displace these foundation tasks before their acceptance criteria are met.
 
-### Later
+### Phase 1 — The 60-Second Vericore
 
-GitHub App, dashboards, team/org governance, hosted services, and commercial packaging are deliberately later. The immediate goal is an excellent open-source verification layer for AI-assisted development.
+Make Vericore understandable and usable through one coherent public workflow:
+
+~~~text
+init → scan → inspect → ask → explain → review → plan
+     → prepare → agent works → verify → report
+~~~
+
+Keep specialized commands. The unified journey is the product surface, not a reason to delete useful lower-level commands.
+
+### Phase 2 — Universal Agent Layer
+
+Create one common **Vericore Agent Adapter** for Claude Code, Cursor, Codex, Gemini/Antigravity, GitHub Copilot, and future agents. Standardize agent/session identity, repository, contract, event metadata, changed files, verification requests, and results. Keep MCP as a key integration boundary rather than building independent implementations for every agent.
+
+### Phase 3 — Change Contract 2.0
+
+Evolve the current Agent Change Contract to express the complete change boundary: intent, repository and base commit, agent identity, allowed and protected paths, expected components and operations, dependency/architecture/security constraints, required tests and evidence, verification commands, risk budget, approvals, and contract fingerprint.
+
+### Phase 4 — Independent Verification Engine
+
+Verify requested work, unexpected or omitted changes, dependency and architecture drift, protected paths, tests and their relevance, configuration/dependency changes, and the exact commit under verification. Preserve explicit outcomes such as PASS, PASS_WITH_WARNINGS, REVIEW_REQUIRED, FAIL, INCONCLUSIVE, STALE, and NOT_EVALUATED. Missing or stale evidence must never be turned into a pass.
+
+### Phase 5 — Verification Receipt & Provenance
+
+Produce a stable machine-readable receipt for every verified change. Include repository/base/candidate identities, contract fingerprint, agent/session, changed and unexpected paths, impact, architecture/security/dependency results, test and command results, evidence IDs, risk, verdict, timestamp, environment, and freshness. Prefer compatibility with established provenance/attestation formats where appropriate. Capture observable evidence, not private model reasoning.
+
+### Phase 6 — Multi-Agent & Cross-Repository Verification
+
+Model relationships among agents, contracts, changes, commits, and affected components. Detect overlapping changes, conflicts, dependency collisions, contract invalidation, stale plans, and missing coordinated changes across repositories.
+
+### Phase 7 — Explain + Verified Project Memory
+
+Provide evidence-first explanations for findings and their impact, architecture context, relevant historical decisions, and recommendations. Build structured engineering memory for rules, decisions, exceptions, risks, architecture, verification history, dependencies, ownership, and accepted trade-offs, with evidence and freshness information.
+
+### Phase 8 — Distribution, Ecosystem & Benchmark
+
+Expand distribution and integration through GitHub/GitLab, IDEs, agent marketplaces, MCP, and CI/CD. Publish the **Vericore Agent Change Benchmark** with a transparent methodology and measurable results for scope drift, omitted requirements, unexpected files, architecture/dependency/security regressions, false completion, stale verification, agent conflicts, and cross-repository omissions.
+
+### Phase 9 — Enterprise Change Assurance
+
+Only after the core verification engine is strong and customer demand is validated, consider organization policies, RBAC, SSO, approvals, exception management, audit history, organization-wide risk, cross-repository governance, policy-as-code, retention, compliance exports, private deployment, and a central verification registry.
+
+Commercialization is a hypothesis to validate—not a reason to build a hosted control plane ahead of the core product.
+
+## Execution and phase gates
+
+The phase order above is the strategic roadmap. The following are execution rules recommended for delivery; they are not claims that the phases have already passed:
+
+- Break work into small, reviewable changes with regression tests for the behavior being changed.
+- Define measurable acceptance checks before declaring a phase complete.
+- Use CI and reproducible fixtures as evidence; distinguish passed checks from pending or unrun checks.
+- Keep unsupported behavior, schema compatibility, and known limitations explicit.
+- Do not publish a release based only on feature completion. Certify the exact candidate commit and artifact set.
+- Do not begin large work in a later phase while a release-blocking foundation defect remains unresolved.
 
 ## Product principles
 

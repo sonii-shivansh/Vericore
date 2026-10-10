@@ -92,16 +92,20 @@ GitHub Actions is the authoritative automated execution environment for release 
 - Architecture contract history records deterministic evaluation decisions, but explicit human approval/exception workflows are not implemented.
 - The Agent Change Contract is a verification boundary, not an authorization system or autonomous coding mechanism.
 
-## Future direction
+## Roadmap and current priorities
 
-Future work is not an API contract. A capability moves into **Implemented** only when the behavior exists in code and is supported by tests, CI, or release validation.
+The master strategic roadmap is documented in [Product Direction](PRODUCT_DIRECTION.md) and follows Phase 0 through Phase 9. It is a plan, not a statement that every listed capability is already shipped.
 
-Current priorities are:
-1. a clear unified developer/agent workflow;
-2. native agent integrations and agent-facing skills;
-3. stronger verification artifacts and incremental verification;
-4. deterministic explain capabilities;
-5. evidence-grounded project memory and feature-gap analysis;
-6. broader distribution and repeatable benchmarks.
+**Immediate priority: Phase 0 — Foundation Freeze & Truth.** Before adding major features, close the foundation gaps identified by code, regression tests, and release gates:
 
-Team dashboards, hosted control planes, and commercial packaging are deliberately later concerns.
+1. Complete the current CI/release baseline and preserve the distinction between published v0.8.2 and unreleased main.
+2. Reconcile roadmap/product documentation with the master Phase 0–9 sequence.
+3. Inventory JSON and persisted artifact schemas, versions, and compatibility rules.
+4. Establish deterministic ordering and regression fixtures for equal-score/tied results.
+5. Verify cache and evidence freshness against actual source state.
+6. Make parser diagnostics and other machine-readable quality metrics consistent across commands.
+7. Catalogue golden repositories, benchmark fixtures, and supported/unsupported boundaries.
+8. Define a reproducible baseline for the public verification benchmark.
+
+Only after those items have explicit acceptance criteria and supporting evidence should work advance to Phase 1's unified product journey, followed by the agent adapter, stronger contract, independent verification, receipts/provenance, multi-agent and cross-repository work, evidence-first explanation/memory, ecosystem distribution, and enterprise assurance in the sequence defined by the roadmap.
+
