@@ -10,6 +10,7 @@ import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.collections.shouldContain
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.shouldBe
+import kotlinx.serialization.json.Json
 
 class GroundedEvidenceTest : FunSpec({
     test("builds deterministic evidence with stable citation ids") {
@@ -45,6 +46,27 @@ class GroundedEvidenceTest : FunSpec({
         dependencyCitation.detail shouldContain "UsesA.kt"
     }
 
+    test("binds grounded evidence to the analysis snapshot identity") {
+        val snapshot = snapshot()
+        val evidence = GroundedEvidenceBuilder.fromSnapshot(snapshot)
+
+        evidence.schemaVersion shouldBe GROUNDED_EVIDENCE_SCHEMA_VERSION
+        evidence.repositoryCommit shouldBe "commit-123"
+        evidence.repositoryStateDigest shouldBe "state-digest"
+        evidence.analysisSchemaVersion shouldBe snapshot.schemaVersion
+        evidence.isBoundTo(snapshot, "/repo") shouldBe true
+        evidence.isBoundTo(snapshot, "/another-repository") shouldBe false
+        evidence.copy(repositoryStateDigest = "old-state-digest").isBoundTo(snapshot, "/repo") shouldBe false
+    }
+
+    test("legacy evidence remains readable but is not reusable as a fresh cache") {
+        val legacy = Json.decodeFromString<GroundedEvidence>("""{"schemaVersion":"1.0","citations":[]}""")
+
+        legacy.schemaVersion shouldBe "1.0"
+        legacy.repositoryStateDigest shouldBe null
+        legacy.isBoundTo(snapshot(), "/repo") shouldBe false
+    }
+
     test("exposes repository-relative paths instead of absolute filesystem paths") {
         val evidence = GroundedEvidenceBuilder.fromSnapshot(snapshot())
         val paths = evidence.citations.mapNotNull { it.path }
@@ -56,8 +78,8 @@ class GroundedEvidenceTest : FunSpec({
 })
 
 private fun snapshot() = AnalysisSnapshot(
-    schemaVersion = "1.0",
-    repository = RepositorySnapshot("/repo", 1L, listOf("Kotlin")),
+    schemaVersion = "1.1",
+    repository = RepositorySnapshot("/repo", 1L, listOf("Kotlin"), "commit-123", "state-digest"),
     metrics = AnalysisMetrics(3, 3, 2, false, 0),
     files = listOf(
         FileSnapshot("/repo/A.kt", "a", 1, 2, listOf("dev"), 0.8, 3, 1),
