@@ -35,6 +35,13 @@ jobs:
           distribution: "temurin"
           cache: "gradle"
 
+      - name: Unix installer path-safety regression
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          bash -n scripts/install.sh
+          bash scripts/test-installers.sh
+
       - name: Resolve application version
         id: version
         shell: bash

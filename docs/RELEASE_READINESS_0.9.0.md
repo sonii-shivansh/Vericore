@@ -1,8 +1,8 @@
 # Vericore v0.9.0 Release Readiness
 
-> **Status: Preparation in progress — not certified and not published.**
+> **Purpose: Pre-publication release control checklist (snapshot: 2026-10-10).**
 >
-> This checklist is the release work tracker. The earlier `release/0.9.0-preparation` branch was merged through PR #234; this file now tracks the unreleased candidate on main. A green Phase 0 audit or a green check on a different SHA does not certify v0.9.0. Freeze and record the final candidate SHA, run the full release audit on that exact commit, then verify the immutable tag/release workflow before publication.
+> This file is a control document, not the live certification result. On the snapshot date, `v0.9.0` was unpublished. The earlier `release/0.9.0-preparation` branch was merged through PR #234, and candidate work is on `main`. The full audit on `306e3fb718b01ddd6dd0f9ed3a52747ae985885e` passed its then-configured jobs, but it does not certify later candidate changes or satisfy the expanded certificate gate set added for this release. Do not infer readiness from this checklist or a green run on another SHA: the authoritative result is the machine-readable Release Audit certificate bound to the exact candidate commit and must report `overallReady: true`.
 
 ## Release intent
 
@@ -72,6 +72,12 @@
 - A PASS is evidence about the declared verification boundary, not a guarantee of semantic correctness or a replacement for review.
 - `v0.9.0` is pre-1.0; do not promise 1.0 compatibility guarantees.
 
+## Certificate gate contract
+
+The Release Audit certificate requires these gates on one candidate SHA: deterministic audit, Windows CI, product verification, four-platform smoke, onboarding E2E, the live-E2E matrix, both live-repository gates, both output-quality gates, documentation parity, the clean-runner GitHub Action audit, and installer path-safety regression. The certificate generator rejects missing, duplicated, or unexpected gate names; a skipped, cancelled, or failed required gate cannot yield `overallReady: true`.
+
+DCO and pull-request required checks are separate contribution controls. They must pass independently before merge; they are not represented as a release-audit job in the certificate.
+
 ## Certification rule
 
-Until every required gate passes on the exact candidate SHA, `v0.8.2` remains the latest public release and `main` remains unreleased development work. Do not create the `v0.9.0` tag or publish artifacts during preparation.
+Before publication, every required gate must pass on the exact candidate SHA, and the tag-triggered Release workflow must validate the tag/version contract and artifact set. Do not create the `v0.9.0` tag or publish artifacts while any required gate is pending or failing. Consult the exact-SHA certificate for live readiness; the snapshot above is historical context, not a live status claim.

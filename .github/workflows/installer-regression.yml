@@ -1,11 +1,14 @@
 name: Installer Regression
 
 on:
+  workflow_call: {}
   pull_request:
     paths:
       - "scripts/install.sh"
       - "scripts/install.ps1"
       - "scripts/test-installers.sh"
+      - "scripts/audit/release-readiness.py"
+      - "scripts/audit/test_release_readiness.py"
       - ".github/workflows/installer-regression.yml"
       - ".github/workflows/release.yml"
       - ".github/workflows/release-audit.yml"
@@ -15,6 +18,8 @@ on:
       - "scripts/install.sh"
       - "scripts/install.ps1"
       - "scripts/test-installers.sh"
+      - "scripts/audit/release-readiness.py"
+      - "scripts/audit/test_release_readiness.py"
       - ".github/workflows/installer-regression.yml"
       - ".github/workflows/release.yml"
       - ".github/workflows/release-audit.yml"
@@ -24,25 +29,36 @@ permissions:
 
 jobs:
   unix-installer-contract:
-    name: Unix installer contract
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
+    name: Unix installer contract and regression / ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux x64
+            os: ubuntu-24.04
+          - name: macOS x64
+            os: macos-15-intel
+          - name: macOS arm64
+            os: macos-14
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-      - name: Validate Bash syntax and release asset contract
+      - name: Validate Bash syntax and exercise installer
         run: |
           bash -n scripts/install.sh
           bash scripts/test-installers.sh
+          python3 scripts/audit/test_release_readiness.py
 
   windows-installer-syntax:
-    name: Windows installer PowerShell syntax
+    name: Windows installer safety and upgrade regression
     runs-on: windows-2025
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-      - name: Parse PowerShell installer without running it
+      - name: Parse PowerShell installer
         shell: pwsh
         run: |
           $tokens = $null
@@ -52,4 +68,111 @@ jobs:
           if ($errors.Count -gt 0) {
             $errors | ForEach-Object { Write-Error $_.Message }
             exit 1
+          }
+
+      - name: Exercise Windows install, upgrade, and unsafe-path rejection
+        shell: pwsh
+        run: |
+          $testRoot = Join-Path $env:RUNNER_TEMP ('vericore-installer-test-' + [guid]::NewGuid().ToString('N'))
+          $mockArchiveName = 'vericore-0.9.0-windows-x64.zip'
+          $script:mockCalls = 0
+          try {
+            $fixtureRoot = Join-Path $testRoot 'fixture'
+            $payload = Join-Path $fixtureRoot 'vericore'
+            New-Item -ItemType Directory -Path (Join-Path $payload 'bin') -Force | Out-Null
+            New-Item -ItemType Directory -Path (Join-Path $payload 'lib') -Force | Out-Null
+            New-Item -ItemType Directory -Path (Join-Path $payload 'jre\bin') -Force | Out-Null
+            Set-Content -LiteralPath (Join-Path $payload 'bin\vericore.bat') -Value @(
+              '@echo off',
+              'if "%~1"=="--version" (',
+              '  echo Vericore 0.9.0',
+              '  exit /b 0',
+              ')',
+              'echo fake cli'
+            )
+            Set-Content -LiteralPath (Join-Path $payload 'lib\vericore-0.9.0.jar') -Value 'fixture jar'
+            Set-Content -LiteralPath (Join-Path $payload 'jre\bin\java.exe') -Value 'fixture runtime marker'
+            $mockArchive = Join-Path $testRoot $mockArchiveName
+            Compress-Archive -Path $payload -DestinationPath $mockArchive -Force
+            $mockSums = Join-Path $testRoot 'SHA256SUMS'
+            $hash = (Get-FileHash -LiteralPath $mockArchive -Algorithm SHA256).Hash.ToLowerInvariant()
+            Set-Content -LiteralPath $mockSums -Value "$hash  $mockArchiveName"
+            $env:VERICORE_TEST_MOCK_ARCHIVE = $mockArchive
+            $env:VERICORE_TEST_MOCK_SUMS = $mockSums
+
+            function Invoke-WebRequest {
+              param([string]$Uri, [string]$OutFile, [hashtable]$Headers)
+              $script:mockCalls++
+              if ($Uri.EndsWith('/SHA256SUMS')) {
+                Copy-Item -LiteralPath $env:VERICORE_TEST_MOCK_SUMS -Destination $OutFile -Force
+              } elseif ($Uri -like '*vericore-0.9.0-windows-x64.zip') {
+                Copy-Item -LiteralPath $env:VERICORE_TEST_MOCK_ARCHIVE -Destination $OutFile -Force
+              } else {
+                throw "Unexpected test URL: $Uri"
+              }
+            }
+
+            $installer = Join-Path $env:GITHUB_WORKSPACE 'scripts\install.ps1'
+            $installRoot = Join-Path $testRoot 'safe-install\Vericore'
+            $sentinel = Join-Path $testRoot 'unrelated-user-data.txt'
+            Set-Content -LiteralPath $sentinel -Value 'must survive upgrade'
+            try {
+              & $installer -InstallRoot $installRoot -Version '0.9.0'
+            } catch {
+              Write-Host ("Installer error: " + $_.Exception.ToString())
+              Write-Host ("Installer stack: " + $_.ScriptStackTrace)
+              throw
+            }
+            if (-not (Test-Path -LiteralPath (Join-Path $installRoot 'bin\vericore.bat'))) {
+              throw 'Fresh install did not create the expected launcher.'
+            }
+            if (-not (Test-Path -LiteralPath (Join-Path $installRoot 'jre\bin\java.exe'))) {
+              throw 'Fresh install omitted the bundled runtime.'
+            }
+
+            & $installer -InstallRoot $installRoot -Version '0.9.0'
+            if (-not (Test-Path -LiteralPath $sentinel)) {
+              throw 'Upgrade removed unrelated user data.'
+            }
+            if (-not (Test-Path -LiteralPath (Join-Path $installRoot 'lib\vericore-0.9.0.jar'))) {
+              throw 'Upgrade omitted the Vericore application jar.'
+            }
+
+            $callsBeforeUnsafeTargets = $script:mockCalls
+            $homeRejected = $false
+            try {
+              & $installer -InstallRoot $env:USERPROFILE -Version '0.9.0' | Out-Null
+            } catch {
+              $homeRejected = $true
+            }
+            if (-not $homeRejected) {
+              throw 'Installer accepted the user profile as its installation directory.'
+            }
+
+            $unsafeRoot = Join-Path $testRoot 'not-a-vericore-installation'
+            New-Item -ItemType Directory -Path $unsafeRoot -Force | Out-Null
+            $unsafeSentinel = Join-Path $unsafeRoot 'keep.txt'
+            Set-Content -LiteralPath $unsafeSentinel -Value 'must not be deleted'
+            $unsafeRejected = $false
+            try {
+              & $installer -InstallRoot $unsafeRoot -Version '0.9.0' | Out-Null
+            } catch {
+              $unsafeRejected = $true
+            }
+            if (-not $unsafeRejected) {
+              throw 'Installer accepted a non-empty non-Vericore directory.'
+            }
+            if (-not (Test-Path -LiteralPath $unsafeSentinel)) {
+              throw 'Installer deleted a sentinel in a rejected destination.'
+            }
+            if ($script:mockCalls -ne $callsBeforeUnsafeTargets) {
+              throw 'Installer attempted to download an archive before rejecting unsafe paths.'
+            }
+            Write-Host 'Windows installer install/upgrade and path-safety tests passed.'
+          } finally {
+            Remove-Item Env:VERICORE_TEST_MOCK_ARCHIVE -ErrorAction SilentlyContinue
+            Remove-Item Env:VERICORE_TEST_MOCK_SUMS -ErrorAction SilentlyContinue
+            if (Test-Path -LiteralPath $testRoot) {
+              Remove-Item -LiteralPath $testRoot -Recurse -Force -ErrorAction SilentlyContinue
+            }
           }

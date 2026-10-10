@@ -10,6 +10,105 @@ fail() {
   exit 1
 }
 
+# INSTALL_ROOT is a container for one managed child directory named "vericore".
+# Never delete the container itself: it may hold unrelated user data.
+if [[ -z "$INSTALL_ROOT" ]]; then
+  fail "VERICORE_INSTALL_ROOT must not be empty."
+fi
+INSTALL_PARENT_INPUT="$(dirname -- "$INSTALL_ROOT")"
+INSTALL_BASE="$(basename -- "$INSTALL_ROOT")"
+case "$INSTALL_BASE" in
+  ""|"."|".."|"/")
+    fail "VERICORE_INSTALL_ROOT must name a dedicated directory, not a filesystem root."
+    ;;
+esac
+mkdir -p -- "$INSTALL_PARENT_INPUT"
+INSTALL_PARENT="$(cd -P -- "$INSTALL_PARENT_INPUT" && pwd)"
+INSTALL_ROOT="$INSTALL_PARENT/$INSTALL_BASE"
+
+if [[ -L "$INSTALL_ROOT" ]]; then
+  fail "The installation container must not be a symbolic link: $INSTALL_ROOT"
+fi
+if [[ -e "$INSTALL_ROOT" && ! -d "$INSTALL_ROOT" ]]; then
+  fail "The installation container exists but is not a directory: $INSTALL_ROOT"
+fi
+mkdir -p -- "$INSTALL_ROOT"
+INSTALL_ROOT="$(cd -P -- "$INSTALL_ROOT" && pwd)"
+
+HOME_CANON="$(cd -P -- "$HOME" && pwd)"
+if [[ "$INSTALL_ROOT" == "/" || "$INSTALL_ROOT" == "$HOME_CANON" || "$HOME_CANON" == "$INSTALL_ROOT/"* ]]; then
+  fail "Refusing an unsafe installation container (filesystem root, home directory, or its ancestor): $INSTALL_ROOT"
+fi
+case "$INSTALL_ROOT" in
+  /usr|/usr/*|/usr/local|/usr/local/*|/opt|/opt/*|/etc|/etc/*|/var|/var/*|/bin|/bin/*|/sbin|/sbin/*|/System|/System/*|/Applications|/Applications/*|/Library|/Library/*|/private|/private/*|/root|/root/*)
+    fail "Refusing to install under a protected system path: $INSTALL_ROOT"
+    ;;
+esac
+
+# BIN_DIR contains a launcher symlink, so never let it alias the distribution
+# container or overwrite a pre-existing unrelated file/symlink named vericore.
+if [[ -z "$BIN_DIR" ]]; then
+  fail "VERICORE_BIN_DIR must not be empty."
+fi
+BIN_PARENT_INPUT="$(dirname -- "$BIN_DIR")"
+BIN_BASE="$(basename -- "$BIN_DIR")"
+case "$BIN_BASE" in
+  ""|"."|".."|"/") fail "VERICORE_BIN_DIR must name a dedicated directory." ;;
+esac
+mkdir -p -- "$BIN_PARENT_INPUT"
+BIN_PARENT="$(cd -P -- "$BIN_PARENT_INPUT" && pwd)"
+BIN_DIR="$BIN_PARENT/$BIN_BASE"
+if [[ -L "$BIN_DIR" ]]; then
+  fail "The launcher directory must not be a symbolic link: $BIN_DIR"
+fi
+mkdir -p -- "$BIN_DIR"
+BIN_DIR="$(cd -P -- "$BIN_DIR" && pwd)"
+if [[ "$BIN_DIR" == "/" || "$BIN_DIR" == "$HOME_CANON" || "$HOME_CANON" == "$BIN_DIR/"* ]]; then
+  fail "Refusing an unsafe launcher directory (filesystem root, home directory, or its ancestor): $BIN_DIR"
+fi
+case "$BIN_DIR" in
+  /usr|/usr/*|/opt|/opt/*|/etc|/etc/*|/var|/var/*|/bin|/bin/*|/sbin|/sbin/*|/System|/System/*|/Applications|/Applications/*|/Library|/Library/*|/private|/private/*|/root|/root/*)
+    fail "Refusing to write a launcher under a protected system path: $BIN_DIR"
+    ;;
+esac
+if [[ "$BIN_DIR" == "$INSTALL_ROOT" || "$BIN_DIR" == "$INSTALL_ROOT/"* || "$INSTALL_ROOT" == "$BIN_DIR/"* ]]; then
+  fail "VERICORE_BIN_DIR and VERICORE_INSTALL_ROOT must not overlap: $BIN_DIR and $INSTALL_ROOT"
+fi
+LAUNCHER_PATH="$BIN_DIR/vericore"
+if [[ -e "$LAUNCHER_PATH" || -L "$LAUNCHER_PATH" ]]; then
+  if [[ ! -L "$LAUNCHER_PATH" ]]; then
+    fail "Refusing to overwrite an existing non-Vericore launcher path: $LAUNCHER_PATH"
+  fi
+  LINK_TARGET="$(readlink "$LAUNCHER_PATH" 2>/dev/null || true)"
+  EXPECTED_TARGET="$INSTALL_ROOT/vericore/bin/vericore"
+  if [[ -z "$LINK_TARGET" || "$LINK_TARGET" != "$EXPECTED_TARGET" ]]; then
+    fail "Refusing to replace a launcher symlink not owned by this installation: $LAUNCHER_PATH"
+  fi
+fi
+
+# The container may contain only the managed distribution. This prevents an
+# update from silently taking ownership of arbitrary files in a custom target.
+shopt -s dotglob nullglob
+for entry in "$INSTALL_ROOT"/*; do
+  if [[ "$(basename -- "$entry")" != "vericore" ]]; then
+    fail "Installation container is not dedicated to Vericore; unexpected entry: $entry"
+  fi
+done
+shopt -u dotglob nullglob
+
+EXISTING_INSTALL="$INSTALL_ROOT/vericore"
+if [[ -e "$EXISTING_INSTALL" || -L "$EXISTING_INSTALL" ]]; then
+  if [[ -L "$EXISTING_INSTALL" || ! -d "$EXISTING_INSTALL" || ! -x "$EXISTING_INSTALL/bin/vericore" || ! -d "$EXISTING_INSTALL/lib" ]]; then
+    fail "Refusing to replace an existing path that does not look like a Vericore distribution: $EXISTING_INSTALL"
+  fi
+  shopt -s nullglob
+  existing_jars=("$EXISTING_INSTALL/lib"/vericore-*.jar)
+  shopt -u nullglob
+  if (( ${#existing_jars[@]} == 0 )); then
+    fail "Refusing to replace an unrecognized installation without a Vericore application jar: $EXISTING_INSTALL"
+  fi
+fi
+
 command -v curl >/dev/null 2>&1 || fail "curl is required."
 command -v tar >/dev/null 2>&1 || fail "tar is required."
 if command -v sha256sum >/dev/null 2>&1; then
@@ -51,7 +150,36 @@ VERSION="${VERSION#v}"
 ARCHIVE="vericore-${VERSION}-${ASSET}.tar.gz"
 BASE_URL="https://github.com/$REPO/releases/download/v${VERSION}"
 TMP_DIR="$(mktemp -d)"
-trap 'rm -rf "$TMP_DIR"' EXIT
+STAGE_DIR=""
+BACKUP_PATH="$INSTALL_ROOT/.vericore-backup.$$"
+BACKUP_MOVED=0
+NEW_INSTALLED=0
+INSTALL_COMPLETE=0
+
+cleanup() {
+  local status=$?
+  trap - EXIT
+  if [[ "$INSTALL_COMPLETE" == "1" ]]; then
+    if [[ "$BACKUP_MOVED" == "1" && ( -e "$BACKUP_PATH" || -L "$BACKUP_PATH" ) ]]; then
+      rm -rf -- "$BACKUP_PATH"
+    fi
+  else
+    if [[ "$NEW_INSTALLED" == "1" && ( -e "$INSTALL_ROOT/vericore" || -L "$INSTALL_ROOT/vericore" ) ]]; then
+      rm -rf -- "$INSTALL_ROOT/vericore"
+    fi
+    if [[ "$BACKUP_MOVED" == "1" && ( -e "$BACKUP_PATH" || -L "$BACKUP_PATH" ) ]]; then
+      if ! mv -- "$BACKUP_PATH" "$INSTALL_ROOT/vericore"; then
+        echo "Vericore installer warning: previous installation remains at $BACKUP_PATH" >&2
+      fi
+    fi
+  fi
+  if [[ -n "$STAGE_DIR" && -d "$STAGE_DIR" ]]; then
+    rm -rf -- "$STAGE_DIR"
+  fi
+  rm -rf -- "$TMP_DIR"
+  exit "$status"
+}
+trap cleanup EXIT
 
 echo "Downloading Vericore $VERSION for $ASSET..."
 curl -fL --retry 3 --retry-delay 1 -o "$TMP_DIR/$ARCHIVE" "$BASE_URL/$ARCHIVE"
@@ -67,17 +195,37 @@ else
 fi
 [[ "$ACTUAL" == "$EXPECTED" ]] || fail "SHA-256 verification failed."
 
-rm -rf "$INSTALL_ROOT"
-mkdir -p "$INSTALL_ROOT" "$BIN_DIR"
-tar -xzf "$TMP_DIR/$ARCHIVE" -C "$INSTALL_ROOT"
-ln -sfn "$INSTALL_ROOT/vericore/bin/vericore" "$BIN_DIR/vericore"
-chmod +x "$INSTALL_ROOT/vericore/bin/vericore" "$BIN_DIR/vericore"
+# Extract and stage alongside the active install so directory replacement stays
+# on the same filesystem. The active install is moved aside only after the
+# archive checksum and staged layout have both been validated.
+STAGE_DIR="$(mktemp -d "$INSTALL_ROOT/.vericore-stage.XXXXXX")"
+tar -xzf "$TMP_DIR/$ARCHIVE" -C "$STAGE_DIR"
+STAGED_INSTALL="$STAGE_DIR/vericore"
+[[ -d "$STAGED_INSTALL" && -x "$STAGED_INSTALL/bin/vericore" && -d "$STAGED_INSTALL/lib" ]] || fail "Downloaded archive has an invalid Vericore distribution layout."
+shopt -s nullglob
+staged_jars=("$STAGED_INSTALL/lib"/vericore-*.jar)
+shopt -u nullglob
+(( ${#staged_jars[@]} > 0 )) || fail "Downloaded archive does not contain the Vericore application jar."
 
-if [[ ":${PATH}:" != *":$BIN_DIR:"* ]]; then
+if [[ -e "$INSTALL_ROOT/vericore" || -L "$INSTALL_ROOT/vericore" ]]; then
+  [[ ! -e "$BACKUP_PATH" && ! -L "$BACKUP_PATH" ]] || fail "Installer backup path already exists: $BACKUP_PATH"
+  mv -- "$INSTALL_ROOT/vericore" "$BACKUP_PATH"
+  BACKUP_MOVED=1
+fi
+if ! mv -- "$STAGED_INSTALL" "$INSTALL_ROOT/vericore"; then
+  fail "Could not activate staged installation; the previous installation will be restored when possible."
+fi
+NEW_INSTALLED=1
+
+ln -sfn "$INSTALL_ROOT/vericore/bin/vericore" "$LAUNCHER_PATH"
+chmod +x "$INSTALL_ROOT/vericore/bin/vericore" "$LAUNCHER_PATH"
+
+if [[ ":$PATH:" != *":$BIN_DIR:"* ]]; then
   echo "Installed to $BIN_DIR/vericore."
   echo "Add $BIN_DIR to PATH to use 'vericore' from every shell."
 else
   "$BIN_DIR/vericore" --version
 fi
 
+INSTALL_COMPLETE=1
 echo "Installation complete."

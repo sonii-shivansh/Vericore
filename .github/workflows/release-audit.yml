@@ -33,6 +33,9 @@ jobs:
           ./gradlew --no-daemon clean test installDist
       - name: Install pinned JSON Schema validator
         run: python3 -m pip install --disable-pip-version-check -r scripts/audit/requirements-schema.txt
+
+      - name: Test release-readiness certificate fail-closed behavior
+        run: python3 scripts/audit/test_release_readiness.py
       - name: Phase 0 schemas, golden repository, and verification benchmark
         env:
           GITHUB_SHA: ${{ github.sha }}
@@ -96,6 +99,21 @@ jobs:
           name: release-audit-evidence
           path: output/
           if-no-files-found: ignore
+
+  docs-parity:
+    name: Documentation parity
+    needs: deterministic-audit
+    uses: ./.github/workflows/docs-parity.yml
+
+  github-action-audit:
+    name: GitHub Action clean-runner audit
+    needs: deterministic-audit
+    uses: ./.github/workflows/github-action-audit.yml
+
+  installer-regression:
+    name: Installer path-safety regression
+    needs: deterministic-audit
+    uses: ./.github/workflows/installer-regression.yml
 
   windows-ci:
     name: Windows CI
@@ -199,7 +217,7 @@ jobs:
   readiness_certificate:
     name: Generate release readiness certificate
     if: always()
-    needs: [deterministic-audit, windows-ci, verification, platform, onboarding, live-e2e, live-petclinic, live-runelite, output-petclinic, output-runelite]
+    needs: [deterministic-audit, windows-ci, verification, platform, onboarding, live-e2e, live-petclinic, live-runelite, output-petclinic, output-runelite, docs-parity, github-action-audit, installer-regression]
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     outputs:
@@ -244,9 +262,21 @@ jobs:
             --check "live-petclinic=${{ needs.live-petclinic.result }}" \
             --check "live-runelite=${{ needs.live-runelite.result }}" \
             --check "output-petclinic=${{ needs.output-petclinic.result }}" \
-            --check "output-runelite=${{ needs.output-runelite.result }}"
+            --check "output-runelite=${{ needs.output-runelite.result }}" \
+            --check "docs-parity=${{ needs.docs-parity.result }}" \
+            --check "github-action-audit=${{ needs.github-action-audit.result }}" \
+            --check "installer-regression=${{ needs.installer-regression.result }}"
           ready="$(python3 -c 'import json; print(str(json.load(open("'"$output"'"))["overallReady"]).lower())')"
           echo "ready=$ready" >> "$GITHUB_OUTPUT"
+      - name: Install pinned JSON Schema validator
+        run: python3 -m pip install --disable-pip-version-check -r scripts/audit/requirements-schema.txt
+
+      - name: Validate certificate JSON Schema
+        shell: bash
+        run: |
+          certificate="release-readiness-${{ steps.version.outputs.version }}.json"
+          jsonschema -i "$certificate" docs/release-readiness.schema.json
+
       - name: Validate certificate schema and candidate binding
         shell: bash
         env:
