@@ -154,6 +154,9 @@ mkdir -p "$REPO/output/agent-e2e"
 if [[ "${TARGET_REPOSITORY:-}" == "google/kotlin" ]]; then
   cleanup_kotlin_config
   KOTLIN_CONFIG_CREATED=false
+  # Removing the temporary analysis-exclusion config changes repository state.
+  # Rebuild evidence after cleanup so prepare binds to the exact state it sees.
+  expect_success 34a-reanalyze-clean-state "$CLI" analyze "$REPO" --clear-cache
 fi
 expect_success 35-prepare "$CLI" prepare "Add a harmless verification marker to the selected source file"   --path "$REPO"   --planned-path "$SOURCE_FILE"   --plan-output "$REPO/output/agent-e2e/engineering-plan.json"   --contract-output "$REPO/output/agent-e2e/agent-change-contract.json"   --output "$REPO/output/agent-e2e/engineering-preparation.json"
 
