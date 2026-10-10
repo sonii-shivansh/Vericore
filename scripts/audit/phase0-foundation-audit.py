@@ -139,6 +139,16 @@ class Audit:
             self.command("golden-analyze-first", ["analyze", str(fixture), "--clear-cache"], fixture, env)
             snapshot_first = self.validate_artifact("golden-snapshot-schema-first", snapshot_path, "analysis-snapshot.schema.json")
             self.assert_golden_snapshot(snapshot_first, manifest, fixture)
+            self.validate_artifact("engineering-risks-schema", output_dir / "engineering-risks.json", "engineering-risks.schema.json")
+
+            self.command("inspect", ["inspect", "--path", str(fixture), "--json"], fixture, env)
+            self.validate_artifact("inspection-schema", output_dir / "inspection.json", "inspection.schema.json")
+            self.command("architecture", ["architecture", str(fixture), "--json"], fixture, env)
+            self.validate_artifact("architecture-schema", output_dir / "architecture.json", "architecture-analysis.schema.json")
+            self.command("impact", ["impact", str(fixture), "src/main/java/example/Service.java", "--json"], fixture, env)
+            self.validate_artifact("change-impact-schema", output_dir / "change-impact.json", "change-impact.schema.json")
+            self.command("pr-intelligence", ["pr-intelligence", str(fixture), "--json"], fixture, env)
+            self.validate_artifact("pr-intelligence-schema", output_dir / "pr-intelligence.json", "pr-intelligence.schema.json")
 
             self.command("golden-analyze-repeat", ["analyze", str(fixture), "--clear-cache"], fixture, env)
             snapshot_second = self.validate_artifact("golden-snapshot-schema-repeat", snapshot_path, "analysis-snapshot.schema.json")
