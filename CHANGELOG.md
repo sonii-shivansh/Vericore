@@ -4,9 +4,16 @@ This file records user-visible changes by release. It follows [Keep a Changelog]
 
 > Releases `0.1.0` through `0.6.0` were published under the project's former name. `0.7.0` is the first release line with Vericore as the canonical product identity.
 
-## [0.9.0] — Unreleased
+## [Unreleased]
 
-Changes below are part of the unreleased `0.9.0` development line. They do not become part of a public release until the candidate is certified, tagged, and published.
+### Fixed
+
+- MCP change-safety and verification tools return an invalid-parameters error when the required plan argument is missing, rather than a generic internal error.
+- Verification results include explicit reasons when no verification command runs or a verification command fails.
+
+## [0.9.0] — 2026-10-10
+
+This release was published on 2026-10-10 after the exact-candidate release audit passed.
 
 ### Added
 
