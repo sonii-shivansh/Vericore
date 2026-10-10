@@ -1,6 +1,7 @@
 name: Installer Regression
 
 on:
+  workflow_call: {}
   pull_request:
     paths:
       - "scripts/install.sh"
