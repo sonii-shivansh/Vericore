@@ -1,0 +1,72 @@
+name: Phase 0 Foundation
+
+on:
+  pull_request:
+    paths:
+      - 'src/main/**'
+      - 'src/test/**'
+      - 'docs/schemas/**'
+      - 'docs/ARTIFACT_SCHEMA_CATALOG.md'
+      - 'docs/SUPPORT_MATRIX.md'
+      - 'docs/VERIFICATION_BENCHMARK.md'
+      - 'scripts/audit/phase0-foundation-audit.py'
+      - 'scripts/audit/requirements-schema.txt'
+      - 'testdata/phase0/**'
+      - 'benchmark/agent-change-v0.1/**'
+      - '.github/workflows/phase0-foundation.yml'
+      - 'build.gradle.kts'
+      - 'gradlew'
+  push:
+    branches: [ main ]
+    paths:
+      - 'src/main/**'
+      - 'src/test/**'
+      - 'docs/schemas/**'
+      - 'docs/ARTIFACT_SCHEMA_CATALOG.md'
+      - 'docs/SUPPORT_MATRIX.md'
+      - 'docs/VERIFICATION_BENCHMARK.md'
+      - 'scripts/audit/phase0-foundation-audit.py'
+      - 'scripts/audit/requirements-schema.txt'
+      - 'testdata/phase0/**'
+      - 'benchmark/agent-change-v0.1/**'
+      - '.github/workflows/phase0-foundation.yml'
+      - 'build.gradle.kts'
+      - 'gradlew'
+
+permissions:
+  contents: read
+
+jobs:
+  foundation-audit:
+    name: Schemas, golden fixture, and verification contracts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          java-version: 21
+          distribution: temurin
+          cache: gradle
+      - name: Build and run full unit suite
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon clean test installDist
+      - name: Install pinned schema validator
+        run: python3 -m pip install --disable-pip-version-check -r scripts/audit/requirements-schema.txt
+      - name: Run Phase 0 schema and golden-repository audit
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: |
+          python3 scripts/audit/phase0-foundation-audit.py \
+            --cli ./build/install/vericore/bin/vericore \
+            --output "$RUNNER_TEMP/vericore-phase0-benchmark-results.json"
+      - name: Upload machine-readable foundation results
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: vericore-phase0-foundation-results
+          path: ${{ runner.temp }}/vericore-phase0-benchmark-results.json
+          if-no-files-found: warn
