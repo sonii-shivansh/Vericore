@@ -56,10 +56,11 @@ class RepositoryQACommand : CliktCommand(name = "repo-qa", help = "Retrieve grou
         }
 
         val files = RepositoryScanner().scan(root.path)
+        val parser = CodeParallelParser(CacheManager())
         val parsedFiles: List<ParsedFile> = runBlocking {
-            CodeParallelParser(CacheManager()).parseFiles(files)
+            parser.parseFiles(files)
         }
-        val parseFailures = files.size - parsedFiles.size
+        val parseFailures = parser.lastWarningCount
         val enriched = try {
             OptimizedGitAnalyzer().analyze(root.path, parsedFiles)
         } catch (_: Exception) {
