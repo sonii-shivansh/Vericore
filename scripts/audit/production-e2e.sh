@@ -149,14 +149,15 @@ for name in ["architecture.json","architecture-drift.json","architecture-contrac
 PY
 
 mkdir -p "$REPO/output/agent-e2e"
-# The temporary Kotlin fixture-exclusion config is needed during analysis, but it
-# must not appear as an unplanned working-tree change during contract verification.
+# Keep Kotlin's temporary analysis config in place through prepare/verify. Ignore
+# only this E2E-owned temporary file via the checkout-local exclude list so it is
+# not mistaken for an agent mutation; deleting it before reanalysis scans the full
+# compiler test corpus and fails the configured file-count safety limit.
 if [[ "${TARGET_REPOSITORY:-}" == "google/kotlin" ]]; then
-  cleanup_kotlin_config
-  KOTLIN_CONFIG_CREATED=false
-  # Removing the temporary analysis-exclusion config changes repository state.
-  # Rebuild evidence after cleanup so prepare binds to the exact state it sees.
-  expect_success 34a-reanalyze-clean-state "$CLI" analyze "$REPO" --clear-cache
+  EXCLUDE_FILE="$REPO/.git/info/exclude"
+  if ! grep -Fxq '.vericore.json' "$EXCLUDE_FILE"; then
+    printf '\n# Vericore Kotlin REST audit temporary config\n.vericore.json\n' >> "$EXCLUDE_FILE"
+  fi
 fi
 expect_success 35-prepare "$CLI" prepare "Add a harmless verification marker to the selected source file"   --path "$REPO"   --planned-path "$SOURCE_FILE"   --plan-output "$REPO/output/agent-e2e/engineering-plan.json"   --contract-output "$REPO/output/agent-e2e/agent-change-contract.json"   --output "$REPO/output/agent-e2e/engineering-preparation.json"
 
@@ -186,6 +187,10 @@ else:
 PY
 
 cp "$OUT/original-source" "$REPO/$SOURCE_FILE"
+if [[ "${TARGET_REPOSITORY:-}" == "google/kotlin" ]]; then
+  cleanup_kotlin_config
+  KOTLIN_CONFIG_CREATED=false
+fi
 git -C "$REPO" status --short
 
 # A clean tree after prepare is an expected fail-closed case: there is no planned
