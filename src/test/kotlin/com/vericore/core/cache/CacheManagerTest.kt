@@ -10,17 +10,17 @@ import kotlin.test.assertNull
 
 class CacheManagerTest {
     @Test
-    fun \`default cache location is canonical Vericore state\`() {
+    fun `default cache location is canonical Vericore state`() {
         assertEquals(".vericore/cache", CacheManager.DEFAULT_CACHE_DIR)
     }
 
     @Test
-    fun \`cache key namespace carries an explicit schema version\`() {
+    fun `cache key namespace carries an explicit schema version`() {
         assertEquals("2", CacheManager.PARSE_CACHE_SCHEMA_VERSION)
     }
 
     @Test
-    fun \`parsed files round trip through an isolated cache directory\`() {
+    fun `parsed files round trip through an isolated cache directory`() {
         val root = Files.createTempDirectory("vericore-cache-test-").toFile()
         try {
             val source = File(root, "Example.kt").apply {
