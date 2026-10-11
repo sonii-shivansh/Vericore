@@ -13,6 +13,7 @@ import com.vericore.core.scanner.RepositoryScanner
 import com.vericore.cli.CodeParallelParser
 import com.vericore.core.cache.CacheManager
 import com.vericore.core.planner.EngineeringPlan
+import com.vericore.core.planner.VerificationEvidenceIds
 import java.io.File
 import kotlinx.serialization.Serializable
 
@@ -114,12 +115,18 @@ object EngineeringVerification {
         }
         val contractValid = contractReasons.isEmpty()
         val contractResult = AgentChangeContractResult(contract, contractValid, contractReasons)
-        val specificationEvaluation = ChangeSpecificationEvaluator.evaluate(contract.specification, contract.evidenceIds.toSet())
         val execution = if (contractValid && safety.status != SafetyStatus.FAIL && analysisStateStable) {
             VerificationExecutionResult(commands = VerificationCommandExecutor.execute(root, contract.verificationCommands))
         } else {
             VerificationExecutionResult()
         }
+        val availableSpecificationEvidenceIds = contract.evidenceIds.toSet() +
+            contract.verificationCommands.indices.map { VerificationEvidenceIds.command(it + 1) }
+        val specificationEvaluation = ChangeSpecificationEvaluator.evaluate(
+            contract.specification,
+            availableSpecificationEvidenceIds,
+            execution.commands
+        )
         val postVerificationCandidate = CandidateStateSnapshotter.capture(root)
         val headAfterVerification = RepositoryState.head(root.path).orEmpty()
         val candidateStateDriftReasons = buildList {
