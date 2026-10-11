@@ -3,6 +3,7 @@ package com.vericore
 import com.github.ajalt.clikt.testing.test
 import com.vericore.cli.EvolutionCommand
 import com.vericore.cli.ImprovedAnalyzeCommand
+import org.eclipse.jgit.api.Git
 import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -19,6 +20,11 @@ class E2ETest {
                 repository.resolve("src/main/kotlin/example/Test.kt"),
                 "package example\nclass Test { fun hello(): String = \"hello\" }\n"
             )
+            // Analysis records repository state and history, so the fixture must be a real Git repository.
+            Git.init().setDirectory(repository.toFile()).call().use { git ->
+                git.add().addFilepattern(".").call()
+                git.commit().setMessage("fixture").setAuthor("Vericore Test", "test@example.com").call()
+            }
 
             val result = ImprovedAnalyzeCommand().test(repository.toString(), "--no-cache")
 
