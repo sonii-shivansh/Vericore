@@ -119,7 +119,7 @@ data class ChangeSpecification(
         }
         require(normalizedBindings.sumOf { binding ->
             binding.criterionId.length + binding.evidenceIds.sumOf { it.length } +
-                if (binding.rule == CriterionEvidenceRule.MANUAL_REVIEW) 0 else binding.rule.name.length
+                (if (binding.rule == CriterionEvidenceRule.MANUAL_REVIEW) 0 else binding.rule.name.length)
         } <= MAX_TOTAL_CHARACTERS) {
             "Evidence bindings may contain at most $MAX_TOTAL_CHARACTERS total characters"
         }
