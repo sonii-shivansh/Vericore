@@ -46,9 +46,10 @@ data class ChangeSpecificationEvaluation(
 /**
  * Converts declared obligations into explicit evaluation records.
  *
- * This first evaluator intentionally does not infer semantic success from tests, file changes,
- * or the existence of a statement. Until a criterion-specific evidence evaluator is available,
- * each declared obligation remains NOT_EVALUATED and must not silently count as a pass.
+ * The only automated rule currently supported is ALL_BOUND_COMMANDS_SUCCEEDED for required-evidence
+ * criteria. It proves only that the explicitly bound commands ran and exited 0; it does not infer
+ * semantic success from tests, file changes, or the existence of a statement. Other criteria
+ * remain NOT_EVALUATED or INCONCLUSIVE until a criterion-specific evidence evaluator is available.
  */
 object ChangeSpecificationEvaluator {
     private const val NOT_EVALUATED_REASON =
