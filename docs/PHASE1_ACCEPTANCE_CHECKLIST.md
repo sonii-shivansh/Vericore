@@ -32,13 +32,17 @@ This checklist defines the exit gate for Phase 1. Keep every item evidence-backe
 - [ ] Documentation parity checks pass.
 - [ ] All checklist items above are either checked with linked evidence or explicitly deferred with a rationale accepted by the phase owner.
 
-**Completion rule:** Phase 1 remains open until the checklist is reviewed against a merged candidate and the evidence links/commit SHA are recorded below.
+**Evidence and closeout rule:** The `Phase 1 Product Journey E2E` workflow must run on the exact candidate commit, including after a push to `main`. Its `phase1-product-journey-evidence` artifact records the candidate SHA and workflow-run URL. The artifact is created before the CLI audit step, so it is not by itself proof that the entire job passed; the workflow run's final conclusion is authoritative.
 
-## Closeout record
+The merged candidate is accepted only when all of the following are true on the same `main` SHA:
 
-- Candidate commit: _pending_
-- Product-journey workflow: _pending_
-- CLI audit: _pending_
-- MCP/contract audit: _pending_
-- Documentation parity: _pending_
-- Decision: **OPEN**
+1. `Phase 1 Product Journey E2E` succeeds and its evidence artifact is inspected.
+2. `Release Audit` succeeds, including build/tests, CLI audit, MCP audit, contract regressions, documentation parity, and platform checks.
+3. The checklist items above are supported by those artifacts or have an explicit, accepted deferral.
+
+## Candidate closeout
+
+- Candidate commit and workflow-run URL: recorded in `phase1-closeout.md` inside the product-journey evidence artifact.
+- Product journey and CLI audit: evidenced by the corresponding successful `Phase 1 Product Journey E2E` run.
+- MCP/contract audit and documentation parity: evidenced by the successful `Release Audit` run on the same SHA.
+- Decision: **OPEN until the merged-main product-journey run and release audit both pass on the same SHA.**
