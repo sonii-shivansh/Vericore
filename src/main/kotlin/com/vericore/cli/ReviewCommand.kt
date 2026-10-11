@@ -45,39 +45,14 @@ class ReviewCommand : CliktCommand(
         val ai = if (aiReview) runGroundedAiReview(root, config, result, base, head) else null
         val reviewOutput = ReviewOutput(result, ai)
         val json = Json { prettyPrint = true; encodeDefaults = true }
+        val output = if (jsonOutput) root.resolve("output/review.json") else null
 
-        if (jsonOutput) {
-            val output = root.resolve("output/review.json")
+        if (output != null) {
             output.parentFile.mkdirs()
             output.writeText(json.encodeToString(reviewOutput))
-            echo("Review JSON: ${output.absolutePath}")
         }
 
-        echo("🔎 Vericore Review")
-        echo("├─ Changed files: ${result.changeSummary.filesChanged}")
-        echo("├─ Lines: +${result.changeSummary.additions} / -${result.changeSummary.deletions}")
-        echo("├─ Impacted files: ${result.impactedFiles}")
-        echo("├─ Cross-package impacts: ${result.crossPackageImpacts}")
-        echo("├─ Test candidates: ${result.testCandidates.size}")
-        echo("└─ Risk: ${result.aggregateSeverity}")
-
-        if (result.findings.isEmpty()) echo("   No deterministic review findings.")
-        result.findings.forEach { finding ->
-            echo("   [${finding.severity}] ${finding.ruleId}")
-            echo("      ${finding.reason}")
-            if (finding.paths.isNotEmpty()) echo("      Files: ${finding.paths.take(5).joinToString(", ")}")
-        }
-
-        if (ai != null) {
-            echo("🤖 Grounded AI Review")
-            echo("├─ Confidence: ${String.format("%.2f", ai.confidence)}")
-            echo("├─ Grounding: ${String.format("%.2f", ai.groundingScore)}")
-            echo("└─ Evidence citations: ${ai.citedEvidenceIds.size}")
-            echo("   ${ai.answer.replace(System.lineSeparator(), " ")}")
-            if (ai.limitations.isNotEmpty()) echo("   ⚠️ ${ai.limitations.joinToString(" | ")}")
-        }
-
-        echo("Next: use `vericore verify` after prepare when a change contract exists.")
+        echo(renderReviewSummary(result, ai, output?.absolutePath))
     }
 
     private fun runGroundedAiReview(
@@ -171,6 +146,60 @@ ${diff.take(12000)}${if (diff.length > 12000) "\n...[diff truncated]" else ""}
             return parser
         }
     }
+}
+
+internal fun renderReviewSummary(
+    result: com.vericore.core.intelligence.PRIntelligenceResult,
+    ai: GroundedAIResponse? = null,
+    outputPath: String? = null
+): String {
+    val sections = buildList {
+        outputPath?.let { add(HumanCommandOutput.section("Report", "Review JSON: $it")) }
+        add(
+            HumanCommandOutput.section(
+                "Summary",
+                "Changed files: ${result.changeSummary.filesChanged}",
+                "Lines: +${result.changeSummary.additions} / -${result.changeSummary.deletions}",
+                "Impacted files: ${result.impactedFiles}",
+                "Cross-package impacts: ${result.crossPackageImpacts}",
+                "Test candidates: ${result.testCandidates.size}",
+                "Risk: ${result.aggregateSeverity}"
+            )
+        )
+        if (result.findings.isEmpty()) {
+            add(HumanCommandOutput.section("Findings", "No deterministic review findings."))
+        } else {
+            add(
+                HumanCommandOutput.section(
+                    "Findings",
+                    *result.findings.flatMap { finding ->
+                        buildList {
+                            add("[${finding.severity}] ${finding.ruleId}")
+                            add("  ${finding.reason}")
+                            if (finding.paths.isNotEmpty()) add("  Files: ${finding.paths.take(5).joinToString(", ")}")
+                        }
+                    }.toTypedArray()
+                )
+            )
+        }
+        ai?.let {
+            add(
+                HumanCommandOutput.section(
+                    "Grounded AI Review",
+                    "Confidence: ${String.format("%.2f", it.confidence)}",
+                    "Grounding: ${String.format("%.2f", it.groundingScore)}",
+                    "Evidence citations: ${it.citedEvidenceIds.size}",
+                    it.answer.replace(System.lineSeparator(), " ").let { answer -> "Answer: $answer" },
+                    *it.limitations.map { limitation -> "Limitation: $limitation" }.toTypedArray()
+                )
+            )
+        }
+    }
+    return HumanCommandOutput.render(
+        title = "🔎 Vericore Review",
+        sections = sections,
+        nextStep = "Use `vericore verify` after prepare when a change contract exists."
+    )
 }
 
 @Serializable
