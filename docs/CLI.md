@@ -477,7 +477,7 @@ Create the evidence-backed preparation bundle used by the safe change workflow.
 ### Syntax
 
 ```bash
-vericore prepare <change-summary> [--path <repository>] [--output <file>] [--plan-output <file>] [--contract-output <file>] [--planned-path <path>...] [--require-behavior <text>...] [--forbid-behavior <text>...] [--protect-invariant <text>...] [--acceptance-criterion <text>...] [--required-evidence <text>...]
+vericore prepare <change-summary> [--path <repository>] [--output <file>] [--plan-output <file>] [--contract-output <file>] [--planned-path <path>...] [--require-behavior <text>...] [--forbid-behavior <text>...] [--protect-invariant <text>...] [--acceptance-criterion <text>...] [--required-evidence <text>...] [--criterion-evidence <criterion-id>=<evidence-id>...]
 ```
 
 ### Examples
@@ -492,7 +492,8 @@ vericore prepare "add payment validation" \
   --forbid-behavior "Never log payment credentials" \
   --protect-invariant "Retries remain idempotent" \
   --acceptance-criterion "Invalid amounts return a validation error" \
-  --required-evidence "Unit-test output for invalid amounts"
+  --required-evidence "Unit-test output for invalid amounts" \
+  --criterion-evidence acceptance-criterion-001=file.1
 ```
 
 ### Default outputs
@@ -505,7 +506,7 @@ output/agent-change-contract.json
 
 The Agent Change Contract is persisted at preparation time. Do not replace it before `verify`.
 
-Repeatable `--require-behavior`, `--forbid-behavior`, `--protect-invariant`, `--acceptance-criterion`, and `--required-evidence` options record explicit constraints in the plan and contract. Use `--criterion-evidence acceptance-criterion-001=file.1` to bind a criterion to an existing prepared evidence ID; inspect the generated plan's `evidenceIds` before choosing IDs. Empty specifications preserve legacy contract fingerprints; non-empty specifications are included in the SHA-256 fingerprint. Evidence bindings are checked against the contract's evidence IDs. A missing ID fails closed; a valid link remains `INCONCLUSIVE` until a criterion-specific evaluator assesses the evidence content. Merely attaching an evidence ID does not prove the criterion.
+Repeatable `--require-behavior`, `--forbid-behavior`, `--protect-invariant`, `--acceptance-criterion`, and `--required-evidence` options record explicit constraints in the plan and contract. Use `--criterion-evidence acceptance-criterion-001=file.1` to bind a criterion to an evidence ID expected to be included in the prepared contract. Choose IDs from the repository's grounded evidence output; if a referenced ID is absent from the contract, verification fails closed. Empty specifications preserve legacy contract fingerprints; non-empty specifications are included in the SHA-256 fingerprint. Evidence bindings are checked against the contract's evidence IDs. A missing ID fails closed; a valid link remains `INCONCLUSIVE` until a criterion-specific evaluator assesses the evidence content. Merely attaching an evidence ID does not prove the criterion.
 
 ---
 
