@@ -4,6 +4,7 @@ import com.vericore.core.cache.CacheManager
 import com.vericore.core.config.ConfigLoader
 import com.vericore.core.graph.RobustDependencyGraph
 import com.vericore.core.intelligence.ChangeImpactEngine
+import com.vericore.core.intelligence.ImpactSummary
 import com.vericore.core.scanner.OptimizedGitAnalyzer
 import com.vericore.core.scanner.RepositoryScanner
 import com.github.ajalt.clikt.core.CliktCommand
@@ -79,9 +80,8 @@ class ImpactCommand : CliktCommand(
     }
 }
 
-
 /** Formats only the human summary; JSON serialization and impact calculations remain unchanged. */
-internal fun renderImpactSummary(summary: com.vericore.core.intelligence.ImpactSummary): String =
+internal fun renderImpactSummary(summary: ImpactSummary): String =
     HumanCommandOutput.render(
         title = "🧭 Change Impact",
         sections = listOf(
