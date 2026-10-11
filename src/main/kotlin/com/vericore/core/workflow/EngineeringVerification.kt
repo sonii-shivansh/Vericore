@@ -52,6 +52,7 @@ object EngineeringVerification {
     suspend fun verify(repoPath: String, plan: EngineeringPlan, contract: AgentChangeContract): EngineeringVerificationResult {
         val root = File(repoPath).canonicalFile
         require(root.isDirectory) { "Repository path is not a directory: $repoPath" }
+        val headBeforeAnalysis = RepositoryState.head(root.path).orEmpty()
         val analysisInput = CandidateStateSnapshotter.capture(root)
         val config = ConfigLoader.loadForRepository(root.path)
         val files = RepositoryScanner(config).scan(root.path)
@@ -113,12 +114,19 @@ object EngineeringVerification {
             VerificationExecutionResult()
         }
         val postVerificationCandidate = CandidateStateSnapshotter.capture(root)
+        val headAfterVerification = RepositoryState.head(root.path).orEmpty()
         val candidateStateDriftReasons = buildList {
+            if (headBeforeAnalysis != currentHead) {
+                add("Git HEAD changed during analysis; the verification contract and analysis may refer to different repository revisions.")
+            }
             if (!analysisStateStable) {
                 add("Repository candidate state changed during analysis; verification commands were not executed because the analysis may be stale.")
             }
             if (candidateAtVerification.digest != postVerificationCandidate.digest) {
                 add("Repository candidate state changed during verification; command results cannot be attributed to one stable candidate.")
+            }
+            if (currentHead != headAfterVerification) {
+                add("Git HEAD changed during verification; command results cannot be attributed to one stable repository revision.")
             }
         }
         val status = when {
