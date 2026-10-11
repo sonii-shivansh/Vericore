@@ -10,7 +10,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class VerificationReceipt(
-    val schemaVersion: String = "1.0",
+    val schemaVersion: String = "1.1",
     val repository: String,
     val preparedHead: String,
     val verifiedHead: String,
@@ -22,7 +22,13 @@ data class VerificationReceipt(
     val deletedPaths: List<String>,
     val verificationCommands: List<String>,
     val verification: VerificationExecutionResult,
-    val safetyReasons: List<String>
+    val safetyReasons: List<String>,
+    val analysisInputDigest: String,
+    val candidateStateDigest: String,
+    val postVerificationCandidateDigest: String,
+    val candidateStateStable: Boolean,
+    val candidateStateFileCount: Int,
+    val postVerificationFileCount: Int
 ) {
     companion object {
         fun from(result: EngineeringVerificationResult): VerificationReceipt {
@@ -39,7 +45,13 @@ data class VerificationReceipt(
                 deletedPaths = result.safety.deletedPaths,
                 verificationCommands = result.verificationCommands,
                 verification = result.verification,
-                safetyReasons = result.safety.reasons
+                safetyReasons = result.reasons,
+                analysisInputDigest = result.analysisInputDigest,
+                candidateStateDigest = result.candidateStateDigest,
+                postVerificationCandidateDigest = result.postVerificationCandidateDigest,
+                candidateStateStable = result.candidateStateStable,
+                candidateStateFileCount = result.candidateStateFileCount,
+                postVerificationFileCount = result.postVerificationFileCount
             )
         }
     }
