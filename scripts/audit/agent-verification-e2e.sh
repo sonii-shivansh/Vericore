@@ -59,7 +59,8 @@ prepare = mcp([{
             "acceptanceCriteria":["The target value is updated by the requested operation"],
             "requiredEvidence":["Relevant unit test results"],
             "evidenceBindings":[
-                {"criterionId":"acceptance-criterion-001","evidenceIds":["file.1"]}
+                {"criterionId":"acceptance-criterion-001","evidenceIds":["file.1"]},
+                {"criterionId":"required-evidence-001","evidenceIds":["verification-command-001"],"rule":"ALL_BOUND_COMMANDS_SUCCEEDED"}
             ]
         }
     }}
@@ -100,11 +101,12 @@ verification = json.loads(next(x["text"] for x in verify_result["content"]))
 assert verification["status"] == "REVIEW_REQUIRED", verification
 evaluation = verification["specificationEvaluation"]
 assert evaluation["status"] == "NOT_EVALUATED", evaluation
-assert evaluation["notEvaluatedCount"] == 4 and evaluation["evaluatedCount"] == 1, evaluation
+assert evaluation["notEvaluatedCount"] == 3 and evaluation["evaluatedCount"] == 2, evaluation
 criterion_statuses = {item["id"]: item["status"] for item in evaluation["criteria"]}
 assert criterion_statuses["acceptance-criterion-001"] == "INCONCLUSIVE", evaluation
+assert criterion_statuses["required-evidence-001"] == "PASS", evaluation
 assert all(status == "NOT_EVALUATED" for criterion_id, status in criterion_statuses.items()
-           if criterion_id != "acceptance-criterion-001"), evaluation
+           if criterion_id not in {"acceptance-criterion-001", "required-evidence-001"}), evaluation
 
 # The CLI receipt must carry the same explicit evaluation and remain REVIEW_REQUIRED.
 cli_verify = subprocess.run(
@@ -131,6 +133,10 @@ assert contract_only_run.returncode == 0, contract_only_run.stdout + chr(10) + c
 contract_only = json.loads(contract_only_path.read_text())
 assert contract_only["status"] == "REVIEW_REQUIRED", contract_only
 assert contract_only["specificationEvaluation"]["status"] == "NOT_EVALUATED", contract_only
+contract_only_statuses = {
+    item["id"]: item["status"] for item in contract_only["specificationEvaluation"]["criteria"]
+}
+assert contract_only_statuses["required-evidence-001"] == "NOT_EVALUATED", contract_only
 
 print("V3-001 Agent Verification E2E: PASS")
 PY
