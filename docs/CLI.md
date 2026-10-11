@@ -531,7 +531,7 @@ A successful or review-required full `vericore verify` run also writes:
 output/verification-receipt.json
 ```
 
-The receipt is derived from the same verification result. It records the prepared and verified repository state, contract fingerprint, changed/planned/unexpected paths, verification commands/results, and deterministic safety reasons. It is an audit artifact, not a second verification decision.
+The receipt is derived from the same verification result. It records the prepared and verified repository state, contract fingerprint, changed/planned/unexpected paths, verification commands/results, deterministic safety reasons and verification reasons, and candidate-state digests captured at analysis start, command start, and command completion. `candidateStateStable` is true only when the repository-input digest remained identical across all three points. If relevant repository files change while analysis or verification commands are running, verification fails closed. The digest excludes version-control metadata and conventional generated/build-output directories; it does not attest to the complete execution environment or external services. The receipt is an audit artifact, not a second verification decision.
 
 ## 17. `ask`
 

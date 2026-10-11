@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:vericore:schema:verification-receipt-v1.0",
+  "$id": "urn:vericore:schema:verification-receipt-v1.1",
   "title": "Vericore Verification Receipt",
   "type": "object",
   "required": [
@@ -16,11 +16,18 @@
     "deletedPaths",
     "verificationCommands",
     "verification",
-    "safetyReasons"
+    "safetyReasons",
+    "verificationReasons",
+    "analysisInputDigest",
+    "candidateStateDigest",
+    "postVerificationCandidateDigest",
+    "candidateStateStable",
+    "candidateStateFileCount",
+    "postVerificationFileCount"
   ],
   "properties": {
     "schemaVersion": {
-      "const": "1.0"
+      "const": "1.1"
     },
     "repository": {
       "type": "string",
@@ -165,6 +172,35 @@
         }
       },
       "additionalProperties": false
+    },
+    "verificationReasons": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "analysisInputDigest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "candidateStateDigest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "postVerificationCandidateDigest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "candidateStateStable": {
+      "type": "boolean"
+    },
+    "candidateStateFileCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "postVerificationFileCount": {
+      "type": "integer",
+      "minimum": 0
     }
   },
   "additionalProperties": false

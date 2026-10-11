@@ -58,7 +58,8 @@ jobs:
 
           cat > "$fixture/mvnw" <<'EOF'
           #!/bin/sh
-          printf '%s\n' "$*" >> verification-executed.log
+          mkdir -p output
+          printf '%s\n' "$*" >> output/verification-executed.log
           exit 0
           EOF
           chmod +x "$fixture/mvnw"
@@ -93,7 +94,7 @@ jobs:
             --contract "$fixture/output/agent-change-contract.json" \
             --output "$fixture/output/verification.json"
 
-          python3 - "$fixture/output/verification.json" "$fixture/verification-executed.log" <<'PY'
+          python3 - "$fixture/output/verification.json" "$fixture/output/verification-executed.log" <<'PY'
           import json, sys
           report=json.load(open(sys.argv[1]))
           executed=open(sys.argv[2]).read().splitlines()

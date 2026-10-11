@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:vericore:schema:engineering-verification-v1.3",
+  "$id": "urn:vericore:schema:engineering-verification-v1.4",
   "title": "Vericore Engineering Verification Result",
   "type": "object",
   "required": [
@@ -14,11 +14,17 @@
     "status",
     "reasons",
     "provenance",
-    "contract"
+    "contract",
+    "analysisInputDigest",
+    "candidateStateDigest",
+    "postVerificationCandidateDigest",
+    "candidateStateStable",
+    "candidateStateFileCount",
+    "postVerificationFileCount"
   ],
   "properties": {
     "schemaVersion": {
-      "const": "1.3"
+      "const": "1.4"
     },
     "repository": {
       "type": "string",
@@ -313,6 +319,29 @@
         "object",
         "null"
       ]
+    },
+    "analysisInputDigest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "candidateStateDigest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "postVerificationCandidateDigest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "candidateStateStable": {
+      "type": "boolean"
+    },
+    "candidateStateFileCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "postVerificationFileCount": {
+      "type": "integer",
+      "minimum": 0
     }
   },
   "additionalProperties": false

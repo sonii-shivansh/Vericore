@@ -85,6 +85,19 @@ For a fast boundary check, `vericore verify --contract-only` validates the persi
 
 A missing, tampered, mismatched, cross-repository, or stale contract produces `FAIL`. Verification does not silently reconstruct a replacement contract from a mutable plan.
 
+
+## Candidate-state integrity
+
+Full verification now records three candidate digests:
+
+- `analysisInputDigest`: repository-input state at the start of analysis.
+- `candidateStateDigest`: repository-input state immediately before declared verification commands.
+- `postVerificationCandidateDigest`: repository-input state after those commands finish.
+
+A stable candidate requires the three digests to match and Git HEAD to remain unchanged from analysis start through command completion. If the candidate changes during analysis, declared verification commands are not run. If it changes during verification, the result fails closed rather than claiming the commands verified a stable state. The receipt also records whether the state was stable and the file counts at command start and after execution.
+
+The deterministic digest includes tracked and untracked repository files, except version-control metadata (`.git`, `.gradle`, `.idea`, `.vericore`, `.codecontext`, `node_modules`) and conventional generated/build-output directories. The repository-root `output/` directory is treated as Vericore-generated output; `build/` and `target/` directories are treated as generated outside source/test/fixture/input trees, so a source package or resource directory with one of those names is still hashed. File extensions do not create exclusions: an untracked root-level log is included because a build may read arbitrary repository files. Test harnesses that produce diagnostic output should write it under the generated `output/` directory. This is repository-input integrity, not a complete build-environment attestation: external services, toolchain identity and external symlink targets require separate controls. Snapshot read errors fail verification rather than being interpreted as a stable candidate.
+
 ## Status semantics
 
 | Status | Meaning |

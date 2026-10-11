@@ -42,6 +42,7 @@
 - deterministic SHA-256 contract fingerprint
 - persisted output/agent-change-contract.json
 - contract tamper, plan mismatch, repository mismatch, stale-HEAD, and unexpected-change detection
+- candidate repository-input state digests captured before analysis, before declared verification commands, and after those commands; relevant candidate drift fails closed
 - verification against the persisted contract rather than a replacement derived from the mutated repository
 
 **Authoritative rule:** the persisted contract is the verification boundary.

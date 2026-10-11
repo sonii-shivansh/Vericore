@@ -62,7 +62,8 @@ jobs:
 
           cat > "$fixture/mvnw" <<'EOF'
           #!/bin/sh
-          printf '%s\n' "$*" >> verification-executed.log
+          mkdir -p output
+          printf '%s\n' "$*" >> output/verification-executed.log
           exit 0
           EOF
           chmod +x "$fixture/mvnw"
@@ -135,7 +136,7 @@ jobs:
           test -s "$fixture/output/verification.json"
           test -s "$fixture/output/verification-receipt.json"
           test -s "$fixture/output/phase1-report.html"
-          test -s "$fixture/verification-executed.log"
+          test -s "$fixture/output/verification-executed.log"
 
           grep -q '"schemaVersion": "1.0"' "$fixture/output/inspection.json"
           grep -q 'Service.kt' "$fixture/output/inspection.json"
@@ -191,7 +192,5 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: phase1-product-journey-evidence
-          path: |
-            ${{ runner.temp }}/vericore-phase1-fixture/output/
-            ${{ runner.temp }}/vericore-phase1-fixture/verification-executed.log
+          path: ${{ runner.temp }}/vericore-phase1-fixture/output/
           if-no-files-found: ignore

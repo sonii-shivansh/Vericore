@@ -31,7 +31,8 @@ trap 'rm -rf "$audit_fixture" "$doctor_fixture" "$contract_fixture" "$qa_fixture
 EOF
   cat > mvnw <<'EOF'
 #!/bin/sh
-printf '%s\n' "$*" >> verification-executed.log
+mkdir -p output
+printf '%s\n' "$*" >> output/verification-executed.log
 exit 0
 EOF
   chmod +x mvnw

@@ -85,7 +85,8 @@ jobs:
           XML
           cat > mvnw <<'SH'
           #!/bin/sh
-          printf '%s\n' "$*" >> verification-executed.log
+          mkdir -p output
+          printf '%s\n' "$*" >> output/verification-executed.log
           exit 0
           SH
           chmod +x mvnw
