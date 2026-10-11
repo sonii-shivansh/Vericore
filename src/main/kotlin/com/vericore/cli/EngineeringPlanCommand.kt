@@ -31,6 +31,7 @@ class EngineeringPlanCommand : CliktCommand(
     private val protectedInvariants by option("--protect-invariant", help = "Existing invariant this change must preserve").multiple()
     private val acceptanceCriteria by option("--acceptance-criterion", help = "Observable criterion for accepting this change").multiple()
     private val requiredEvidence by option("--required-evidence", help = "Evidence that must be supplied/reviewed for acceptance").multiple()
+    private val criterionEvidence by option("--criterion-evidence", help = "Bind a criterion ID to a prepared evidence ID as <criterion-id>=<evidence-id>; repeatable").multiple()
     private val evidenceFile by option("--evidence", help = "Path to a grounded evidence JSON artifact; relative paths resolve from the repository")
     private val outputFile by option("--output", help = "Write the plan JSON to this path instead of stdout")
 
@@ -52,7 +53,8 @@ class EngineeringPlanCommand : CliktCommand(
                     forbiddenBehaviors = forbiddenBehaviors,
                     protectedInvariants = protectedInvariants,
                     acceptanceCriteria = acceptanceCriteria,
-                    requiredEvidence = requiredEvidence
+                    requiredEvidence = requiredEvidence,
+                    evidenceBindings = parseCriterionEvidenceBindings(criterionEvidence)
                 )
             )
         )
