@@ -1,6 +1,6 @@
 # CLI Output Contract Inventory
 
-**Audited against:** `main` at `b0de0b72c30664dfee99bf3e676eba73c9f5eb8d` (PR #241 merge)  
+**Audited against:** `main` at `d940e750c0257f6ebc6632fcb02192d1aef6f75a` (PR #242 merge)  
 **Purpose:** Record observed stdout/file-output behavior before migrating more commands to the shared human-readable renderer.
 
 This is an implementation inventory, not a promise that every output shape is already ideal. The source code is authoritative if this document and implementation disagree. Update this inventory alongside future CLI output-contract changes.
@@ -37,7 +37,7 @@ This is an implementation inventory, not a promise that every output shape is al
 | `repo-qa` | JSON result to stdout | Optional `--evidence-output <file>` writes reusable grounded-evidence JSON | Default stdout is machine-readable JSON; do not prepend human progress output. |
 | `report` | Human report-generated summary rendered through `HumanCommandOutput` | `--output <file>` selects the HTML report path | Generates HTML; this is not a JSON command. The summary layout is presentation-only; session selection and artifact paths are unchanged. |
 | `review` | Human deterministic review summary, and AI summary when `--ai` is enabled | `--json`: `output/review.json` | JSON mode writes the artifact and still prints the human summary. `--ai` augments deterministic findings; it does not replace them. |
-| `recommendations` | Human prioritized recommendations | `--json`: `output/recommendations.json` | Writes JSON and still prints human recommendations. Requires an analysis snapshot. |
+| `recommendations` | Human prioritized recommendations rendered through `HumanCommandOutput` | `--json`: `output/recommendations.json` | Writes JSON and still prints human recommendations. Requires an analysis snapshot. Summary formatting does not change recommendation generation, JSON fields, artifact path, or exit behavior. |
 | `plan` | JSON to stdout by default | `--output <file>` writes plan JSON to a repository-local file | With `--output`, stdout becomes a human summary; without it, stdout is JSON. |
 | `prepare` | Human summary and artifact paths | Writes preparation, engineering-plan, and agent-change-contract JSON files; paths can be overridden with output options | No `--json` flag observed. Keep all three artifacts consistent and preserve the persisted contract. |
 | `verify` | Status/path summary on success; failure reasons go to stderr | Verification result JSON goes to stdout by default or to the path passed to `--output`; full verification also writes `output/verification-receipt.json` | `--contract-only` uses the same stdout/file routing but returns before writing the full verification receipt. Failure raises `ValidationException` after reporting reasons. |
