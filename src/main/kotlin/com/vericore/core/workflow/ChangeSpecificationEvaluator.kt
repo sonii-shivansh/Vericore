@@ -2,6 +2,8 @@ package com.vericore.core.workflow
 
 import com.vericore.core.planner.ChangeSpecification
 import com.vericore.core.planner.CriterionEvidenceBinding
+import com.vericore.core.planner.CriterionEvidenceRule
+import com.vericore.core.planner.VerificationEvidenceIds
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -54,7 +56,8 @@ object ChangeSpecificationEvaluator {
 
     fun evaluate(
         specification: ChangeSpecification,
-        availableEvidenceIds: Set<String> = emptySet()
+        availableEvidenceIds: Set<String> = emptySet(),
+        commandResults: List<VerificationCommandResult> = emptyList()
     ): ChangeSpecificationEvaluation? {
         val normalized = try {
             specification.normalized()
@@ -77,12 +80,15 @@ object ChangeSpecificationEvaluator {
 
         val bindings = normalized.evidenceBindings.associateBy { it.criterionId }
         val availableIds = availableEvidenceIds.toSet()
+        val commandResultsById = commandResults.mapIndexed { index, result ->
+            VerificationEvidenceIds.command(index + 1) to result
+        }.toMap()
         val criteria = buildList {
-            addAll(normalized.requiredBehaviors.withIds("required-behavior", SpecificationCriterionKind.REQUIRED_BEHAVIOR, bindings, availableIds))
-            addAll(normalized.forbiddenBehaviors.withIds("forbidden-behavior", SpecificationCriterionKind.FORBIDDEN_BEHAVIOR, bindings, availableIds))
-            addAll(normalized.protectedInvariants.withIds("protected-invariant", SpecificationCriterionKind.PROTECTED_INVARIANT, bindings, availableIds))
-            addAll(normalized.acceptanceCriteria.withIds("acceptance-criterion", SpecificationCriterionKind.ACCEPTANCE_CRITERION, bindings, availableIds))
-            addAll(normalized.requiredEvidence.withIds("required-evidence", SpecificationCriterionKind.REQUIRED_EVIDENCE, bindings, availableIds))
+            addAll(normalized.requiredBehaviors.withIds("required-behavior", SpecificationCriterionKind.REQUIRED_BEHAVIOR, bindings, availableIds, commandResultsById))
+            addAll(normalized.forbiddenBehaviors.withIds("forbidden-behavior", SpecificationCriterionKind.FORBIDDEN_BEHAVIOR, bindings, availableIds, commandResultsById))
+            addAll(normalized.protectedInvariants.withIds("protected-invariant", SpecificationCriterionKind.PROTECTED_INVARIANT, bindings, availableIds, commandResultsById))
+            addAll(normalized.acceptanceCriteria.withIds("acceptance-criterion", SpecificationCriterionKind.ACCEPTANCE_CRITERION, bindings, availableIds, commandResultsById))
+            addAll(normalized.requiredEvidence.withIds("required-evidence", SpecificationCriterionKind.REQUIRED_EVIDENCE, bindings, availableIds, commandResultsById))
         }
         val notEvaluatedCount = criteria.count { it.status == CriterionEvaluationStatus.NOT_EVALUATED }
         val status = when {
@@ -103,14 +109,27 @@ object ChangeSpecificationEvaluator {
         prefix: String,
         kind: SpecificationCriterionKind,
         bindings: Map<String, CriterionEvidenceBinding>,
-        availableEvidenceIds: Set<String>
+        availableEvidenceIds: Set<String>,
+        commandResultsById: Map<String, VerificationCommandResult>
     ): List<SpecificationCriterionEvaluation> = mapIndexed { index, statement ->
         val id = "$prefix-${(index + 1).toString().padStart(3, '0')}"
         val binding = bindings[id]
         val missingEvidence = binding?.evidenceIds.orEmpty().filterNot(availableEvidenceIds::contains)
+        val boundCommandResults = binding?.evidenceIds.orEmpty().mapNotNull(commandResultsById::get)
+        val allBoundCommandsHaveResults = binding != null && boundCommandResults.size == binding.evidenceIds.size
+        val commandRuleAllowed = kind == SpecificationCriterionKind.REQUIRED_EVIDENCE &&
+            binding?.rule == CriterionEvidenceRule.ALL_BOUND_COMMANDS_SUCCEEDED
         val status = when {
             binding == null -> CriterionEvaluationStatus.NOT_EVALUATED
             missingEvidence.isNotEmpty() -> CriterionEvaluationStatus.FAIL
+            binding.rule == CriterionEvidenceRule.ALL_BOUND_COMMANDS_SUCCEEDED && !commandRuleAllowed ->
+                CriterionEvaluationStatus.FAIL
+            commandRuleAllowed && !allBoundCommandsHaveResults -> CriterionEvaluationStatus.NOT_EVALUATED
+            commandRuleAllowed && boundCommandResults.any { it.executed && !it.timedOut && it.exitCode != null && it.exitCode != 0 } ->
+                CriterionEvaluationStatus.FAIL
+            commandRuleAllowed && boundCommandResults.any { !it.executed || it.timedOut || it.exitCode == null } ->
+                CriterionEvaluationStatus.INCONCLUSIVE
+            commandRuleAllowed -> CriterionEvaluationStatus.PASS
             else -> CriterionEvaluationStatus.INCONCLUSIVE
         }
         val reason = when {
@@ -119,6 +138,16 @@ object ChangeSpecificationEvaluator {
             binding == null -> NOT_EVALUATED_REASON
             missingEvidence.isNotEmpty() ->
                 "Evidence binding references IDs absent from the prepared contract: ${missingEvidence.sorted().joinToString(", ")}."
+            binding.rule == CriterionEvidenceRule.ALL_BOUND_COMMANDS_SUCCEEDED && !commandRuleAllowed ->
+                "ALL_BOUND_COMMANDS_SUCCEEDED is only valid for required-evidence criteria."
+            commandRuleAllowed && !allBoundCommandsHaveResults ->
+                "Bound verification command evidence was declared but was not generated in this verification run."
+            commandRuleAllowed && boundCommandResults.any { it.executed && !it.timedOut && it.exitCode != null && it.exitCode != 0 } ->
+                "At least one bound verification command exited non-zero."
+            commandRuleAllowed && boundCommandResults.any { !it.executed || it.timedOut || it.exitCode == null } ->
+                "At least one bound verification command did not produce a conclusive result."
+            commandRuleAllowed ->
+                "All bound verification commands executed and exited 0; this evaluates command success only, not arbitrary behavior semantics."
             else ->
                 "Evidence IDs are bound to this criterion, but their content has not been semantically evaluated."
         }
