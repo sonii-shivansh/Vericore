@@ -114,5 +114,17 @@ assert receipt["status"] == "REVIEW_REQUIRED", receipt
 assert receipt["specificationEvaluation"]["status"] == "NOT_EVALUATED", receipt
 assert receipt["specificationEvaluation"] == evaluation, receipt
 
+contract_only_path = root/"output/contract-only-verification.json"
+contract_only_run = subprocess.run(
+    [app, "verify", "--path", str(root), "--contract-only", "--output", str(contract_only_path)],
+    cwd=root,
+    text=True,
+    capture_output=True
+)
+assert contract_only_run.returncode == 0, contract_only_run.stdout + chr(10) + contract_only_run.stderr
+contract_only = json.loads(contract_only_path.read_text())
+assert contract_only["status"] == "REVIEW_REQUIRED", contract_only
+assert contract_only["specificationEvaluation"]["status"] == "NOT_EVALUATED", contract_only
+
 print("V3-001 Agent Verification E2E: PASS")
 PY
