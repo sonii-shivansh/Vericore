@@ -110,6 +110,26 @@ class CandidateStateSnapshotterTest {
     }
 
     @Test
+    fun `source tree directories named build output or target remain candidate inputs`() {
+        withRepository { root ->
+            val sourceRoot = root.resolve("src/main/kotlin")
+            Files.createDirectories(sourceRoot)
+            Files.writeString(sourceRoot.resolve("App.kt"), "class App\n")
+            val before = CandidateStateSnapshotter.capture(root.toFile())
+
+            for (directory in listOf("build", "output", "target")) {
+                val path = sourceRoot.resolve("$directory/Source.kt")
+                Files.createDirectories(path.parent)
+                Files.writeString(path, "package $directory\nclass Source\n")
+            }
+
+            val after = CandidateStateSnapshotter.capture(root.toFile())
+            assertNotEquals(before.digest, after.digest)
+            assertEquals(4, after.fileCount)
+        }
+    }
+
+    @Test
     fun `generated outputs and build caches do not perturb candidate digest`() {
         withRepository { root ->
             val source = root.resolve("src/App.kt")
@@ -121,6 +141,8 @@ class CandidateStateSnapshotterTest {
             Files.writeString(root.resolve("output/verification-receipt.json"), "{\"status\":\"PASS\"}")
             Files.createDirectories(root.resolve("build/classes"))
             Files.writeString(root.resolve("build/classes/generated.class"), "generated")
+            Files.createDirectories(root.resolve("target/classes"))
+            Files.writeString(root.resolve("target/classes/generated.class"), "generated")
             Files.createDirectories(root.resolve(".vericore"))
             Files.writeString(root.resolve(".vericore/session.json"), "{}")
 
