@@ -28,7 +28,7 @@ data class VerificationExecutionResult(
 
 @Serializable
 data class EngineeringVerificationResult(
-    val schemaVersion: String = "1.4",
+    val schemaVersion: String = "1.5",
     val repository: String,
     val safety: ChangeSafetyResult,
     val prIntelligence: com.vericore.core.intelligence.PRIntelligenceResult,
@@ -44,7 +44,8 @@ data class EngineeringVerificationResult(
     val postVerificationCandidateDigest: String,
     val candidateStateStable: Boolean,
     val candidateStateFileCount: Int,
-    val postVerificationFileCount: Int
+    val postVerificationFileCount: Int,
+    val specificationEvaluation: ChangeSpecificationEvaluation? = null
 )
 
 /** Runs deterministic post-change checks against the exact persisted contract produced by prepare. */
@@ -108,6 +109,7 @@ object EngineeringVerification {
         }
         val contractValid = contractReasons.isEmpty()
         val contractResult = AgentChangeContractResult(contract, contractValid, contractReasons)
+        val specificationEvaluation = ChangeSpecificationEvaluator.evaluate(contract.specification)
         val execution = if (contractValid && safety.status != SafetyStatus.FAIL && analysisStateStable) {
             VerificationExecutionResult(commands = VerificationCommandExecutor.execute(root, contract.verificationCommands))
         } else {
@@ -134,6 +136,9 @@ object EngineeringVerification {
             safety.status == SafetyStatus.FAIL -> SafetyStatus.FAIL
             candidateStateDriftReasons.isNotEmpty() -> SafetyStatus.FAIL
             !execution.allCommandsPassed -> SafetyStatus.FAIL
+            specificationEvaluation?.status == CriterionEvaluationStatus.FAIL -> SafetyStatus.FAIL
+            specificationEvaluation?.status == CriterionEvaluationStatus.INCONCLUSIVE ||
+                specificationEvaluation?.status == CriterionEvaluationStatus.NOT_EVALUATED -> SafetyStatus.REVIEW_REQUIRED
             safety.status == SafetyStatus.REVIEW_REQUIRED || pr.aggregateSeverity.name == "CRITICAL" -> SafetyStatus.REVIEW_REQUIRED
             else -> SafetyStatus.PASS
         }
@@ -141,6 +146,11 @@ object EngineeringVerification {
             addAll(contractReasons)
             addAll(safety.reasons)
             addAll(candidateStateDriftReasons)
+            specificationEvaluation?.criteria
+                ?.filter { it.status != CriterionEvaluationStatus.PASS }
+                ?.forEach { criterion ->
+                    add("Specification criterion '${criterion.id}' is ${criterion.status}: ${criterion.reason}")
+                }
             if (execution.commands.isEmpty()) {
                 add("No verification commands were executed; verification cannot pass without a successful verification command.")
             } else {
@@ -171,7 +181,8 @@ object EngineeringVerification {
             postVerificationCandidateDigest = postVerificationCandidate.digest,
             candidateStateStable = candidateStateDriftReasons.isEmpty(),
             candidateStateFileCount = candidateAtVerification.fileCount,
-            postVerificationFileCount = postVerificationCandidate.fileCount
+            postVerificationFileCount = postVerificationCandidate.fileCount,
+            specificationEvaluation = specificationEvaluation
         )
     }
 }
