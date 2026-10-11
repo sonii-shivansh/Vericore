@@ -1,6 +1,6 @@
 # CLI Output Contract Inventory
 
-**Audited against:** `main` at `c31fbb441490c1285518245d9546ead864de65d0` (PR #251 merge)  
+**Audited against:** `main` at `2ac566de4718402a3d2c68cebf21208c497e50e1` (PR #255 merge)  
 **Purpose:** Record observed stdout/file-output behavior before migrating more commands to the shared human-readable renderer.
 
 This is an implementation inventory, not a promise that every output shape is already ideal. The source code is authoritative if this document and implementation disagree. Update this inventory alongside future CLI output-contract changes.
