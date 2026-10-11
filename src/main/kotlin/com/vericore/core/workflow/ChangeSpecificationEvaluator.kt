@@ -138,7 +138,7 @@ object ChangeSpecificationEvaluator {
                 "No concrete artifact has been linked to this evidence obligation."
             binding == null -> NOT_EVALUATED_REASON
             missingEvidence.isNotEmpty() ->
-                "Evidence binding references IDs absent from the prepared contract: ${missingEvidence.sorted().joinToString(", ")}."
+                "Evidence binding references IDs absent from the prepared contract and its planned verification commands: ${missingEvidence.sorted().joinToString(", ")}."
             binding.rule == CriterionEvidenceRule.ALL_BOUND_COMMANDS_SUCCEEDED && !commandRuleAllowed ->
                 "ALL_BOUND_COMMANDS_SUCCEEDED is only valid for required-evidence criteria."
             commandRuleAllowed && !allBoundCommandsHaveResults ->
