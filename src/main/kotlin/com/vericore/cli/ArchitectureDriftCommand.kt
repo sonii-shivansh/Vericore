@@ -46,20 +46,38 @@ class ArchitectureDriftCommand : CliktCommand(
         val drift = ArchitectureDriftEngine.compare(baselineResult, currentResult)
 
         if (jsonOutput) {
-            val output = root.resolve("output/architecture-drift.json")
+            val output = outputPath(root)
             output.parentFile.mkdirs()
             output.writeText(Json { prettyPrint = true; encodeDefaults = true }.encodeToString(drift))
-            echo("🏛️ Architecture drift report: ${output.canonicalPath}")
         }
 
-        echo("🏛️ Architecture Drift")
-        echo("├─ Added findings: ${drift.summary.addedFindings}")
-        echo("├─ Removed findings: ${drift.summary.removedFindings}")
-        echo("├─ New cycles: ${drift.summary.newCycles}")
-        echo("├─ Removed cycles: ${drift.summary.removedCycles}")
-        echo("├─ Changed layers: ${drift.summary.changedLayers}")
-        echo("├─ Added edges: ${drift.summary.addedEdges}")
-        echo("└─ Removed edges: ${drift.summary.removedEdges}")
-        drift.changes.take(20).forEach { change -> echo("   ${change.type}: ${change.key}") }
+        echo(renderArchitectureDriftSummary(drift, if (jsonOutput) outputPath(root).canonicalPath else null))
     }
 }
+
+internal fun renderArchitectureDriftSummary(
+    result: com.vericore.core.intelligence.ArchitectureDriftResult,
+    outputPath: String? = null
+): String {
+    val sections = buildList {
+        outputPath?.let { add(HumanCommandOutput.section("Report", "Architecture drift report: $it")) }
+        add(
+            HumanCommandOutput.section(
+                "Summary",
+                "Added findings: ${result.summary.addedFindings}",
+                "Removed findings: ${result.summary.removedFindings}",
+                "New cycles: ${result.summary.newCycles}",
+                "Removed cycles: ${result.summary.removedCycles}",
+                "Changed layers: ${result.summary.changedLayers}",
+                "Added edges: ${result.summary.addedEdges}",
+                "Removed edges: ${result.summary.removedEdges}"
+            )
+        )
+        result.changes.take(20).takeIf { it.isNotEmpty() }?.let { changes ->
+            add(HumanCommandOutput.section("Changes", *changes.map { "${it.type}: ${it.key}" }.toTypedArray()))
+        }
+    }
+    return HumanCommandOutput.render(title = "🏛️ Architecture Drift", sections = sections)
+}
+
+private fun outputPath(root: File): File = root.resolve("output/architecture-drift.json")
