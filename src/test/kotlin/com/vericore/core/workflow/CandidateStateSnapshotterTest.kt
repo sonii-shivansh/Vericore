@@ -1,6 +1,7 @@
 package com.vericore.core.workflow
 
 import java.nio.file.Files
+import org.eclipse.jgit.api.Git
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -73,6 +74,29 @@ class CandidateStateSnapshotterTest {
 
             assertNotEquals(initial.digest, withAddedFile.digest)
             assertEquals(initial.digest, afterRemoval.digest)
+        }
+    }
+
+    @Test
+    fun `untracked root diagnostic logs do not look like source drift`() {
+        withRepository { root ->
+            val source = root.resolve("src/App.kt")
+            Files.createDirectories(source.parent)
+            Files.writeString(source, "class App\n")
+            Git.init().setDirectory(root.toFile()).call().use { git ->
+                git.add().addFilepattern("src/App.kt").call()
+                git.commit()
+                    .setMessage("create test repository")
+                    .setAuthor("Test", "test@example.com")
+                    .setCommitter("Test", "test@example.com")
+                    .call()
+            }
+
+            val before = CandidateStateSnapshotter.capture(root.toFile())
+            Files.writeString(root.resolve("verification-executed.log"), "mvn test\n")
+            val after = CandidateStateSnapshotter.capture(root.toFile())
+
+            assertEquals(before.digest, after.digest)
         }
     }
 
