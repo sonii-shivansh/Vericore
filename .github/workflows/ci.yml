@@ -77,7 +77,7 @@ jobs:
           if (Test-Path $fixture) { Remove-Item -Recurse -Force $fixture }
           New-Item -ItemType Directory -Force -Path (Join-Path $fixture "src\main\java\example") | Out-Null
           Set-Content -Path (Join-Path $fixture "pom.xml") -Value '<project />'
-          Set-Content -Path (Join-Path $fixture "mvnw.cmd") -Value @("@echo off", "echo %*>>verification-executed.log", "exit /b 0")
+          Set-Content -Path (Join-Path $fixture "mvnw.cmd") -Value @("@echo off", "if not exist output mkdir output", "echo %*>>output\verification-executed.log", "exit /b 0")
           Set-Content -Path (Join-Path $fixture "src\main\java\example\Service.java") -Value 'package example; public class Service { public String greet(String name) { return "Hello " + name; } }'
           git -C $fixture init -q
           git -C $fixture config user.name "Vericore E2E"
@@ -95,7 +95,7 @@ jobs:
           if ($contract -notmatch "cd /d") { throw "Prepared contract did not contain Windows cmd directory syntax" }
           & $cli verify --path $fixture --output (Join-Path $fixture "output\verify.json")
           if ($LASTEXITCODE -ne 0) { throw "Windows fixture verify failed with exit code $LASTEXITCODE" }
-          $executed = Get-Content (Join-Path $fixture "verification-executed.log") -Raw
+          $executed = Get-Content (Join-Path $fixture "output\verification-executed.log") -Raw
           if ($executed -notmatch "-B test") { throw "Windows verification did not execute Maven test command" }
           if ($executed -notmatch "-B package -DskipTests") { throw "Windows verification did not execute Maven package command" }
       - name: Upload distribution
