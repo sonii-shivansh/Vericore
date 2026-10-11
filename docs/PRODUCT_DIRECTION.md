@@ -126,3 +126,43 @@ The phase order above is the strategic roadmap. The following are execution rule
 - Preserve CLI compatibility while the public journey improves.
 - Keep MCP machine-readable and safe for local agent use.
 - Do not expand into hosted control-plane features before the developer/agent workflow is genuinely useful.
+
+
+## Strategic product decision — 2026-10-11
+
+This section records the product thesis and execution constraints agreed for Vericore. Keep it as durable project context when future work, reviews, or contributors revisit priorities.
+
+### Product thesis
+
+Vericore should become an **agent-neutral, local-first trust layer for AI-made software changes**, not another general-purpose coding agent and not merely another AI code reviewer.
+
+The proposed long-term product concept is the **Vericore Change Passport**: a portable, machine-verifiable record connecting the requested intent, the original change contract, the exact repository candidate evaluated, the checks that actually ran, the evidence for each claim, and a verdict that states what remains unverified.
+
+The product promise is evidence integrity and inspectable verification—not a guarantee that arbitrary software is correct.
+
+### Non-negotiable engineering principles
+
+- Deterministic repository facts remain authoritative; optional AI may interpret evidence but must not invent facts or turn missing evidence into a pass.
+- The persisted pre-change contract remains the verification boundary. Verification must not silently replace it with a contract derived from the mutated tree.
+- Verification claims must be bound to the exact repository-input state they evaluated. Relevant mutations during analysis or test execution must invalidate a PASS.
+- Distinguish PASS, review-required, failure, stale evidence, inconclusive results, and checks that were not evaluated as the result model evolves.
+- Keep verification receipts machine-readable, content-addressable where appropriate, and compatible with established provenance/attestation formats instead of inventing a disconnected ecosystem.
+- Treat hashes and signatures as integrity/provenance mechanisms, not proof of semantic correctness.
+- Publish benchmark methodology and measured results, including false acceptance, false rejection, stale-evidence detection, cost and limitations. Do not claim superiority before controlled comparisons.
+- Prioritize developer adoption and recurring use over command count, feature count, vanity metrics or a premature hosted enterprise control plane.
+
+### Execution order
+
+1. Strengthen exact-state binding and fail-closed behavior in the existing prepare → change → verify workflow.
+2. Evolve the Agent Change Contract into a structured, testable change specification with explicit evidence obligations.
+3. Improve receipt provenance and provide simple human-readable explanations alongside stable machine-readable artifacts.
+4. Expand the public benchmark to realistic repositories, deliberate failure cases and more than one agent workflow.
+5. Pursue broader languages, agent adapters, multi-agent/cross-repository coordination, signed attestations and enterprise controls only as correctness and real user demand justify them.
+
+### 2030 design horizon
+
+Design the core so it can later support multi-agent change conflicts, cross-repository change coordination, evidence freshness over time, and portable engineering assurance. These are strategic hypotheses, not assertions that every future problem is known or that any feature is already implemented.
+
+### Scope of the first implementation step
+
+The first implementation step introduces a deterministic candidate repository-input digest and checks it before analysis, immediately before verification commands, and after those commands. The digest excludes version-control metadata and conventional generated/build-output directories so Vericore's own outputs and build caches do not invalidate the result. It does not attest to the complete execution environment, external services, or external symlink targets; those require separate provenance or isolation controls.
