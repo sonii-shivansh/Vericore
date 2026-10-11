@@ -26,7 +26,10 @@ class E2ETest {
                 git.commit().setMessage("fixture").setAuthor("Vericore Test", "test@example.com").call()
             }
 
-            val result = ImprovedAnalyzeCommand().test(repository.toString(), "--no-cache")
+            // Clikt's test helper parses command-line arguments; forward slashes avoid
+            // treating Windows path separators as escapes. Windows accepts these paths.
+            val repositoryPath = repository.toAbsolutePath().toString().replace('\\', '/')
+            val result = ImprovedAnalyzeCommand().test(repositoryPath, "--no-cache")
 
             assertEquals(0, result.statusCode, result.stdout)
             assertTrue(result.stdout.contains("Analysis snapshot"), result.stdout)
