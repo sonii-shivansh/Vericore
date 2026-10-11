@@ -31,6 +31,7 @@ class McpProtocolTest {
         assertTrue(result.contains("acceptanceCriteria"))
         assertTrue(result.contains("requiredEvidence"))
         assertTrue(result.contains("evidenceBindings"))
+        assertTrue(result.contains("ALL_BOUND_COMMANDS_SUCCEEDED"))
         assertTrue(!result.contains("codecontext_"))
     }
 
