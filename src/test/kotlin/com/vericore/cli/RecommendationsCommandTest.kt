@@ -26,8 +26,7 @@ class RecommendationsCommandTest {
             """💡 Engineering Recommendations
 
 1. [HIGH] Add focused tests
-
-Review the risky path before changing it.
+  Review the risky path before changing it.
   Action: Add regression coverage.
   Evidence: src/main.kt, src/test/mainTest.kt""",
             renderRecommendationsSummary(
