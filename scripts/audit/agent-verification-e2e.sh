@@ -50,7 +50,15 @@ prepare = mcp([{
     "jsonrpc":"2.0","id":2,"method":"tools/call",
     "params":{"name":"vericore_prepare_change","arguments":{
         "repoPath":str(root),
-        "changeSummary":"Update Target value safely","plannedPaths":["src/main/kotlin/Target.kt"]
+        "changeSummary":"Update Target value safely",
+        "plannedPaths":["src/main/kotlin/Target.kt"],
+        "specification":{
+            "requiredBehaviors":["Return the updated target value"],
+            "forbiddenBehaviors":["Do not alter unrelated files"],
+            "protectedInvariants":["Keep the public method signature stable"],
+            "acceptanceCriteria":["The target value is updated by the requested operation"],
+            "requiredEvidence":["Relevant unit test results"]
+        }
     }}
 }])
 
@@ -59,6 +67,8 @@ assert result["isError"] is False, result
 prepared = json.loads(next(x["text"] for x in result["content"]))
 assert prepared["contract"]["fingerprint"]
 assert prepared["plan"]["plannedPaths"] == ["src/main/kotlin/Target.kt"]
+assert prepared["plan"]["specification"]["requiredBehaviors"] == ["Return the updated target value"]
+assert prepared["plan"]["specification"] == prepared["contract"]["specification"]
 assert (root/"output/agent-change-contract.json").is_file()
 assert (root/"output/engineering-plan.json").is_file()
 
@@ -78,6 +88,9 @@ verify = mcp([{
 
 contract_result = next(r["result"] for r in verify if r.get("id")==4)
 assert contract_result["isError"] is False, contract_result
+persisted_contract = json.loads(next(x["text"] for x in contract_result["content"]))
+assert persisted_contract["fingerprint"] == prepared["contract"]["fingerprint"]
+assert persisted_contract["specification"] == prepared["contract"]["specification"]
 verify_result = next(r["result"] for r in verify if r.get("id")==5)
 assert verify_result["isError"] is False, verify_result
 verification = json.loads(next(x["text"] for x in verify_result["content"]))

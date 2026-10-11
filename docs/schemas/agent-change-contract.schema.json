@@ -73,6 +73,58 @@
     "fingerprint": {
       "type": "string",
       "pattern": "^[a-f0-9]{64}$"
+    },
+    "specification": {
+      "type": "object",
+      "description": "Optional explicit change constraints. Their presence is not proof that each criterion has been evaluated.",
+      "properties": {
+        "requiredBehaviors": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "forbiddenBehaviors": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "protectedInvariants": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "acceptanceCriteria": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "requiredEvidence": {
+          "type": "array",
+          "maxItems": 100,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false

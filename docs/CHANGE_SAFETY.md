@@ -51,9 +51,11 @@ When the change is not already present in the working tree, supply explicit plan
 
 The contract binds the planned change to repository identity and the Git `HEAD` observed during preparation when Git metadata is available.
 
-Its SHA-256 fingerprint covers the meaningful persisted contract fields, including the change summary, repository identity, prepared `HEAD`, planned paths, expected components, verification commands, evidence IDs, architecture expectations, and schema information.
+Its SHA-256 fingerprint covers the meaningful persisted contract fields, including the change summary, repository identity, prepared `HEAD`, planned paths, expected components, verification commands, evidence IDs, architecture expectations, and schema information. An optional structured `specification` also binds required behaviors, forbidden behaviors, protected invariants, acceptance criteria, and required evidence. Empty specifications preserve historical fingerprints; non-empty specifications are fingerprint-bound. A fingerprint is an integrity checksum, not a signature or authorization mechanism.
 
 The plan and contract are deterministic artifacts. Preparation does not modify source code.
+
+The structured specification is caller-authored. Vericore validates its shape and size, normalizes whitespace and duplicate entries, and preserves it in both artifacts. Current verification binds the specification to the plan/contract fingerprint; it does **not** automatically prove every behavior or acceptance criterion. Such criteria remain explicit obligations until a future evidence evaluator can report their evaluation status.
 
 ## 2. Change the code
 

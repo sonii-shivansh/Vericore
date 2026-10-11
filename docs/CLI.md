@@ -438,7 +438,7 @@ Generate a deterministic, evidence-backed engineering plan for a proposed change
 ### Syntax
 
 ```bash
-vericore plan <change-summary> [--repository <path>] [--changed <path>...] [--evidence <file>] [--output <file>]
+vericore plan <change-summary> [--repository <path>] [--changed <path>...] [--evidence <file>] [--output <file>] [--require-behavior <text>...] [--forbid-behavior <text>...] [--protect-invariant <text>...] [--acceptance-criterion <text>...] [--required-evidence <text>...]
 ```
 
 ### Examples
@@ -457,6 +457,13 @@ vericore plan "add payment validation" --evidence output/grounded-evidence.json 
 | `--changed <path>` | none | One or more repository-relative planned paths. |
 | `--evidence <file>` | `output/grounded-evidence.json` | Grounded evidence artifact. |
 | `--output <file>` | stdout | Write the plan JSON to a repository-local path. |
+| `--require-behavior <text>` | none | Declare behavior the change must provide. Repeatable. |
+| `--forbid-behavior <text>` | none | Declare behavior the change must not introduce. Repeatable. |
+| `--protect-invariant <text>` | none | Declare an invariant that must remain true. Repeatable. |
+| `--acceptance-criterion <text>` | none | Declare an observable acceptance criterion. Repeatable. |
+| `--required-evidence <text>` | none | Declare evidence that must be supplied or reviewed. Repeatable. |
+
+The plan preserves these declarations in its structured `specification` object. They are bound to the contract fingerprint when prepared. Recording a criterion does not mean Vericore has automatically proven it.
 
 The plan is read-only and cannot modify source code.
 
@@ -469,7 +476,7 @@ Create the evidence-backed preparation bundle used by the safe change workflow.
 ### Syntax
 
 ```bash
-vericore prepare <change-summary> [--path <repository>] [--output <file>] [--plan-output <file>] [--contract-output <file>]
+vericore prepare <change-summary> [--path <repository>] [--output <file>] [--plan-output <file>] [--contract-output <file>] [--planned-path <path>...] [--require-behavior <text>...] [--forbid-behavior <text>...] [--protect-invariant <text>...] [--acceptance-criterion <text>...] [--required-evidence <text>...]
 ```
 
 ### Examples
@@ -478,6 +485,13 @@ vericore prepare <change-summary> [--path <repository>] [--output <file>] [--pla
 vericore prepare "add payment validation" --planned-path src/main/java/com/example/PaymentService.java
 vericore prepare "add payment validation" --path /workspace/repository
 vericore prepare "add payment validation" --plan-output output/payment-plan.json --contract-output output/payment-contract.json
+vericore prepare "add payment validation" \
+  --planned-path src/main/kotlin/PaymentService.kt \
+  --require-behavior "Reject invalid payment amounts" \
+  --forbid-behavior "Never log payment credentials" \
+  --protect-invariant "Retries remain idempotent" \
+  --acceptance-criterion "Invalid amounts return a validation error" \
+  --required-evidence "Unit-test output for invalid amounts"
 ```
 
 ### Default outputs
@@ -489,6 +503,8 @@ output/agent-change-contract.json
 ```
 
 The Agent Change Contract is persisted at preparation time. Do not replace it before `verify`.
+
+Repeatable `--require-behavior`, `--forbid-behavior`, `--protect-invariant`, `--acceptance-criterion`, and `--required-evidence` options record explicit constraints in the plan and contract. Empty specifications preserve legacy contract fingerprints; non-empty specifications are included in the SHA-256 fingerprint. These declarations are not automatically semantically evaluated by merely being present.
 
 ---
 

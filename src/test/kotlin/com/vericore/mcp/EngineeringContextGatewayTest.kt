@@ -4,6 +4,7 @@ import com.vericore.core.intelligence.ArchitectureIntelligenceEngine
 import com.vericore.core.intelligence.ArchitectureIntelligenceResult
 import com.vericore.core.scanner.RepositoryScanner
 import com.vericore.core.config.VericoreConfig
+import com.vericore.core.planner.ChangeSpecification
 import com.vericore.core.planner.EngineeringPlan
 import com.vericore.cli.CodeParallelParser
 import com.vericore.core.cache.CacheManager
@@ -118,7 +119,16 @@ class EngineeringContextGatewayTest {
             git.add().addFilepattern("src/Target.kt").call()
             git.commit().setMessage("initial fixture").setAuthor("VCORE CI", "ci@example.com").call()
 
-            val prepared = EngineeringContextGateway.prepare(root.path, "Update Target safely", listOf("src/Target.kt"))
+            val specification = ChangeSpecification(
+                requiredBehaviors = listOf("Return the updated target value"),
+                forbiddenBehaviors = listOf("Do not alter unrelated files"),
+                protectedInvariants = listOf("Keep the public method signature stable"),
+                acceptanceCriteria = listOf("The target value is updated by the requested operation"),
+                requiredEvidence = listOf("Relevant unit test results")
+            )
+            val prepared = EngineeringContextGateway.prepare(
+                root.path, "Update Target safely", listOf("src/Target.kt"), specification
+            )
             assertTrue(root.resolve("output/engineering-preparation.json").isFile)
             assertTrue(root.resolve("output/engineering-plan.json").isFile)
             assertTrue(root.resolve("output/agent-change-contract.json").isFile)
@@ -128,6 +138,8 @@ class EngineeringContextGatewayTest {
                 prepared
             )
             assertEquals(returned.contract.fingerprint, returned.plan.contractFingerprint)
+            assertEquals(specification, returned.plan.specification)
+            assertEquals(specification, returned.contract.specification)
             val persisted = EngineeringContextGateway.changeContract(root.path)
             assertEquals(
                 returned.contract,

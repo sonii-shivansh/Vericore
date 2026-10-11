@@ -10,8 +10,8 @@ This catalog is the source of truth for persisted, versioned core artifacts. Sch
 | Grounded evidence | repo-qa -> output/grounded-evidence.json | 1.1 | schemas/grounded-evidence.schema.json | Carries commit/source digest/schema binding when available; legacy 1.0 can be decoded but cannot be reused as fresh evidence |
 | Engineering context snapshot | context-snapshot --json -> output/engineering-context.json | 1.0 | schemas/engineering-context-snapshot.schema.json | This path is owned only by context-snapshot |
 | Engineering context diff | context-diff -> output/engineering-context-diff.json | 1.0 | schemas/engineering-context-diff.schema.json | Deterministic list of added/removed/modified paths |
-| Engineering plan | plan / prepare -> output/engineering-plan.json | 1.0 | schemas/engineering-plan.schema.json | Bound to contract fingerprint in preparation flow |
-| Agent Change Contract | prepare -> output/agent-change-contract.json | 2.0 | schemas/agent-change-contract.schema.json | SHA-256 fingerprint is an integrity checksum, not a signature |
+| Engineering plan | plan / prepare -> output/engineering-plan.json | 1.0 | schemas/engineering-plan.schema.json | Optional additive structured change specification is preserved and bound to contract fingerprint |
+| Agent Change Contract | prepare -> output/agent-change-contract.json | 2.0 | schemas/agent-change-contract.schema.json | Optional additive structured specification is fingerprint-bound; SHA-256 is an integrity checksum, not a signature |
 | Preparation result | prepare / MCP vericore_prepare_change -> output/engineering-preparation.json | 1.2 | schemas/engineering-preparation.schema.json | Dedicated path avoids collision with EngineeringContextSnapshot |
 | Semantic evidence graph | evidence-graph --json -> output/semantic-evidence-graph.json | 1.0 | schemas/semantic-evidence-graph.schema.json | Ordered nodes/edges, cardinality and digest |
 | Architecture analysis | architecture <path> --json -> output/architecture.json | 1.1 | schemas/architecture-analysis.schema.json | Sorted findings, cycles, layers and dependency edges |
@@ -30,7 +30,7 @@ Architecture-contract outputs, architecture-drift outputs, Engineering Reality, 
 ## Compatibility rules
 
 1. A consumer must reject an unsupported major artifact version or fail closed if it is used to establish a verification boundary.
-2. Additive optional fields may be introduced only under a documented compatibility policy. Update the corresponding schema and fixtures in the same change.
+2. Additive optional fields may be introduced only under a documented compatibility policy. Update the corresponding schema and fixtures in the same change. Empty structured change specifications preserve legacy contract fingerprints; non-empty specifications are included in the fingerprint.
 3. Legacy evidence without repository/source-state binding can be read for migration but must not be reused as current evidence.
 4. Absolute repository paths, commit IDs, timestamps, and digests are intentionally variable; golden comparisons normalize only explicitly documented variable fields.
 5. Never update a schema to match a broken artifact without independent review of the artifact's intended contract.

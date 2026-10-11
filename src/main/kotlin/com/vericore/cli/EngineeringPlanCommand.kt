@@ -1,6 +1,7 @@
 package com.vericore.cli
 
 import com.vericore.core.ai.GroundedEvidence
+import com.vericore.core.planner.ChangeSpecification
 import com.vericore.core.planner.EngineeringPlanRequest
 import com.vericore.core.planner.EngineeringPlanner
 import com.github.ajalt.clikt.core.CliktCommand
@@ -25,6 +26,11 @@ class EngineeringPlanCommand : CliktCommand(
         "--changed",
         help = "Repository-relative file path(s) explicitly planned for the change"
     ).multiple()
+    private val requiredBehaviors by option("--require-behavior", help = "Behavior this change must provide").multiple()
+    private val forbiddenBehaviors by option("--forbid-behavior", help = "Behavior this change must not introduce").multiple()
+    private val protectedInvariants by option("--protect-invariant", help = "Existing invariant this change must preserve").multiple()
+    private val acceptanceCriteria by option("--acceptance-criterion", help = "Observable criterion for accepting this change").multiple()
+    private val requiredEvidence by option("--required-evidence", help = "Evidence that must be supplied/reviewed for acceptance").multiple()
     private val evidenceFile by option("--evidence", help = "Path to a grounded evidence JSON artifact; relative paths resolve from the repository")
     private val outputFile by option("--output", help = "Write the plan JSON to this path instead of stdout")
 
@@ -40,7 +46,14 @@ class EngineeringPlanCommand : CliktCommand(
                 changeSummary = changeSummary,
                 changedPaths = changedPaths.toList(),
                 evidence = evidence,
-                repositoryPath = root.path
+                repositoryPath = root.path,
+                specification = ChangeSpecification(
+                    requiredBehaviors = requiredBehaviors,
+                    forbiddenBehaviors = forbiddenBehaviors,
+                    protectedInvariants = protectedInvariants,
+                    acceptanceCriteria = acceptanceCriteria,
+                    requiredEvidence = requiredEvidence
+                )
             )
         )
         val json = Json { prettyPrint = true; encodeDefaults = true }

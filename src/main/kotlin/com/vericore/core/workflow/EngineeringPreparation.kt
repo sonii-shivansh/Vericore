@@ -12,6 +12,7 @@ import com.vericore.core.intelligence.AnalysisSnapshotBuilder
 import com.vericore.core.intelligence.EngineeringContextEngine
 import com.vericore.core.intelligence.ChangeSet
 import com.vericore.core.intelligence.DecisionProvenance
+import com.vericore.core.planner.ChangeSpecification
 import com.vericore.core.planner.EngineeringPlan
 import com.vericore.core.planner.EngineeringPlanRequest
 import com.vericore.core.planner.EngineeringPlanner
@@ -39,7 +40,12 @@ data class EngineeringPreparationResult(
 object EngineeringPreparation {
     private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
-    suspend fun prepare(repoPath: String, changeSummary: String, plannedPaths: List<String> = emptyList()): EngineeringPreparationResult {
+    suspend fun prepare(
+        repoPath: String,
+        changeSummary: String,
+        plannedPaths: List<String> = emptyList(),
+        specification: ChangeSpecification = ChangeSpecification()
+    ): EngineeringPreparationResult {
         val root = File(repoPath).canonicalFile
         require(root.isDirectory) { "Repository path is not a directory: $repoPath" }
         val config = ConfigLoader.loadForRepository(root.path)
@@ -80,7 +86,8 @@ object EngineeringPreparation {
                 changeSummary = changeSummary,
                 changedPaths = plannedPaths.ifEmpty { changeSet.files.map { it.path } },
                 evidence = evidence,
-                repositoryPath = root.path
+                repositoryPath = root.path,
+                specification = specification
             )
         )
         val preparedHead = RepositoryState.head(root.path).orEmpty()

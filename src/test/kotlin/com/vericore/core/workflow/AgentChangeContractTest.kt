@@ -1,5 +1,6 @@
 package com.vericore.core.workflow
 
+import com.vericore.core.planner.ChangeSpecification
 import com.vericore.core.planner.EngineeringPlan
 import com.vericore.core.planner.RiskLevel
 import kotlin.test.Test
@@ -51,6 +52,38 @@ class AgentChangeContractTest {
         val base = AgentChangeContract.fromPlan(plan("src/App.kt"))
         val changed = base.copy(expectedChangeTypes = mapOf("src/App.kt" to listOf("MODIFIED")))
         assertNotEquals(AgentChangeContract.fingerprintFor(base), AgentChangeContract.fingerprintFor(changed))
+    }
+
+    @Test
+    fun `structured specification changes contract fingerprint`() {
+        val base = plan("src/App.kt")
+        val specified = base.copy(
+            specification = ChangeSpecification(
+                requiredBehaviors = listOf("Return a validated result"),
+                forbiddenBehaviors = listOf("Do not log secrets"),
+                protectedInvariants = listOf("Keep retries idempotent"),
+                acceptanceCriteria = listOf("A malformed request returns 400"),
+                requiredEvidence = listOf("Test output for malformed requests")
+            )
+        )
+
+        assertNotEquals(
+            AgentChangeContract.fingerprintFor(base),
+            AgentChangeContract.fingerprintFor(specified)
+        )
+        val contract = AgentChangeContract.fromPlan(specified, "/tmp/spec-repo", "prepared-head")
+        assertEquals(specified.specification, contract.specification)
+        assertEquals(AgentChangeContract.fingerprintFor(contract), contract.fingerprint)
+    }
+
+    @Test
+    fun `empty specification preserves legacy contract fingerprint semantics`() {
+        val base = plan("src/App.kt")
+        val explicitEmpty = base.copy(specification = ChangeSpecification())
+        assertEquals(
+            AgentChangeContract.fingerprintFor(base),
+            AgentChangeContract.fingerprintFor(explicitEmpty)
+        )
     }
 
     @Test
