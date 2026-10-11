@@ -24,6 +24,20 @@ class InitCommandTest {
     }
 
     @Test
+    fun alreadyInitializedJsonKeepsProductResultStatusAndNextStep() {
+        val root = Files.createTempDirectory("vericore-init-existing-json").toFile()
+        root.resolve(".git").mkdirs()
+        root.resolve(".vericore.json").writeText("{}")
+
+        val result = InitCommand().test("--path ${cliPath(root)} --json")
+
+        assertEquals(0, result.statusCode)
+        assertTrue(result.stdout.contains("\"status\": \"ALREADY_INITIALIZED\""))
+        assertTrue(result.stdout.contains("\"nextStep\""))
+        assertTrue(!result.stdout.contains("PROJECT INITIALIZED"))
+    }
+
+    @Test
     fun refusesNonGitDirectory() {
         val root = Files.createTempDirectory("vericore-no-git").toFile()
         val error = assertFailsWith<IllegalArgumentException> {
