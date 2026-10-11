@@ -101,7 +101,7 @@ object CandidateStateSnapshotter {
         val name = directory.fileName?.toString() ?: return false
         if (name in excludedMetadataDirectoryNames) return true
 
-        val relativeParts = rootPath.relativize(directory).map(Path::toString)
+        val relativeParts = rootPath.relativize(directory).map { it.toString() }
         // Vericore writes its own artifacts to the repository-root output directory.
         if (relativeParts.size == 1 && name == "output") return true
 
