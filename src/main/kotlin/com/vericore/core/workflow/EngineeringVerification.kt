@@ -28,7 +28,7 @@ data class VerificationExecutionResult(
 
 @Serializable
 data class EngineeringVerificationResult(
-    val schemaVersion: String = "1.4",
+    val schemaVersion: String = "1.5",
     val repository: String,
     val safety: ChangeSafetyResult,
     val prIntelligence: com.vericore.core.intelligence.PRIntelligenceResult,
@@ -44,7 +44,8 @@ data class EngineeringVerificationResult(
     val postVerificationCandidateDigest: String,
     val candidateStateStable: Boolean,
     val candidateStateFileCount: Int,
-    val postVerificationFileCount: Int
+    val postVerificationFileCount: Int,
+    val specificationEvaluation: ChangeSpecificationEvaluation? = null
 )
 
 /** Runs deterministic post-change checks against the exact persisted contract produced by prepare. */
@@ -98,9 +99,14 @@ object EngineeringVerification {
         val analysisStateStable = analysisInput.digest == candidateAtVerification.digest
         val currentHead = RepositoryState.head(root.path).orEmpty()
         val expectedContractFingerprint = AgentChangeContract.fingerprintFor(contract)
-        val expectedPlanFingerprint = AgentChangeContract.fromPlan(plan, root.path, contract.preparedHead).fingerprint
+        val expectedPlanFingerprintResult = runCatching {
+            AgentChangeContract.fromPlan(plan, root.path, contract.preparedHead).fingerprint
+        }
+        val expectedPlanFingerprint = expectedPlanFingerprintResult.getOrNull().orEmpty()
+        val planSpecificationError = expectedPlanFingerprintResult.exceptionOrNull()?.message
         val contractReasons = buildList {
             if (contract.fingerprint != expectedContractFingerprint) add("The persisted agent change contract fingerprint is invalid or tampered.")
+            if (planSpecificationError != null) add("The supplied plan contains an invalid structured specification: $planSpecificationError")
             if (contract.repository != root.path) add("The contract belongs to a different repository: ${contract.repository}")
             if (plan.contractFingerprint != contract.fingerprint) add("The engineering plan is not bound to the persisted contract fingerprint.")
             if (expectedPlanFingerprint != contract.fingerprint) add("The supplied plan does not match the persisted contract contents.")
@@ -108,6 +114,7 @@ object EngineeringVerification {
         }
         val contractValid = contractReasons.isEmpty()
         val contractResult = AgentChangeContractResult(contract, contractValid, contractReasons)
+        val specificationEvaluation = ChangeSpecificationEvaluator.evaluate(contract.specification)
         val execution = if (contractValid && safety.status != SafetyStatus.FAIL && analysisStateStable) {
             VerificationExecutionResult(commands = VerificationCommandExecutor.execute(root, contract.verificationCommands))
         } else {
@@ -134,6 +141,9 @@ object EngineeringVerification {
             safety.status == SafetyStatus.FAIL -> SafetyStatus.FAIL
             candidateStateDriftReasons.isNotEmpty() -> SafetyStatus.FAIL
             !execution.allCommandsPassed -> SafetyStatus.FAIL
+            specificationEvaluation?.status == CriterionEvaluationStatus.FAIL -> SafetyStatus.FAIL
+            specificationEvaluation?.status == CriterionEvaluationStatus.INCONCLUSIVE ||
+                specificationEvaluation?.status == CriterionEvaluationStatus.NOT_EVALUATED -> SafetyStatus.REVIEW_REQUIRED
             safety.status == SafetyStatus.REVIEW_REQUIRED || pr.aggregateSeverity.name == "CRITICAL" -> SafetyStatus.REVIEW_REQUIRED
             else -> SafetyStatus.PASS
         }
@@ -141,6 +151,11 @@ object EngineeringVerification {
             addAll(contractReasons)
             addAll(safety.reasons)
             addAll(candidateStateDriftReasons)
+            specificationEvaluation?.criteria
+                ?.filter { it.status != CriterionEvaluationStatus.PASS }
+                ?.forEach { criterion ->
+                    add("Specification criterion '${criterion.id}' is ${criterion.status}: ${criterion.reason}")
+                }
             if (execution.commands.isEmpty()) {
                 add("No verification commands were executed; verification cannot pass without a successful verification command.")
             } else {
@@ -171,7 +186,8 @@ object EngineeringVerification {
             postVerificationCandidateDigest = postVerificationCandidate.digest,
             candidateStateStable = candidateStateDriftReasons.isEmpty(),
             candidateStateFileCount = candidateAtVerification.fileCount,
-            postVerificationFileCount = postVerificationCandidate.fileCount
+            postVerificationFileCount = postVerificationCandidate.fileCount,
+            specificationEvaluation = specificationEvaluation
         )
     }
 }

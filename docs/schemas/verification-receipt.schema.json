@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:vericore:schema:verification-receipt-v1.1",
+  "$id": "urn:vericore:schema:verification-receipt-v1.2",
   "title": "Vericore Verification Receipt",
   "type": "object",
   "required": [
@@ -27,7 +27,7 @@
   ],
   "properties": {
     "schemaVersion": {
-      "const": "1.1"
+      "const": "1.2"
     },
     "repository": {
       "type": "string",
@@ -201,6 +201,94 @@
     "postVerificationFileCount": {
       "type": "integer",
       "minimum": 0
+    },
+    "specificationEvaluation": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "title": "Structured change specification evaluation",
+      "required": [
+        "schemaVersion",
+        "status",
+        "criteria",
+        "evaluatedCount",
+        "notEvaluatedCount"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "1.0"
+        },
+        "status": {
+          "enum": [
+            "PASS",
+            "FAIL",
+            "INCONCLUSIVE",
+            "NOT_EVALUATED"
+          ]
+        },
+        "criteria": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "kind",
+              "statement",
+              "status",
+              "reason",
+              "evidenceIds"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "enum": [
+                  "REQUIRED_BEHAVIOR",
+                  "FORBIDDEN_BEHAVIOR",
+                  "PROTECTED_INVARIANT",
+                  "ACCEPTANCE_CRITERION",
+                  "REQUIRED_EVIDENCE",
+                  "SPECIFICATION_VALIDITY"
+                ]
+              },
+              "statement": {
+                "type": "string",
+                "minLength": 1
+              },
+              "status": {
+                "enum": [
+                  "PASS",
+                  "FAIL",
+                  "INCONCLUSIVE",
+                  "NOT_EVALUATED"
+                ]
+              },
+              "reason": {
+                "type": "string"
+              },
+              "evidenceIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "evaluatedCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "notEvaluatedCount": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false

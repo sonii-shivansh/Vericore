@@ -83,7 +83,7 @@ Verification loads the persisted contract and validates:
 9. recommended verification commands;
 10. verification provenance.
 
-For a fast boundary check, `vericore verify --contract-only` validates the persisted contract, repository identity, prepared `HEAD`, plan binding, and current mutation scope without rebuilding the full dependency analysis graph.
+For a fast boundary check, `vericore verify --contract-only` validates the persisted contract, repository identity, prepared `HEAD`, plan binding, and current mutation scope without rebuilding the full dependency analysis graph. It also reports the structured specification evaluation; a non-empty specification whose criteria are `NOT_EVALUATED` or `INCONCLUSIVE` cannot receive `PASS` in this mode.
 
 A missing, tampered, mismatched, cross-repository, or stale contract produces `FAIL`. Verification does not silently reconstruct a replacement contract from a mutable plan.
 
@@ -105,7 +105,7 @@ The deterministic digest includes tracked and untracked repository files, except
 | Status | Meaning |
 |---|---|
 | `PASS` | The persisted contract is valid and detected changes remain within the planned scope. |
-| `REVIEW_REQUIRED` | The contract is valid, but the change contains a condition that needs explicit engineering review, such as a deleted file or critical deterministic finding. |
+| `REVIEW_REQUIRED` | The contract is valid, but explicit engineering review is required, including deleted files, critical deterministic findings, or specification criteria that remain `NOT_EVALUATED` or `INCONCLUSIVE`. |
 | `FAIL` | The contract is invalid or stale, or a detected change falls outside the prepared scope. |
 
 These statuses are **review signals**, not proof of software correctness. Tests, review, and human engineering judgment remain required.
@@ -125,6 +125,10 @@ The release and E2E test suites exercise the safety boundary against:
 - repository restoration after mutation.
 
 The goal is to fail closed when the prepared verification boundary is no longer trustworthy.
+
+### Specification evaluation status
+
+A non-empty structured specification is expanded into stable per-criterion records. Current criteria are explicitly `NOT_EVALUATED` because no criterion-specific evidence evaluator is implemented yet. Vericore does not infer that a behavior passed merely because test commands passed or the repository stayed in scope. The overall verification result is `REVIEW_REQUIRED` until each obligation can be evaluated against appropriate evidence. Empty specifications preserve the prior status behavior.
 
 ## AI-agent workflow
 

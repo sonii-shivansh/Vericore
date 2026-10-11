@@ -43,7 +43,7 @@
 - persisted output/agent-change-contract.json
 - contract tamper, plan mismatch, repository mismatch, stale-HEAD, and unexpected-change detection
 - candidate repository-input state digests captured before analysis, before declared verification commands, and after those commands; relevant candidate drift fails closed
-- optional structured change specifications (required/forbidden behaviors, protected invariants, acceptance criteria, required evidence) preserved in plans/contracts and bound into the contract fingerprint; semantic evaluation of these declarations is not yet implemented
+- structured specification evaluation records stable per-criterion IDs and explicit `NOT_EVALUATED` statuses; a non-empty specification with unevaluated criteria forces overall `REVIEW_REQUIRED`; criterion-specific evidence evaluation is not yet implemented
 - verification against the persisted contract rather than a replacement derived from the mutated repository
 
 **Authoritative rule:** the persisted contract is the verification boundary.

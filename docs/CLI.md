@@ -533,7 +533,7 @@ vericore verify --path . --plan output/engineering-plan.json --contract output/a
 | `--plan <file>` | `output/engineering-plan.json` | Persisted engineering plan. |
 | `--contract <file>` | `output/agent-change-contract.json` | Original immutable Agent Change Contract. Required to exist. |
 | `--output <file>` | stdout | Optional verification artifact. |
-| `--contract-only` | off | Validate contract identity, prepared `HEAD`, and mutation scope without rebuilding the full analysis graph. |
+| `--contract-only` | off | Validate contract identity, prepared `HEAD`, and mutation scope without rebuilding the full analysis graph. Also returns specification evaluation; unevaluated criteria keep the status at `REVIEW_REQUIRED`. |
 
 Verification executes the persisted build/test commands using the native shell and wrapper conventions for the current platform. On Windows, Maven/Gradle wrapper commands use `mvnw.cmd`/`gradlew.bat` and `cmd` directory syntax; on Unix-like systems they use the executable wrapper form. Verification fails when the contract is missing, tampered, stale, cross-repository, inconsistent with the plan, or when changes fall outside the prepared boundary. `PASS` and `REVIEW_REQUIRED` are not substitutes for tests or human review.
 
@@ -547,7 +547,7 @@ A successful or review-required full `vericore verify` run also writes:
 output/verification-receipt.json
 ```
 
-The receipt is derived from the same verification result. It records the prepared and verified repository state, contract fingerprint, changed/planned/unexpected paths, verification commands/results, deterministic safety reasons and verification reasons, and candidate-state digests captured at analysis start, command start, and command completion. `candidateStateStable` is true only when the repository-input digest remained identical across all three points. If relevant repository files change while analysis or verification commands are running, verification fails closed. The digest excludes version-control metadata and conventional generated/build-output directories; it does not attest to the complete execution environment or external services. The receipt is an audit artifact, not a second verification decision.
+The receipt is derived from the same verification result. It records the prepared and verified repository state, contract fingerprint, changed/planned/unexpected paths, verification commands/results, deterministic safety reasons and verification reasons, candidate-state digests captured at analysis start, command start, and command completion, and optional per-criterion specification evaluation. `candidateStateStable` is true only when the repository-input digest remained identical across all three points. If relevant repository files change while analysis or verification commands are running, verification fails closed. When a non-empty specification has criteria that are not yet backed by criterion-specific evaluators, those criteria are explicitly marked `NOT_EVALUATED` and the overall status is at least `REVIEW_REQUIRED`. The receipt is an audit artifact, not a second verification decision.
 
 ## 17. `ask`
 

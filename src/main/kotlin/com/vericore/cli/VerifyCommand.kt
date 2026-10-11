@@ -6,9 +6,12 @@ import com.vericore.core.exceptions.ValidationException
 import com.vericore.core.planner.EngineeringPlan
 import com.vericore.core.workflow.AgentChangeContract
 import com.vericore.core.workflow.ChangeSafetyAnalyzer
+import com.vericore.core.workflow.ChangeSpecificationEvaluator
+import com.vericore.core.workflow.CriterionEvaluationStatus
 import com.vericore.core.workflow.EngineeringVerification
 import com.vericore.core.workflow.RepositoryState
 import com.vericore.core.workflow.VerificationReceipt
+import com.vericore.core.workflow.ChangeSpecificationEvaluation
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
@@ -25,7 +28,8 @@ data class ContractOnlyVerificationResult(
     val valid: Boolean,
     val status: String,
     val reasons: List<String>,
-    val changedPaths: List<String>
+    val changedPaths: List<String>,
+    val specificationEvaluation: ChangeSpecificationEvaluation? = null
 )
 
 /** Verifies the working-tree change against an engineering plan and immutable change contract. */
@@ -74,7 +78,12 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
             if (contract.fingerprint != expectedContractFingerprint) add("The persisted agent change contract fingerprint is invalid or tampered.")
             if (contract.repository != root.path) add("The contract belongs to a different repository: ${contract.repository}")
             if (plan.contractFingerprint != contract.fingerprint) add("The engineering plan is not bound to the persisted contract fingerprint.")
-            val expectedPlanFingerprint = AgentChangeContract.fromPlan(plan, root.path, contract.preparedHead).fingerprint
+            val expectedPlanFingerprint = try {
+                AgentChangeContract.fromPlan(plan, root.path, contract.preparedHead).fingerprint
+            } catch (error: IllegalArgumentException) {
+                add("The supplied plan contains an invalid structured specification: ${error.message ?: "validation failed"}")
+                ""
+            }
             if (expectedPlanFingerprint != contract.fingerprint) add("The supplied plan does not match the persisted contract contents.")
             val currentHead = RepositoryState.head(root.path).orEmpty()
             if (contract.preparedHead.isNotBlank() && currentHead.isNotBlank() && contract.preparedHead != currentHead) {
@@ -84,10 +93,20 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
 
         val changes = collectContractOnlyChanges(root)
         val safety = ChangeSafetyAnalyzer.verify(changes, plan.plannedPaths)
-        val allReasons = reasons + safety.reasons.filter { it != "No source working-tree changes were detected." }
+        val specificationEvaluation = ChangeSpecificationEvaluator.evaluate(contract.specification)
+        val specificationReasons = specificationEvaluation?.criteria
+            ?.filter { it.status != CriterionEvaluationStatus.PASS }
+            ?.map { criterion -> "Specification criterion '${criterion.id}' is ${criterion.status}: ${criterion.reason}" }
+            .orEmpty()
+        val allReasons = reasons +
+            safety.reasons.filter { it != "No source working-tree changes were detected." } +
+            specificationReasons
         val status = when {
-            reasons.isNotEmpty() || safety.status == com.vericore.core.workflow.SafetyStatus.FAIL -> com.vericore.core.workflow.SafetyStatus.FAIL
-            safety.status == com.vericore.core.workflow.SafetyStatus.REVIEW_REQUIRED -> com.vericore.core.workflow.SafetyStatus.REVIEW_REQUIRED
+            reasons.isNotEmpty() || safety.status == com.vericore.core.workflow.SafetyStatus.FAIL ||
+                specificationEvaluation?.status == CriterionEvaluationStatus.FAIL -> com.vericore.core.workflow.SafetyStatus.FAIL
+            safety.status == com.vericore.core.workflow.SafetyStatus.REVIEW_REQUIRED ||
+                specificationEvaluation?.status == CriterionEvaluationStatus.INCONCLUSIVE ||
+                specificationEvaluation?.status == CriterionEvaluationStatus.NOT_EVALUATED -> com.vericore.core.workflow.SafetyStatus.REVIEW_REQUIRED
             else -> com.vericore.core.workflow.SafetyStatus.PASS
         }
         val result = ContractOnlyVerificationResult(
@@ -95,7 +114,8 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
             valid = status == com.vericore.core.workflow.SafetyStatus.PASS,
             status = status.name,
             reasons = allReasons,
-            changedPaths = safety.changedPaths
+            changedPaths = safety.changedPaths,
+            specificationEvaluation = specificationEvaluation
         )
         writeOutput(json.encodeToString(result))
         echo("Status: ${result.status}")

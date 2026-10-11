@@ -19,8 +19,8 @@ This catalog is the source of truth for persisted, versioned core artifacts. Sch
 | PR intelligence | pr-intelligence <path> --json -> output/pr-intelligence.json | 1.0 | schemas/pr-intelligence.schema.json | Deterministic rule findings and aggregate severity |
 | Engineering risks | analyze -> output/engineering-risks.json | core risk model | schemas/engineering-risks.schema.json | Sorted risk list; schema tracks the serialized risk shape |
 | Product inspection | inspect --json -> output/inspection.json | 1.0 | schemas/inspection.schema.json | Snapshot-derived user-facing inspection summary |
-| Verification result | verify -> output/verification.json unless overridden | 1.4 | schemas/engineering-verification.schema.json | Caller can choose another output path |
-| Verification receipt | full verify -> output/verification-receipt.json | 1.1 | schemas/verification-receipt.schema.json | Binds the recorded verification to analysis, pre-command, and post-command candidate-state digests; derived from the same verification result, not a second decision |
+| Verification result | verify -> output/verification.json unless overridden | 1.5 | schemas/engineering-verification.schema.json | Includes explicit per-criterion evaluation state; undevaluated obligations force REVIEW_REQUIRED |
+| Verification receipt | full verify -> output/verification-receipt.json | 1.2 | schemas/verification-receipt.schema.json | Includes specification evaluation states and candidate-state provenance; derived from the same verification result, not a second decision |
 | Release-readiness certificate | Release Audit job | 1.0 | docs/release-readiness.schema.json | Existing schema outside docs/schemas |
 
 ## Remaining schema inventory
