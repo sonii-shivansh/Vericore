@@ -23,10 +23,7 @@ class ReportCommand : CliktCommand(name = "report", help = "Generate a durable H
         val target = output?.let { File(it).canonicalFile } ?: root.resolve(".vericore").resolve("reports").resolve(session.id + ".html")
         target.parentFile?.mkdirs()
         target.writeText(render(snapshot, session))
-        echo("REPORT GENERATED")
-        echo("  Session: " + session.id)
-        echo("  Repository: " + root.absolutePath)
-        echo("  Report: " + target.absolutePath)
+        echo(renderReportSummary(session.id, root.absolutePath, target.absolutePath))
     }
 
     private fun resolveSession(root: File): SessionRecord {
@@ -67,3 +64,14 @@ class ReportCommand : CliktCommand(name = "report", help = "Generate a durable H
 """.trimIndent()
     }
 }
+
+/** Formats the report command's human summary without changing the HTML artifact or command status. */
+internal fun renderReportSummary(sessionId: String, repositoryPath: String, reportPath: String): String =
+    HumanCommandOutput.render(
+        title = "REPORT GENERATED",
+        sections = listOf(
+            HumanCommandOutput.section("Session", sessionId),
+            HumanCommandOutput.section("Repository", repositoryPath),
+            HumanCommandOutput.section("Report", reportPath)
+        )
+    )
