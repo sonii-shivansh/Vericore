@@ -55,7 +55,7 @@ Its SHA-256 fingerprint covers the meaningful persisted contract fields, includi
 
 The plan and contract are deterministic artifacts. Preparation does not modify source code.
 
-The structured specification is caller-authored. Vericore validates its shape and size, normalizes whitespace and duplicate entries, and preserves it in both artifacts. Current verification binds the specification to the plan/contract fingerprint; it does **not** automatically prove every behavior or acceptance criterion. Such criteria remain explicit obligations until a future evidence evaluator can report their evaluation status.
+The structured specification is caller-authored. Vericore validates its shape and size, normalizes whitespace and duplicate entries, and preserves it in both artifacts. Evidence bindings must reference a declared criterion ID and evidence IDs present in the prepared contract. A dangling evidence ID or unknown criterion fails closed. A valid evidence link is recorded as `INCONCLUSIVE` because the current system does not yet semantically evaluate arbitrary evidence content. The overall result remains `REVIEW_REQUIRED` until the criterion can be evaluated appropriately.
 
 ## 2. Change the code
 
