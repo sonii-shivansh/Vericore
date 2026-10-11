@@ -4,7 +4,7 @@ import com.vericore.core.planner.CriterionEvidenceBinding
 import com.vericore.core.planner.CriterionEvidenceRule
 
 /**
- * Parses repeatable CLI arguments in the form criterion-id=evidence-id.
+ * Parses repeatable CLI arguments in the form criterion-id=evidence-id, where the evidence ID may be a prepared citation or a planned verification-command ID.
  * Multiple arguments for the same criterion are grouped into one binding.
  */
 internal fun parseCriterionEvidenceBindings(
