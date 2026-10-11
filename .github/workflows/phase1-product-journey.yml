@@ -87,7 +87,8 @@ jobs:
           git -C "$fixture" commit -qm "initial fixture"
 
           "$cli" --version
-          "$cli" --help > "$fixture/global-help.txt"
+          global_help="$RUNNER_TEMP/vericore-global-help.txt"
+          "$cli" --help > "$global_help"
           for command in init scan inspect repo-qa review plan prepare verify report; do
             "$cli" "$command" --help > /dev/null
           done
