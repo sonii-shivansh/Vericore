@@ -134,7 +134,6 @@ object CandidateStateSnapshotter {
         output.toString(Charsets.UTF_8)
             .split(0.toChar())
             .filter(String::isNotEmpty)
-            .map { it.replace('\\\\', '/') }
             .toSet()
     }.getOrNull()
 
