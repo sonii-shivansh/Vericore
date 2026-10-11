@@ -148,6 +148,14 @@
                   "minLength": 1,
                   "maxLength": 200
                 }
+              },
+              "rule": {
+                "type": "string",
+                "enum": [
+                  "MANUAL_REVIEW",
+                  "ALL_BOUND_COMMANDS_SUCCEEDED"
+                ],
+                "description": "ALL_BOUND_COMMANDS_SUCCEEDED is only valid for required-evidence criteria and proves command success only, not arbitrary behavior semantics."
               }
             },
             "additionalProperties": false
