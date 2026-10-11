@@ -25,6 +25,11 @@ class McpProtocolTest {
         val response = McpProtocol.handle(buildJsonObject { put("jsonrpc", JsonPrimitive("2.0")); put("id", JsonPrimitive(2)); put("method", JsonPrimitive("tools/list")) })
         val result = response["result"].toString()
         listOf("vericore_analyze_repository", "vericore_impact_analysis", "vericore_architecture_analysis", "vericore_pr_intelligence", "vericore_review", "vericore_recommendations", "vericore_get_engineering_reality", "vericore_get_context_snapshot", "vericore_get_context_diff", "vericore_get_architecture_drift", "vericore_get_architecture_contract", "vericore_prepare_change", "vericore_get_change_contract", "vericore_get_evidence", "vericore_change_safety", "vericore_verify_change").forEach { assertTrue(result.contains(it), "Missing MCP tool: $it") }
+        assertTrue(result.contains("requiredBehaviors"))
+        assertTrue(result.contains("forbiddenBehaviors"))
+        assertTrue(result.contains("protectedInvariants"))
+        assertTrue(result.contains("acceptanceCriteria"))
+        assertTrue(result.contains("requiredEvidence"))
         assertTrue(!result.contains("codecontext_"))
     }
 
