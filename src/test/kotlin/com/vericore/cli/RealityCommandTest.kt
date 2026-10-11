@@ -3,6 +3,7 @@ package com.vericore.cli
 import com.vericore.core.reality.EngineeringRealitySnapshot
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class RealityCommandTest {
     @Test
@@ -41,6 +42,8 @@ Repository
   Reality digest: reality-digest""",
             renderEngineeringRealitySummary(reality)
         )
+        val outputPath = "/repo/output/engineering-reality.json"
+        val summary = renderEngineeringRealitySummary(reality, outputPath)
         assertEquals(
             """🧭 Engineering Reality
 
@@ -55,11 +58,9 @@ Repository
   Cycles: detected
   Dirty: false
   Reality digest: reality-digest""",
-            renderEngineeringRealitySummary(
-                reality,
-                "/repo/output/engineering-reality.json"
-            )
+            summary
         )
+        assertEquals(1, Regex(Regex.escape(outputPath)).findAll(summary).count())
     }
 
     @Test
@@ -85,6 +86,6 @@ Repository
             realityDigest = "digest"
         )
 
-        kotlin.test.assertTrue(renderEngineeringRealitySummary(reality).contains("Commit: unknown"))
+        assertTrue(renderEngineeringRealitySummary(reality).contains("Commit: unknown"))
     }
 }
