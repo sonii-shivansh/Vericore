@@ -100,5 +100,19 @@ assert evaluation["status"] == "NOT_EVALUATED", evaluation
 assert evaluation["notEvaluatedCount"] == 5 and evaluation["evaluatedCount"] == 0, evaluation
 assert all(item["status"] == "NOT_EVALUATED" for item in evaluation["criteria"]), evaluation
 
+# The CLI receipt must carry the same explicit evaluation and remain REVIEW_REQUIRED.
+cli_verify = subprocess.run(
+    [app, "verify", "--path", str(root)],
+    cwd=root,
+    text=True,
+    capture_output=True
+)
+assert cli_verify.returncode == 0, cli_verify.stdout + chr(10) + cli_verify.stderr
+receipt = json.loads((root/"output/verification-receipt.json").read_text())
+assert receipt["schemaVersion"] == "1.2", receipt
+assert receipt["status"] == "REVIEW_REQUIRED", receipt
+assert receipt["specificationEvaluation"]["status"] == "NOT_EVALUATED", receipt
+assert receipt["specificationEvaluation"] == evaluation, receipt
+
 print("V3-001 Agent Verification E2E: PASS")
 PY
