@@ -26,16 +26,13 @@ data class CandidateStateSnapshot(
 )
 
 object CandidateStateSnapshotter {
-    private val excludedDirectoryNames = setOf(
-        ".git",
-        ".gradle",
-        ".idea",
-        ".vericore",
-        ".codecontext",
-        "build",
-        "node_modules",
-        "output",
-        "target"
+    private val excludedMetadataDirectoryNames = setOf(
+        ".git", ".gradle", ".idea", ".vericore", ".codecontext", "node_modules"
+    )
+    private val generatedDirectoryNames = setOf("build", "output", "target")
+    private val sourceOrFixtureDirectoryNames = setOf(
+        "src", "test", "tests", "testdata", "test-fixtures", "test-fixture",
+        "fixtures", "fixture", "resources", "examples", "benchmark", "docs"
     )
 
     private data class Entry(
@@ -54,7 +51,7 @@ object CandidateStateSnapshotter {
 
         Files.walkFileTree(rootPath, object : SimpleFileVisitor<Path>() {
             override fun preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult {
-                if (dir != rootPath && dir.fileName?.toString()?.let(excludedDirectoryNames::contains) == true) {
+                if (dir != rootPath && shouldExcludeDirectory(dir, rootPath)) {
                     return FileVisitResult.SKIP_SUBTREE
                 }
                 return FileVisitResult.CONTINUE
@@ -98,6 +95,21 @@ object CandidateStateSnapshotter {
             fileCount = entries.size,
             totalBytes = totalBytes
         )
+    }
+
+    private fun shouldExcludeDirectory(directory: Path, rootPath: Path): Boolean {
+        val name = directory.fileName?.toString() ?: return false
+        if (name in excludedMetadataDirectoryNames) return true
+
+        val relativeParts = rootPath.relativize(directory).map(Path::toString)
+        // Vericore writes its own artifacts to the repository-root output directory.
+        if (relativeParts.size == 1 && name == "output") return true
+
+        // Build-system output directories are generated outside source/test/input trees.
+        // A package or resource directory named build/target/output under src, tests, etc.
+        // is still repository input and must remain part of the digest.
+        val isSourceOrFixturePath = relativeParts.any { it in sourceOrFixtureDirectoryNames }
+        return name in generatedDirectoryNames && !isSourceOrFixturePath
     }
 
     private fun hashRegularFile(path: Path, relativePath: String, initial: BasicFileAttributes): Entry {
