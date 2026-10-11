@@ -6,9 +6,12 @@ import com.vericore.core.exceptions.ValidationException
 import com.vericore.core.planner.EngineeringPlan
 import com.vericore.core.workflow.AgentChangeContract
 import com.vericore.core.workflow.ChangeSafetyAnalyzer
+import com.vericore.core.workflow.ChangeSpecificationEvaluator
+import com.vericore.core.workflow.CriterionEvaluationStatus
 import com.vericore.core.workflow.EngineeringVerification
 import com.vericore.core.workflow.RepositoryState
 import com.vericore.core.workflow.VerificationReceipt
+import com.vericore.core.workflow.ChangeSpecificationEvaluation
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
@@ -25,7 +28,8 @@ data class ContractOnlyVerificationResult(
     val valid: Boolean,
     val status: String,
     val reasons: List<String>,
-    val changedPaths: List<String>
+    val changedPaths: List<String>,
+    val specificationEvaluation: ChangeSpecificationEvaluation? = null
 )
 
 /** Verifies the working-tree change against an engineering plan and immutable change contract. */
@@ -84,10 +88,20 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
 
         val changes = collectContractOnlyChanges(root)
         val safety = ChangeSafetyAnalyzer.verify(changes, plan.plannedPaths)
-        val allReasons = reasons + safety.reasons.filter { it != "No source working-tree changes were detected." }
+        val specificationEvaluation = ChangeSpecificationEvaluator.evaluate(contract.specification)
+        val specificationReasons = specificationEvaluation?.criteria
+            ?.filter { it.status != CriterionEvaluationStatus.PASS }
+            ?.map { criterion -> "Specification criterion '${criterion.id}' is ${criterion.status}: ${criterion.reason}" }
+            .orEmpty()
+        val allReasons = reasons +
+            safety.reasons.filter { it != "No source working-tree changes were detected." } +
+            specificationReasons
         val status = when {
-            reasons.isNotEmpty() || safety.status == com.vericore.core.workflow.SafetyStatus.FAIL -> com.vericore.core.workflow.SafetyStatus.FAIL
-            safety.status == com.vericore.core.workflow.SafetyStatus.REVIEW_REQUIRED -> com.vericore.core.workflow.SafetyStatus.REVIEW_REQUIRED
+            reasons.isNotEmpty() || safety.status == com.vericore.core.workflow.SafetyStatus.FAIL ||
+                specificationEvaluation?.status == CriterionEvaluationStatus.FAIL -> com.vericore.core.workflow.SafetyStatus.FAIL
+            safety.status == com.vericore.core.workflow.SafetyStatus.REVIEW_REQUIRED ||
+                specificationEvaluation?.status == CriterionEvaluationStatus.INCONCLUSIVE ||
+                specificationEvaluation?.status == CriterionEvaluationStatus.NOT_EVALUATED -> com.vericore.core.workflow.SafetyStatus.REVIEW_REQUIRED
             else -> com.vericore.core.workflow.SafetyStatus.PASS
         }
         val result = ContractOnlyVerificationResult(
@@ -95,7 +109,8 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
             valid = status == com.vericore.core.workflow.SafetyStatus.PASS,
             status = status.name,
             reasons = allReasons,
-            changedPaths = safety.changedPaths
+            changedPaths = safety.changedPaths,
+            specificationEvaluation = specificationEvaluation
         )
         writeOutput(json.encodeToString(result))
         echo("Status: ${result.status}")
