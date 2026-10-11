@@ -57,6 +57,18 @@ class ChangeSpecificationTest {
     }
 
     @Test
+    fun `default manual evidence rule preserves prior canonical form`() {
+        val specification = ChangeSpecification(
+            acceptanceCriteria = listOf("Invalid input returns 400"),
+            evidenceBindings = listOf(
+                CriterionEvidenceBinding("acceptance-criterion-001", listOf("file.1"))
+            )
+        ).normalized()
+
+        assertFalse(specification.canonicalForm().contains("MANUAL_REVIEW"))
+    }
+
+    @Test
     fun `command-success rule is restricted to required evidence criteria`() {
         assertFailsWith<IllegalArgumentException> {
             ChangeSpecification(
