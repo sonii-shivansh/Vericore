@@ -41,17 +41,11 @@ class EngineeringContextDiffCommand : CliktCommand(name = "context-diff", help =
         val current = json.decodeFromString(EngineeringContextSnapshot.serializer(), File(after).readText())
         val diff = EngineeringContextEngine.diff(baseline, current)
         if (jsonOutput) {
-            val output = File("output/engineering-context-diff.json")
+            val output = diffOutputPath()
             output.parentFile.mkdirs()
             output.writeText(EngineeringContextEngine.encode(diff))
-            echo("🧭 Context diff: ${output.absolutePath}")
         }
-        echo("🧭 Engineering Context Diff")
-        echo("├─ Added: ${diff.summary.added}")
-        echo("├─ Removed: ${diff.summary.removed}")
-        echo("├─ Modified: ${diff.summary.modified}")
-        echo("└─ Unchanged: ${diff.summary.unchanged}")
-        diff.changes.take(30).forEach { change -> echo("   ${change.type}: ${change.path}") }
+        echo(renderEngineeringContextDiffSummary(diff, if (jsonOutput) diffOutputPath().absolutePath else null))
     }
 }
 
@@ -76,3 +70,27 @@ internal fun renderEngineeringContextSnapshotSummary(
 }
 
 private fun snapshotOutputPath(root: File): File = root.resolve("output/engineering-context.json")
+
+internal fun renderEngineeringContextDiffSummary(
+    diff: com.vericore.core.intelligence.EngineeringContextDiff,
+    outputPath: String? = null
+): String {
+    val sections = buildList {
+        outputPath?.let { add(HumanCommandOutput.section("Report", "Context diff: $it")) }
+        add(
+            HumanCommandOutput.section(
+                "Summary",
+                "Added: ${diff.summary.added}",
+                "Removed: ${diff.summary.removed}",
+                "Modified: ${diff.summary.modified}",
+                "Unchanged: ${diff.summary.unchanged}"
+            )
+        )
+        diff.changes.take(30).takeIf { it.isNotEmpty() }?.let { changes ->
+            add(HumanCommandOutput.section("Changes", *changes.map { "${it.type}: ${it.path}" }.toTypedArray()))
+        }
+    }
+    return HumanCommandOutput.render(title = "🧭 Engineering Context Diff", sections = sections)
+}
+
+private fun diffOutputPath(): File = File("output/engineering-context-diff.json")
