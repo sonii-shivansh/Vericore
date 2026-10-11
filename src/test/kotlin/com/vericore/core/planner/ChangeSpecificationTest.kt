@@ -57,6 +57,22 @@ class ChangeSpecificationTest {
     }
 
     @Test
+    fun `command-success rule is restricted to required evidence criteria`() {
+        assertFailsWith<IllegalArgumentException> {
+            ChangeSpecification(
+                acceptanceCriteria = listOf("Invalid input returns 400"),
+                evidenceBindings = listOf(
+                    CriterionEvidenceBinding(
+                        "acceptance-criterion-001",
+                        listOf(VerificationEvidenceIds.command(1)),
+                        CriterionEvidenceRule.ALL_BOUND_COMMANDS_SUCCEEDED
+                    )
+                )
+            ).normalized()
+        }
+    }
+
+    @Test
     fun `canonical form is stable and distinguishes delimiter-like user text`() {
         val first = ChangeSpecification(requiredBehaviors = listOf("a:b", "c"))
         val same = ChangeSpecification(requiredBehaviors = listOf("a:b", "c"))
