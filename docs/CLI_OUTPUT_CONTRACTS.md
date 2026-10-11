@@ -1,6 +1,6 @@
 # CLI Output Contract Inventory
 
-**Audited against:** `main` at `d940e750c0257f6ebc6632fcb02192d1aef6f75a` (PR #242 merge)  
+**Audited against:** `main` at `97d42513e457be616af210c04716f6eb0c4f13dc` (PR #243 merge)  
 **Purpose:** Record observed stdout/file-output behavior before migrating more commands to the shared human-readable renderer.
 
 This is an implementation inventory, not a promise that every output shape is already ideal. The source code is authoritative if this document and implementation disagree. Update this inventory alongside future CLI output-contract changes.
@@ -23,7 +23,7 @@ This is an implementation inventory, not a promise that every output shape is al
 | `init` | Human initialization summary | `--json`: `ProductCommandResult` JSON to stdout | JSON mode returns before printing the human summary. Already-initialized status is `ALREADY_INITIALIZED`; successful initialization is `PASS`. |
 | `scan` | Delegates to `analyze`; progress and analysis summary | No `--json` option of its own | Passes `--no-cache`, `--clear-cache`, `--no-snapshot`, and `--verbose` through to analysis. |
 | `analyze` | Progress plus human-readable codebase report | Persists analysis/session artifacts as implemented; no `--json` flag in this command | Verbose mode may print stack traces. Keep progress output and errors out of any future machine-only stream. |
-| `inspect` | Human inspection summary | `--json`: `output/inspection.json` | Writes the JSON file and still prints the human summary. Requires the persisted analysis snapshot. |
+| `inspect` | Human inspection summary rendered through `HumanCommandOutput` | `--json`: `output/inspection.json` | Writes the JSON file and still prints the human summary. Requires the persisted analysis snapshot. Summary formatting does not change inspection data, JSON schema, artifact path, or exit behavior. |
 | `doctor` | Diagnostic lines and final readiness/attention summary | No JSON option observed | Errors produce a non-success exit through `ConfigurationException`; optional AI configuration can be reported as warnings. |
 | `impact` | Human impact summary rendered through `HumanCommandOutput` | `--json`: `output/change-impact.json` | Writes JSON and still prints the human summary; node-detail lines remain unchanged. Summary rendering does not change the JSON schema, artifact path, or impact calculations. |
 | `architecture` | Human architecture summary | `--json`: `output/architecture.json` | Writes JSON and still prints the human summary. |
