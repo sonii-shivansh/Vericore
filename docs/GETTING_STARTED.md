@@ -74,7 +74,45 @@ vericore reality /path/to/repository --json
 
 For exact command syntax, options, defaults, outputs, and failure behavior, see the **[CLI Reference](CLI.md)**.
 
-## 4. Safely make an AI-assisted change
+## 4. The complete product journey
+
+Run these commands from the repository you want Vericore to inspect. This sequence uses deterministic repository evidence; AI-provider setup is optional.
+
+```bash
+# Initialize once, then analyze and inspect the repository.
+vericore init --path .
+vericore scan --path .
+vericore inspect --path .
+
+# Ask a grounded question using repository evidence.
+vericore repo-qa "What depends on the main service?" \
+  --path . \
+  --evidence-output output/grounded-evidence.json
+
+# Review the current change and create an evidence-backed plan.
+vericore review --path .
+vericore plan "describe the intended change" \
+  --repository . \
+  --evidence output/grounded-evidence.json \
+  --output output/engineering-plan-preview.json
+
+# Persist the boundary before editing.
+vericore prepare "describe the intended change" \
+  --path . \
+  --planned-path src/main/kotlin/com/example/Service.kt
+
+# Make the change with your normal coding agent, then verify the original contract.
+vericore verify --path .
+
+# Produce a durable HTML engineering report.
+vericore report --path . --output output/engineering-report.html
+```
+
+The plan preview is read-only. `prepare` persists the plan and original Agent Change Contract used by `verify`; do not replace the contract after the edit. Vericore does not autonomously modify source code. Run the repository's normal tests and review the diff as well.
+
+The journey's explanation step is covered by grounded `repo-qa` answers and review's optional evidence-backed AI explanation. There is no separate `vericore explain` command in this release line.
+
+## 5. Safely make an AI-assisted change
 
 This is Vericore's primary verification workflow:
 
