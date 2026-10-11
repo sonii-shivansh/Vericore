@@ -94,7 +94,11 @@ assert persisted_contract["specification"] == prepared["contract"]["specificatio
 verify_result = next(r["result"] for r in verify if r.get("id")==5)
 assert verify_result["isError"] is False, verify_result
 verification = json.loads(next(x["text"] for x in verify_result["content"]))
-assert verification["status"] in {"PASS","REVIEW_REQUIRED"}, verification
+assert verification["status"] == "REVIEW_REQUIRED", verification
+evaluation = verification["specificationEvaluation"]
+assert evaluation["status"] == "NOT_EVALUATED", evaluation
+assert evaluation["notEvaluatedCount"] == 5 and evaluation["evaluatedCount"] == 0, evaluation
+assert all(item["status"] == "NOT_EVALUATED" for item in evaluation["criteria"]), evaluation
 
 print("V3-001 Agent Verification E2E: PASS")
 PY
