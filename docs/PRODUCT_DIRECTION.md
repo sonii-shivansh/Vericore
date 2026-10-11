@@ -17,7 +17,7 @@ The public experience should stay small and understandable:
 1. init — initialize the project
 2. scan — understand the repository
 3. inspect — summarize what matters
-4. ask — ask grounded repository questions
+4. repo-qa — ask grounded repository questions; ask — optional AI interpretation
 5. review — review a change
 6. plan — produce a deterministic engineering plan
 7. prepare — establish the change boundary
