@@ -59,12 +59,7 @@ class AIAssistantCommand :
                     throw IllegalArgumentException("Unsupported AI provider: ${config.ai.provider}")
                 }
 
-                echo("\n💡 ${response.answer}\n")
-                if (response.suggestedFiles.isNotEmpty()) {
-                    echo("📁 Check these files:")
-                    response.suggestedFiles.forEach { echo("   - $it") }
-                }
-                echo("\n🎯 Confidence: ${(response.confidence * 100).toInt()}%")
+                echo(renderAskSummary(response.answer, response.suggestedFiles, response.confidence))
             } catch (e: Exception) {
                 if (e is VericoreException) throw e
                 throw AIProviderException(formatProviderFailure(e.message), e)
@@ -87,3 +82,15 @@ class AIAssistantCommand :
         }
     }
 }
+
+
+/** Formats the final answer only; progress output and provider/error behavior remain unchanged. */
+internal fun renderAskSummary(answer: String, suggestedFiles: List<String>, confidence: Double): String =
+    HumanCommandOutput.render(
+        title = "💡 Answer",
+        sections = buildList {
+            add(HumanCommandOutput.section("Response", answer))
+            if (suggestedFiles.isNotEmpty()) add(HumanCommandOutput.section("Check these files", *suggestedFiles.toTypedArray()))
+            add(HumanCommandOutput.section("Confidence", "${(confidence * 100).toInt()}%"))
+        }
+    )
