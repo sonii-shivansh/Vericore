@@ -1,6 +1,6 @@
 # CLI Output Contract Inventory
 
-**Audited against:** `main` at `4ce99a3c7c2a16e31fa9c6c082a3538206a70504` (PR #240 merge)  
+**Audited against:** `main` at `b0de0b72c30664dfee99bf3e676eba73c9f5eb8d` (PR #241 merge)  
 **Purpose:** Record observed stdout/file-output behavior before migrating more commands to the shared human-readable renderer.
 
 This is an implementation inventory, not a promise that every output shape is already ideal. The source code is authoritative if this document and implementation disagree. Update this inventory alongside future CLI output-contract changes.
@@ -25,7 +25,7 @@ This is an implementation inventory, not a promise that every output shape is al
 | `analyze` | Progress plus human-readable codebase report | Persists analysis/session artifacts as implemented; no `--json` flag in this command | Verbose mode may print stack traces. Keep progress output and errors out of any future machine-only stream. |
 | `inspect` | Human inspection summary | `--json`: `output/inspection.json` | Writes the JSON file and still prints the human summary. Requires the persisted analysis snapshot. |
 | `doctor` | Diagnostic lines and final readiness/attention summary | No JSON option observed | Errors produce a non-success exit through `ConfigurationException`; optional AI configuration can be reported as warnings. |
-| `impact` | Human impact summary | `--json`: `output/change-impact.json` | Writes JSON and still prints the human summary. |
+| `impact` | Human impact summary rendered through `HumanCommandOutput` | `--json`: `output/change-impact.json` | Writes JSON and still prints the human summary; node-detail lines remain unchanged. Summary rendering does not change the JSON schema, artifact path, or impact calculations. |
 | `architecture` | Human architecture summary | `--json`: `output/architecture.json` | Writes JSON and still prints the human summary. |
 | `architecture-drift` | Human drift summary | `--json`: `output/architecture-drift.json` | Requires a baseline argument; JSON mode still prints a human summary. |
 | `architecture-contract` | Human contract decision summary | `--json`: `output/architecture-contract.json` | Also may print legacy-contract warnings and decision-history path. A failed contract raises `ValidationException`; JSON mode does not mean summary-free stdout. |
