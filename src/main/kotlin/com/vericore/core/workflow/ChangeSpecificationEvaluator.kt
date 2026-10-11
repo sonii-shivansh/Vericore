@@ -52,7 +52,9 @@ object ChangeSpecificationEvaluator {
         "No criterion-specific evidence evaluator is implemented; this obligation requires explicit review."
 
     fun evaluate(specification: ChangeSpecification): ChangeSpecificationEvaluation? {
-        val normalized = runCatching { specification.normalized() }.getOrElse { error ->
+        val normalized = try {
+            specification.normalized()
+        } catch (error: IllegalArgumentException) {
             val invalid = SpecificationCriterionEvaluation(
                 id = "specification-validity-001",
                 kind = SpecificationCriterionKind.SPECIFICATION_VALIDITY,
