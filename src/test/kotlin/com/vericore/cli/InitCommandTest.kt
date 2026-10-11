@@ -19,6 +19,8 @@ class InitCommandTest {
         assertTrue(root.resolve(".vericore/reports").isDirectory)
         assertTrue(result.stdout.contains("PROJECT INITIALIZED"))
         assertTrue(result.stdout.contains("vericore setup"))
+        assertTrue(result.stdout.contains("vericore scan --path"))
+        assertTrue(!result.stdout.contains("vericore analyze"))
     }
 
     @Test

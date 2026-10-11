@@ -20,41 +20,74 @@ class InitCommand : CliktCommand(name = "init", help = "Initialize Vericore for 
         require(root.resolve(".git").exists()) { "Not a Git repository: ${root.path}" }
         val configFile = root.resolve(ConfigLoader.DEFAULT_CONFIG_FILE)
         if (configFile.exists() && !force) {
-            val result = ProductCommandResult(command = "init", status = "ALREADY_INITIALIZED", repository = root.path, artifacts = listOf(ProductArtifact("config", configFile.path)), nextStep = "vericore doctor --path ${root.path}")
-            if (jsonOutput) echo(productJson(result)) else {
-                echo("✓ Vericore is already initialized.")
-                echo("  Config: ${configFile.path}")
-                echo("  Run 'vericore doctor' to verify the setup.")
+            val result = ProductCommandResult(
+                command = "init",
+                status = "ALREADY_INITIALIZED",
+                repository = root.path,
+                artifacts = listOf(ProductArtifact("config", configFile.path)),
+                nextStep = "vericore doctor --path ${root.path}"
+            )
+            if (jsonOutput) {
+                echo(productJson(result))
+            } else {
+                echo(
+                    HumanCommandOutput.render(
+                        title = "VERICORE — PROJECT INITIALIZED",
+                        status = "ALREADY_INITIALIZED",
+                        sections = listOf(
+                            HumanCommandOutput.section("Repository", root.name, root.path),
+                            HumanCommandOutput.section("Configuration", configFile.path)
+                        ),
+                        nextStep = "vericore doctor --path ${root.path}"
+                    )
+                )
             }
             return
         }
+
         ConfigLoader.createDefault(configFile.path)
-        listOf(root.resolve(".vericore"), root.resolve(".vericore/sessions"), root.resolve(".vericore/reports"), root.resolve(".vericore/evidence"), root.resolve(".vericore/baselines"), root.resolve(".vericore/contracts")).forEach { it.mkdirs() }
-        val result = ProductCommandResult(command = "init", status = "PASS", repository = root.path, artifacts = listOf(ProductArtifact("config", configFile.path), ProductArtifact("workspace", root.resolve(".vericore").path)), nextStep = "vericore scan --path ${root.path}")
-        if (jsonOutput) { echo(productJson(result)); return }
-        echo("")
-        echo("╭──────────────────────────────────────────────╮")
-        echo("│ VERICORE — PROJECT INITIALIZED               │")
-        echo("╰──────────────────────────────────────────────╯")
-        echo("")
-        echo("Repository")
-        echo("  ${root.name}")
-        echo("  ${root.path}")
-        echo("")
-        echo("Initialized")
-        echo("  ✓ ${ConfigLoader.DEFAULT_CONFIG_FILE}")
-        echo("  ✓ .vericore/ session and evidence workspace")
-        echo("  ✓ deterministic analysis defaults")
-        echo("")
-        echo("AI")
-        echo("  Optional — configure with: vericore setup")
-        echo("")
-        echo("MCP")
-        echo("  Client configuration: vericore mcp-config")
-        echo("")
-        echo("Next step")
-        echo("  vericore analyze ${root.path}")
-        echo("")
-        echo("Vericore ${Version.current} is ready.")
+        listOf(
+            root.resolve(".vericore"),
+            root.resolve(".vericore/sessions"),
+            root.resolve(".vericore/reports"),
+            root.resolve(".vericore/evidence"),
+            root.resolve(".vericore/baselines"),
+            root.resolve(".vericore/contracts")
+        ).forEach { it.mkdirs() }
+
+        val result = ProductCommandResult(
+            command = "init",
+            status = "PASS",
+            repository = root.path,
+            artifacts = listOf(
+                ProductArtifact("config", configFile.path),
+                ProductArtifact("workspace", root.resolve(".vericore").path)
+            ),
+            nextStep = "vericore scan --path ${root.path}"
+        )
+        if (jsonOutput) {
+            echo(productJson(result))
+            return
+        }
+
+        echo(
+            HumanCommandOutput.render(
+                title = "VERICORE — PROJECT INITIALIZED",
+                status = result.status,
+                sections = listOf(
+                    HumanCommandOutput.section("Repository", root.name, root.path),
+                    HumanCommandOutput.section(
+                        "Initialized",
+                        "✓ ${ConfigLoader.DEFAULT_CONFIG_FILE}",
+                        "✓ .vericore/ session and evidence workspace",
+                        "✓ deterministic analysis defaults"
+                    ),
+                    HumanCommandOutput.section("AI", "Optional — configure with: vericore setup"),
+                    HumanCommandOutput.section("MCP", "Client configuration: vericore mcp-config"),
+                    HumanCommandOutput.section("Version", "Vericore ${Version.current} is ready.")
+                ),
+                nextStep = "vericore scan --path ${root.path}"
+            )
+        )
     }
 }
