@@ -4,6 +4,7 @@ import com.vericore.core.cache.CacheManager
 import com.vericore.core.config.ConfigLoader
 import com.vericore.core.graph.RobustDependencyGraph
 import com.vericore.core.intelligence.ChangeImpactEngine
+import com.vericore.core.intelligence.ImpactSummary
 import com.vericore.core.scanner.OptimizedGitAnalyzer
 import com.vericore.core.scanner.RepositoryScanner
 import com.github.ajalt.clikt.core.CliktCommand
@@ -70,13 +71,7 @@ class ImpactCommand : CliktCommand(
             echo("🧭 Impact report: ${output.absolutePath}")
         }
 
-        echo("🧭 Change Impact")
-        echo("├─ Changed files: ${result.summary.changedFiles}")
-        echo("├─ Impacted files: ${result.summary.impactedFiles}")
-        echo("├─ Impacted packages: ${result.summary.impactedPackages}")
-        echo("├─ Cross-package impacts: ${result.summary.crossPackageImpacts}")
-        echo("├─ Test candidates: ${result.summary.testCandidates}")
-        echo("└─ Maximum dependency depth: ${result.summary.maxDepth}")
+        echo(renderImpactSummary(result.summary))
 
         result.nodes.take(20).forEach { node ->
             val displayPath = node.path.replace('\\', '/').removePrefix("${root.path.replace('\\', '/')}/")
@@ -84,3 +79,20 @@ class ImpactCommand : CliktCommand(
         }
     }
 }
+
+/** Formats only the human summary; JSON serialization and impact calculations remain unchanged. */
+internal fun renderImpactSummary(summary: ImpactSummary): String =
+    HumanCommandOutput.render(
+        title = "🧭 Change Impact",
+        sections = listOf(
+            HumanCommandOutput.section(
+                "Summary",
+                "Changed files: ${summary.changedFiles}",
+                "Impacted files: ${summary.impactedFiles}",
+                "Impacted packages: ${summary.impactedPackages}",
+                "Cross-package impacts: ${summary.crossPackageImpacts}",
+                "Test candidates: ${summary.testCandidates}",
+                "Maximum dependency depth: ${summary.maxDepth}"
+            )
+        )
+    )
