@@ -61,7 +61,7 @@ class RecommendationsCommandTest {
             snapshotFile.writeText(Json { encodeDefaults = true }.encodeToString(snapshot))
 
             // Clikt's test-string tokenizer treats Windows backslashes as escapes.
-            val repositoryArgument = root.absolutePath.replace(File.separatorChar, '/')
+            val repositoryArgument = root.absolutePath.replace("\\", "/")
             val result = RecommendationsCommand().test("$repositoryArgument --json")
             val artifact = root.resolve("output/recommendations.json")
 
