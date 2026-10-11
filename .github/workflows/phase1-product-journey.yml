@@ -84,7 +84,7 @@ jobs:
           git -C "$fixture" commit -qm "initialize Vericore"
           "$cli" scan --path "$fixture"
           "$cli" inspect --path "$fixture" --json
-          "$cli" repo-qa "What depends on Service?" --path "$fixture" --evidence-output "$fixture/output/grounded-evidence.json"
+          "$cli" repo-qa "What depends on Service?" --path "$fixture" --evidence-output "$fixture/output/grounded-evidence.json" > "$fixture/output/repo-qa-result.json"
           "$cli" review --path "$fixture" --json
           "$cli" plan "update Service greeting" --repository "$fixture" --changed src/main/kotlin/example/Service.kt --evidence "$fixture/output/grounded-evidence.json" --output "$fixture/output/plan-preview.json"
           "$cli" prepare "update Service greeting" --path "$fixture" --planned-path src/main/kotlin/example/Service.kt
@@ -112,6 +112,38 @@ jobs:
           grep -q '"schemaVersion": "1.0"' "$fixture/output/inspection.json"
           grep -q 'Service.kt' "$fixture/output/inspection.json"
           grep -q '"status"' "$fixture/output/verification.json"
+
+          # Parse the public machine-readable outputs instead of checking file existence alone.
+          python3 - "$fixture" <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          root = pathlib.Path(sys.argv[1])
+          output = root / "output"
+          for name in (
+              "inspection.json",
+              "grounded-evidence.json",
+              "repo-qa-result.json",
+              "review.json",
+              "plan-preview.json",
+              "engineering-plan.json",
+              "agent-change-contract.json",
+              "verification.json",
+              "verification-receipt.json",
+          ):
+              path = output / name
+              value = json.loads(path.read_text())
+              assert isinstance(value, (dict, list)), f"{name} must be a JSON object or array"
+          inspection = json.loads((output / "inspection.json").read_text())
+          assert inspection.get("schemaVersion") == "1.0", inspection
+          qa = json.loads((output / "repo-qa-result.json").read_text())
+          assert "evidence" in qa, qa
+          verification = json.loads((output / "verification.json").read_text())
+          assert "status" in verification, verification
+          html = (output / "phase1-report.html").read_text()
+          assert "<html" in html.lower(), "report output is not HTML"
+          PY
 
       - name: Run the existing CLI audit
         run: ./scripts/audit/cli-audit.sh
