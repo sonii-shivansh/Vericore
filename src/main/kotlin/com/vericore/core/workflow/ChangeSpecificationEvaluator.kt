@@ -1,6 +1,7 @@
 package com.vericore.core.workflow
 
 import com.vericore.core.planner.ChangeSpecification
+import com.vericore.core.planner.CriterionEvidenceBinding
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -51,7 +52,10 @@ object ChangeSpecificationEvaluator {
     private const val NOT_EVALUATED_REASON =
         "No criterion-specific evidence evaluator is implemented; this obligation requires explicit review."
 
-    fun evaluate(specification: ChangeSpecification): ChangeSpecificationEvaluation? {
+    fun evaluate(
+        specification: ChangeSpecification,
+        availableEvidenceIds: Set<String> = emptySet()
+    ): ChangeSpecificationEvaluation? {
         val normalized = try {
             specification.normalized()
         } catch (error: IllegalArgumentException) {
@@ -71,18 +75,20 @@ object ChangeSpecificationEvaluator {
         }
         if (normalized.isEmpty()) return null
 
+        val bindings = normalized.evidenceBindings.associateBy { it.criterionId }
+        val availableIds = availableEvidenceIds.toSet()
         val criteria = buildList {
-            addAll(normalized.requiredBehaviors.withIds("required-behavior", SpecificationCriterionKind.REQUIRED_BEHAVIOR))
-            addAll(normalized.forbiddenBehaviors.withIds("forbidden-behavior", SpecificationCriterionKind.FORBIDDEN_BEHAVIOR))
-            addAll(normalized.protectedInvariants.withIds("protected-invariant", SpecificationCriterionKind.PROTECTED_INVARIANT))
-            addAll(normalized.acceptanceCriteria.withIds("acceptance-criterion", SpecificationCriterionKind.ACCEPTANCE_CRITERION))
-            addAll(normalized.requiredEvidence.withIds("required-evidence", SpecificationCriterionKind.REQUIRED_EVIDENCE))
+            addAll(normalized.requiredBehaviors.withIds("required-behavior", SpecificationCriterionKind.REQUIRED_BEHAVIOR, bindings, availableIds))
+            addAll(normalized.forbiddenBehaviors.withIds("forbidden-behavior", SpecificationCriterionKind.FORBIDDEN_BEHAVIOR, bindings, availableIds))
+            addAll(normalized.protectedInvariants.withIds("protected-invariant", SpecificationCriterionKind.PROTECTED_INVARIANT, bindings, availableIds))
+            addAll(normalized.acceptanceCriteria.withIds("acceptance-criterion", SpecificationCriterionKind.ACCEPTANCE_CRITERION, bindings, availableIds))
+            addAll(normalized.requiredEvidence.withIds("required-evidence", SpecificationCriterionKind.REQUIRED_EVIDENCE, bindings, availableIds))
         }
         val notEvaluatedCount = criteria.count { it.status == CriterionEvaluationStatus.NOT_EVALUATED }
         val status = when {
             criteria.any { it.status == CriterionEvaluationStatus.FAIL } -> CriterionEvaluationStatus.FAIL
-            criteria.any { it.status == CriterionEvaluationStatus.INCONCLUSIVE } -> CriterionEvaluationStatus.INCONCLUSIVE
             notEvaluatedCount > 0 -> CriterionEvaluationStatus.NOT_EVALUATED
+            criteria.any { it.status == CriterionEvaluationStatus.INCONCLUSIVE } -> CriterionEvaluationStatus.INCONCLUSIVE
             else -> CriterionEvaluationStatus.PASS
         }
         return ChangeSpecificationEvaluation(
@@ -95,18 +101,34 @@ object ChangeSpecificationEvaluator {
 
     private fun List<String>.withIds(
         prefix: String,
-        kind: SpecificationCriterionKind
+        kind: SpecificationCriterionKind,
+        bindings: Map<String, CriterionEvidenceBinding>,
+        availableEvidenceIds: Set<String>
     ): List<SpecificationCriterionEvaluation> = mapIndexed { index, statement ->
+        val id = "$prefix-${(index + 1).toString().padStart(3, '0')}"
+        val binding = bindings[id]
+        val missingEvidence = binding?.evidenceIds.orEmpty().filterNot(availableEvidenceIds::contains)
+        val status = when {
+            binding == null -> CriterionEvaluationStatus.NOT_EVALUATED
+            missingEvidence.isNotEmpty() -> CriterionEvaluationStatus.FAIL
+            else -> CriterionEvaluationStatus.INCONCLUSIVE
+        }
+        val reason = when {
+            binding == null && kind == SpecificationCriterionKind.REQUIRED_EVIDENCE ->
+                "No concrete artifact has been linked to this evidence obligation."
+            binding == null -> NOT_EVALUATED_REASON
+            missingEvidence.isNotEmpty() ->
+                "Evidence binding references IDs absent from the prepared contract: ${missingEvidence.sorted().joinToString(", ")}."
+            else ->
+                "Evidence IDs are bound to this criterion, but their content has not been semantically evaluated."
+        }
         SpecificationCriterionEvaluation(
-            id = "$prefix-${(index + 1).toString().padStart(3, '0')}",
+            id = id,
             kind = kind,
             statement = statement,
-            status = CriterionEvaluationStatus.NOT_EVALUATED,
-            reason = if (kind == SpecificationCriterionKind.REQUIRED_EVIDENCE) {
-                "No concrete artifact has been linked to this evidence obligation."
-            } else {
-                NOT_EVALUATED_REASON
-            }
+            status = status,
+            reason = reason,
+            evidenceIds = binding?.evidenceIds.orEmpty()
         )
     }
 }
