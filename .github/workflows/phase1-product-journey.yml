@@ -140,17 +140,6 @@ jobs:
           grep -q 'Service.kt' "$fixture/output/inspection.json"
           grep -q '"status"' "$fixture/output/verification.json"
 
-          # Record the exact candidate and run that produced this acceptance evidence.
-          cat > "$fixture/output/phase1-closeout.md" <<EOF
-          # Phase 1 Candidate Acceptance Evidence
-
-          - Candidate commit: $GITHUB_SHA
-          - Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
-          - Product journey: PASS (this file is emitted only after all assertions below pass)
-          - CLI audit: PASS (the workflow's final audit step must also pass for the job to succeed)
-          - Decision: ACCEPTED only when this workflow run concludes successfully on the candidate commit and the release audit passes on the same main commit.
-          EOF
-
           # Parse the public machine-readable outputs instead of checking file existence alone.
           python3 - "$fixture" <<'PY'
           import json
@@ -182,6 +171,16 @@ jobs:
           html = (output / "phase1-report.html").read_text()
           assert "<html" in html.lower(), "report output is not HTML"
           PY
+
+          # Record the exact candidate and run after the product-journey artifact assertions pass.
+          cat > "$fixture/output/phase1-closeout.md" <<EOF
+          # Phase 1 Candidate Acceptance Evidence
+
+          - Candidate commit: $GITHUB_SHA
+          - Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          - Product journey assertions: PASS
+          - Final acceptance: requires this entire workflow run and Release Audit to succeed on the same merged-main SHA.
+          EOF
 
       - name: Run the existing CLI audit
         run: ./scripts/audit/cli-audit.sh
