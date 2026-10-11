@@ -99,9 +99,14 @@ object EngineeringVerification {
         val analysisStateStable = analysisInput.digest == candidateAtVerification.digest
         val currentHead = RepositoryState.head(root.path).orEmpty()
         val expectedContractFingerprint = AgentChangeContract.fingerprintFor(contract)
-        val expectedPlanFingerprint = AgentChangeContract.fromPlan(plan, root.path, contract.preparedHead).fingerprint
+        val expectedPlanFingerprintResult = runCatching {
+            AgentChangeContract.fromPlan(plan, root.path, contract.preparedHead).fingerprint
+        }
+        val expectedPlanFingerprint = expectedPlanFingerprintResult.getOrNull().orEmpty()
+        val planSpecificationError = expectedPlanFingerprintResult.exceptionOrNull()?.message
         val contractReasons = buildList {
             if (contract.fingerprint != expectedContractFingerprint) add("The persisted agent change contract fingerprint is invalid or tampered.")
+            if (planSpecificationError != null) add("The supplied plan contains an invalid structured specification: $planSpecificationError")
             if (contract.repository != root.path) add("The contract belongs to a different repository: ${contract.repository}")
             if (plan.contractFingerprint != contract.fingerprint) add("The engineering plan is not bound to the persisted contract fingerprint.")
             if (expectedPlanFingerprint != contract.fingerprint) add("The supplied plan does not match the persisted contract contents.")
