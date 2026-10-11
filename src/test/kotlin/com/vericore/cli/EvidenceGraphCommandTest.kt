@@ -91,7 +91,7 @@ Summary
             assertTrue(artifact.isFile, "JSON mode should write output/semantic-evidence-graph.json")
             assertTrue(result.stdout.contains("Semantic Evidence Graph"))
             val normalizedStdout = result.stdout.replace("\\", "/").lowercase()
-            val normalizedArtifactPath = artifact.path.replace("\\", "/").lowercase()
+            val normalizedArtifactPath = artifact.canonicalPath.replace("\\", "/").lowercase()
             assertTrue(
                 normalizedStdout.contains("semantic evidence graph: $normalizedArtifactPath"),
                 "stdout should include the normalized artifact path: ${result.stdout}"
