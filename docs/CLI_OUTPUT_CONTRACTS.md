@@ -32,7 +32,7 @@ This is an implementation inventory, not a promise that every output shape is al
 | `context-snapshot` | Human context summary | `--json`: `output/engineering-context.json` | JSON mode writes the file and still prints the summary. |
 | `context-diff` | Human context-diff summary and up to 30 changes | `--json`: `output/engineering-context-diff.json` | JSON mode writes the file and still prints the summary. |
 | `evidence-graph` | Human graph summary | `--json`: `output/semantic-evidence-graph.json` | JSON mode writes the file and still prints the summary. |
-| `reality` | Human engineering-reality summary | `--json`: machine-readable reality snapshot under `output/` (exact path is defined in command source) | JSON mode writes the file and still prints the summary. |
+| `reality` | Human engineering-reality summary | `--json`: `output/engineering-reality.json` | JSON mode writes the file and still prints the summary. |
 | `pr-intelligence` | Human PR-intelligence summary | `--json`: `output/pr-intelligence.json` | JSON mode writes the file and still prints the summary. Base/head revisions must be supplied as a pair. |
 | `repo-qa` | JSON result to stdout | Optional `--evidence-output <file>` writes reusable grounded-evidence JSON | Default stdout is machine-readable JSON; do not prepend human progress output. |
 | `report` | Human report-generated summary | `--output <file>` selects the HTML report path | Generates HTML; this is not a JSON command. |
@@ -40,7 +40,7 @@ This is an implementation inventory, not a promise that every output shape is al
 | `recommendations` | Human prioritized recommendations | `--json`: `output/recommendations.json` | Writes JSON and still prints human recommendations. Requires an analysis snapshot. |
 | `plan` | JSON to stdout by default | `--output <file>` writes plan JSON to a repository-local file | With `--output`, stdout becomes a human summary; without it, stdout is JSON. |
 | `prepare` | Human summary and artifact paths | Writes preparation, engineering-plan, and agent-change-contract JSON files; paths can be overridden with output options | No `--json` flag observed. Keep all three artifacts consistent and preserve the persisted contract. |
-| `verify` | Status/path summary; failure reasons go to stderr | Default verification result JSON is stdout; `--output <file>` redirects that result; full verification also writes `output/verification-receipt.json` | Failure raises `ValidationException` after reporting reasons. `--contract-only` has its own JSON result path/behavior in command source; test before changing it. |
+| `verify` | Status/path summary on success; failure reasons go to stderr | Verification result JSON goes to stdout by default or to the path passed to `--output`; full verification also writes `output/verification-receipt.json` | `--contract-only` uses the same stdout/file routing but returns before writing the full verification receipt. Failure raises `ValidationException` after reporting reasons. |
 | `ask` | Human conversational answer, suggested files, confidence | No JSON option observed | AI/provider failures are sanitized and surfaced as command errors. |
 | `evolution` | Progress and tabular human report | No JSON option observed | No historical snapshots or analysis failure causes a command error. |
 | `server` | Startup message, then server operation | HTTP API, not CLI JSON mode | Keep startup logs separate from HTTP response bodies. |
