@@ -166,3 +166,10 @@ Design the core so it can later support multi-agent change conflicts, cross-repo
 ### Scope of the first implementation step
 
 The first implementation step introduces a deterministic candidate repository-input digest and checks it before analysis, immediately before verification commands, and after those commands. The digest excludes version-control metadata and conventional generated/build-output directories so Vericore's own outputs and build caches do not invalidate the result. Root-level `output/` is excluded; `build/` and `target/` are excluded outside source/test/input trees, while similarly named source package directories remain included. Other tracked and untracked repository files are included regardless of file extension. Test harnesses should place diagnostic artifacts under the generated `output/` directory. The digest does not attest to the complete execution environment, external services, or external symlink targets; those require separate provenance or isolation controls.
+
+
+## Current implementation slice — structured change specification
+
+The current implementation adds an optional, caller-authored `specification` to engineering plans and Agent Change Contracts. It captures five categories: required behaviors, forbidden behaviors, protected invariants, acceptance criteria, and required evidence. CLI `plan`/`prepare` and MCP `vericore_prepare_change` accept the same shape. Inputs are bounded and normalized, and non-empty specifications are included in the contract fingerprint. Empty specifications preserve historical fingerprints for compatibility.
+
+This slice intentionally does **not** claim semantic evaluation of those obligations. The next step is to attach each criterion to observable evidence and explicit evaluation states (for example, `PASS`, `FAIL`, `INCONCLUSIVE`, or `NOT_EVALUATED`) so absence of evidence cannot become an implicit pass.
