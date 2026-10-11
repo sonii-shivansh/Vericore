@@ -62,40 +62,12 @@ class InspectCommand : CliktCommand(
             echo("🔎 Inspection: ${output.absolutePath}")
         }
 
-        echo("")
-        echo("🔎 Vericore Inspection")
-        echo("Repository  ${inspection.repository}")
-        echo("Languages   ${inspection.languages.joinToString(", ").ifBlank { "Unknown" }}")
-        echo("Files       ${inspection.metrics.files}")
-        echo("Graph       ${inspection.metrics.nodes} nodes / ${inspection.metrics.edges} edges")
-        echo("Architecture ${if (inspection.metrics.cyclesDetected) "cycles detected" else "no cycles detected"}")
-        echo("Risk        ${inspection.highRiskFiles} high/critical · ${inspection.criticalRiskFiles} critical")
-        echo("")
-
-        echo("Top hotspots")
-        if (inspection.hotspots.isEmpty()) {
-            echo("  none")
-        } else {
-            inspection.hotspots.forEachIndexed { index, hotspot ->
-                echo("  ${index + 1}. ${hotspot.path} (${String.format("%.4f", hotspot.score)})")
-            }
-        }
-
-        echo("")
-        echo("Next actions")
-        inspection.recommendations.take(3).forEachIndexed { index, recommendation ->
-            echo("  ${index + 1}. [${recommendation.priority}] ${recommendation.title}")
-            echo("     ${recommendation.action}")
-        }
-
-        echo("")
-        echo("Next step")
-        echo("  Ask a grounded question: vericore repo-qa \"What should I know before changing this repository?\" --path $path")
+        echo(renderInspectionSummary(inspection, path))
     }
 }
 
 @Serializable
-private data class InspectionOutput(
+internal data class InspectionOutput(
     val schemaVersion: String,
     val repository: String,
     val analyzedAtEpochMillis: Long,
@@ -109,7 +81,7 @@ private data class InspectionOutput(
 )
 
 @Serializable
-private data class InspectionMetrics(
+internal data class InspectionMetrics(
     val files: Int,
     val nodes: Int,
     val edges: Int,
@@ -118,3 +90,38 @@ private data class InspectionMetrics(
     val packages: Int,
     val crossPackageEdges: Int
 )
+
+
+/** Formats only the human summary; inspection data and JSON serialization remain unchanged. */
+internal fun renderInspectionSummary(inspection: InspectionOutput, path: String): String =
+    HumanCommandOutput.render(
+        title = "🔎 Vericore Inspection",
+        sections = listOf(
+            HumanCommandOutput.section(
+                "Repository",
+                inspection.repository,
+                "Languages: ${inspection.languages.joinToString(", ").ifBlank { "Unknown" }}",
+                "Files: ${inspection.metrics.files}",
+                "Graph: ${inspection.metrics.nodes} nodes / ${inspection.metrics.edges} edges",
+                "Architecture: ${if (inspection.metrics.cyclesDetected) "cycles detected" else "no cycles detected"}",
+                "Risk: ${inspection.highRiskFiles} high/critical · ${inspection.criticalRiskFiles} critical"
+            ),
+            HumanCommandOutput.Section(
+                title = "Top hotspots",
+                lines = if (inspection.hotspots.isEmpty()) listOf("none") else
+                    inspection.hotspots.mapIndexed { index, hotspot ->
+                        "${index + 1}. ${hotspot.path} (${String.format("%.4f", hotspot.score)})"
+                    }
+            ),
+            HumanCommandOutput.Section(
+                title = "Next actions",
+                lines = inspection.recommendations.take(3).flatMapIndexed { index, recommendation ->
+                    listOf(
+                        "${index + 1}. [${recommendation.priority}] ${recommendation.title}",
+                        recommendation.action
+                    )
+                }
+            )
+        ),
+        nextStep = "Ask a grounded question: vericore repo-qa \"What should I know before changing this repository?\" --path $path"
+    )
