@@ -1,5 +1,6 @@
 package com.vericore.core.workflow
 
+import com.vericore.core.planner.ChangeSpecification
 import com.vericore.core.planner.EngineeringPlan
 import kotlinx.serialization.Serializable
 import java.io.File
@@ -17,7 +18,8 @@ data class AgentChangeContract(
     val verificationCommands: List<String>,
     val evidenceIds: List<String>,
     val architectureExpectations: List<String> = emptyList(),
-    val fingerprint: String
+    val fingerprint: String,
+    val specification: ChangeSpecification = ChangeSpecification()
 ) {
     companion object {
         fun fromPlan(plan: EngineeringPlan): AgentChangeContract = fromPlan(plan, plan.repository, "")
@@ -30,8 +32,9 @@ data class AgentChangeContract(
             val commands = plan.verificationCommands.distinct().sorted()
             val evidence = plan.evidenceIds.distinct().sorted()
             val expectations = plan.concerns.distinct().sorted()
+            val specification = plan.specification.normalized()
             val changeTypes = emptyMap<String, List<String>>()
-            val canonical = canonicalize("2.0", plan.changeSummary, repository, preparedHead, paths, changeTypes, components, commands, evidence, expectations)
+            val canonical = canonicalize("2.0", plan.changeSummary, repository, preparedHead, paths, changeTypes, components, commands, evidence, expectations, specification)
             return AgentChangeContract(
                 changeSummary = plan.changeSummary.trim(),
                 repository = repository,
@@ -42,7 +45,8 @@ data class AgentChangeContract(
                 verificationCommands = commands,
                 evidenceIds = evidence,
                 architectureExpectations = expectations,
-                fingerprint = sha256(canonical)
+                fingerprint = sha256(canonical),
+                specification = specification
             )
         }
 
@@ -59,7 +63,8 @@ data class AgentChangeContract(
                 contract.expectedComponents.map(::normalize).distinct().sorted(),
                 contract.verificationCommands.distinct().sorted(),
                 contract.evidenceIds.distinct().sorted(),
-                contract.architectureExpectations.distinct().sorted()
+                contract.architectureExpectations.distinct().sorted(),
+                contract.specification
             )
         )
 
@@ -73,19 +78,25 @@ data class AgentChangeContract(
             components: List<String>,
             commands: List<String>,
             evidence: List<String>,
-            expectations: List<String>
-        ): String = listOf(
-            schemaVersion,
-            summary.trim(),
-            repository,
-            preparedHead,
-            paths.joinToString("\n"),
-            changeTypes.entries.sortedBy { it.key }.joinToString("\n") { (path, types) -> "$path=${types.joinToString(",")}" },
-            components.joinToString("\n"),
-            commands.joinToString("\n"),
-            evidence.joinToString("\n"),
-            expectations.joinToString("\n")
-        ).joinToString("\n---\n")
+            expectations: List<String>,
+            specification: ChangeSpecification = ChangeSpecification()
+        ): String {
+            val legacyCanonical = listOf(
+                schemaVersion,
+                summary.trim(),
+                repository,
+                preparedHead,
+                paths.joinToString("\n"),
+                changeTypes.entries.sortedBy { it.key }.joinToString("\n") { (path, types) -> "$path=${types.joinToString(",")}" },
+                components.joinToString("\n"),
+                commands.joinToString("\n"),
+                evidence.joinToString("\n"),
+                expectations.joinToString("\n")
+            ).joinToString("\n---\n")
+            // Preserve historical fingerprints for legacy contracts whose specification is empty.
+            return if (specification.isEmpty()) legacyCanonical
+            else "$legacyCanonical\n---\nSPECIFICATION\n${specification.canonicalForm()}"
+        }
 
         private fun sha256(value: String): String = MessageDigest.getInstance("SHA-256")
             .digest(value.toByteArray(Charsets.UTF_8)).joinToString("") { "%02x".format(it) }
