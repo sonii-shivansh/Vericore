@@ -28,7 +28,7 @@ data class VerificationExecutionResult(
 
 @Serializable
 data class EngineeringVerificationResult(
-    val schemaVersion: String = "1.3",
+    val schemaVersion: String = "1.4",
     val repository: String,
     val safety: ChangeSafetyResult,
     val prIntelligence: com.vericore.core.intelligence.PRIntelligenceResult,
@@ -38,7 +38,13 @@ data class EngineeringVerificationResult(
     val status: SafetyStatus,
     val reasons: List<String> = emptyList(),
     val provenance: DecisionProvenance = DecisionProvenance.create("verify", null, "1.0", emptyList()),
-    val contract: AgentChangeContractResult? = null
+    val contract: AgentChangeContractResult? = null,
+    val analysisInputDigest: String,
+    val candidateStateDigest: String,
+    val postVerificationCandidateDigest: String,
+    val candidateStateStable: Boolean,
+    val candidateStateFileCount: Int,
+    val postVerificationFileCount: Int
 )
 
 /** Runs deterministic post-change checks against the exact persisted contract produced by prepare. */
@@ -46,6 +52,7 @@ object EngineeringVerification {
     suspend fun verify(repoPath: String, plan: EngineeringPlan, contract: AgentChangeContract): EngineeringVerificationResult {
         val root = File(repoPath).canonicalFile
         require(root.isDirectory) { "Repository path is not a directory: $repoPath" }
+        val analysisInput = CandidateStateSnapshotter.capture(root)
         val config = ConfigLoader.loadForRepository(root.path)
         val files = RepositoryScanner(config).scan(root.path)
         require(files.size <= config.maxFilesAnalyze) { "Repository exceeds the maximum file limit: ${config.maxFilesAnalyze}" }
@@ -84,33 +91,48 @@ object EngineeringVerification {
         val pr = com.vericore.core.intelligence.PRIntelligenceEngine.analyze(changeSet, impact, risks, packageByPath, tests, toRelativePath)
         val architecture = ArchitectureIntelligenceEngine.analyze(graph.graph, root, config.architecture)
 
+        // The analysis and the verification commands must refer to the same candidate state.
+        // A content digest catches uncommitted and untracked changes that do not move Git HEAD.
+        val candidateAtVerification = CandidateStateSnapshotter.capture(root)
+        val analysisStateStable = analysisInput.digest == candidateAtVerification.digest
         val currentHead = RepositoryState.head(root.path).orEmpty()
         val expectedContractFingerprint = AgentChangeContract.fingerprintFor(contract)
         val expectedPlanFingerprint = AgentChangeContract.fromPlan(plan, root.path, contract.preparedHead).fingerprint
-        val reasons = buildList {
+        val contractReasons = buildList {
             if (contract.fingerprint != expectedContractFingerprint) add("The persisted agent change contract fingerprint is invalid or tampered.")
             if (contract.repository != root.path) add("The contract belongs to a different repository: ${contract.repository}")
             if (plan.contractFingerprint != contract.fingerprint) add("The engineering plan is not bound to the persisted contract fingerprint.")
             if (expectedPlanFingerprint != contract.fingerprint) add("The supplied plan does not match the persisted contract contents.")
             if (contract.preparedHead.isNotBlank() && currentHead.isNotBlank() && contract.preparedHead != currentHead) add("The repository HEAD changed after prepare (${contract.preparedHead} -> $currentHead); the contract is stale.")
         }
-        val contractValid = reasons.isEmpty()
-        val contractResult = AgentChangeContractResult(contract, contractValid, reasons)
-        val execution = if (contractValid && safety.status != SafetyStatus.FAIL) {
+        val contractValid = contractReasons.isEmpty()
+        val contractResult = AgentChangeContractResult(contract, contractValid, contractReasons)
+        val execution = if (contractValid && safety.status != SafetyStatus.FAIL && analysisStateStable) {
             VerificationExecutionResult(commands = VerificationCommandExecutor.execute(root, contract.verificationCommands))
         } else {
             VerificationExecutionResult()
         }
+        val postVerificationCandidate = CandidateStateSnapshotter.capture(root)
+        val candidateStateDriftReasons = buildList {
+            if (!analysisStateStable) {
+                add("Repository candidate state changed during analysis; verification commands were not executed because the analysis may be stale.")
+            }
+            if (candidateAtVerification.digest != postVerificationCandidate.digest) {
+                add("Repository candidate state changed during verification; command results cannot be attributed to one stable candidate.")
+            }
+        }
         val status = when {
             !contractValid -> SafetyStatus.FAIL
             safety.status == SafetyStatus.FAIL -> SafetyStatus.FAIL
+            candidateStateDriftReasons.isNotEmpty() -> SafetyStatus.FAIL
             !execution.allCommandsPassed -> SafetyStatus.FAIL
             safety.status == SafetyStatus.REVIEW_REQUIRED || pr.aggregateSeverity.name == "CRITICAL" -> SafetyStatus.REVIEW_REQUIRED
             else -> SafetyStatus.PASS
         }
         val verificationReasons = buildList {
-            addAll(reasons)
+            addAll(contractReasons)
             addAll(safety.reasons)
+            addAll(candidateStateDriftReasons)
             if (execution.commands.isEmpty()) {
                 add("No verification commands were executed; verification cannot pass without a successful verification command.")
             } else {
@@ -135,7 +157,13 @@ object EngineeringVerification {
             status = status,
             reasons = verificationReasons,
             provenance = provenance,
-            contract = contractResult
+            contract = contractResult,
+            analysisInputDigest = analysisInput.digest,
+            candidateStateDigest = candidateAtVerification.digest,
+            postVerificationCandidateDigest = postVerificationCandidate.digest,
+            candidateStateStable = candidateStateDriftReasons.isEmpty(),
+            candidateStateFileCount = candidateAtVerification.fileCount,
+            postVerificationFileCount = postVerificationCandidate.fileCount
         )
     }
 }
