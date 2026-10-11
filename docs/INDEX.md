@@ -49,6 +49,7 @@ Machine-readable schemas live in [`docs/schemas/`](schemas/). They are interface
 | [Repository Governance](REPOSITORY_GOVERNANCE.md) | Intended repository settings, CI/release model and governance caveats |
 | [Verification Benchmark](VERIFICATION_BENCHMARK.md) | Public benchmark design, methodology and interpretation boundaries |
 | [Phase 0 Foundation Checklist](PHASE0_FOUNDATION_CHECKLIST.md) | Foundation acceptance criteria and closeout record |
+| [Phase 1 Acceptance Checklist](PHASE1_ACCEPTANCE_CHECKLIST.md) | Measurable exit gate for the 60-Second Vericore product journey |
 | [Phase 0 Benchmark Baseline](PHASE0_BENCHMARK_BASELINE.md) | Recorded run metadata, methodology, artifact digest and limitations |
 
 ## Release documentation
