@@ -1,5 +1,6 @@
 package com.vericore.cli
 
+import com.vericore.core.planner.ChangeSpecification
 import com.vericore.core.workflow.EngineeringPreparation
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
@@ -19,10 +20,22 @@ class PrepareCommand : CliktCommand(name = "prepare", help = "Prepare an evidenc
     private val planOutput by option("--plan-output", help = "Engineering plan artifact path")
     private val contractOutput by option("--contract-output", help = "Agent change contract artifact path")
     private val plannedPaths by option("--planned-path", help = "Repository-relative path the agent expects to modify").multiple()
+    private val requiredBehaviors by option("--require-behavior", help = "Behavior this change must provide").multiple()
+    private val forbiddenBehaviors by option("--forbid-behavior", help = "Behavior this change must not introduce").multiple()
+    private val protectedInvariants by option("--protect-invariant", help = "Existing invariant this change must preserve").multiple()
+    private val acceptanceCriteria by option("--acceptance-criterion", help = "Observable criterion for accepting this change").multiple()
+    private val requiredEvidence by option("--required-evidence", help = "Evidence that must be supplied/reviewed for acceptance").multiple()
 
     override fun run() {
         val root = File(path).canonicalFile
-        val result = runBlocking { EngineeringPreparation.prepare(root.path, changeSummary, plannedPaths) }
+        val specification = ChangeSpecification(
+            requiredBehaviors = requiredBehaviors,
+            forbiddenBehaviors = forbiddenBehaviors,
+            protectedInvariants = protectedInvariants,
+            acceptanceCriteria = acceptanceCriteria,
+            requiredEvidence = requiredEvidence
+        )
+        val result = runBlocking { EngineeringPreparation.prepare(root.path, changeSummary, plannedPaths, specification) }
         val json = Json { prettyPrint = true; encodeDefaults = true }
         val artifactPath = output ?: root.resolve("output/engineering-preparation.json").path
         val artifact = File(artifactPath).let { if (it.isAbsolute) it else root.resolve(it.path) }.apply { parentFile?.mkdirs() }
