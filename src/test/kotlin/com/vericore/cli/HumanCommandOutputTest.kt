@@ -37,6 +37,7 @@ Next step
     fun `omits empty optional status and next step`() {
         assertEquals(
             """Vericore
+
 Repository
   example""",
             HumanCommandOutput.render(
