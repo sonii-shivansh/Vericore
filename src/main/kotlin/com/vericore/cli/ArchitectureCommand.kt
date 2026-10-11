@@ -30,20 +30,43 @@ class ArchitectureCommand : CliktCommand(name = "architecture", help = "Analyze 
         graph.analyze().getOrThrow()
         val result = ArchitectureIntelligenceEngine.analyze(graph.graph, root, config.architecture)
         if (jsonOutput) {
-            val output = root.resolve("output/architecture.json")
+            val output = outputPath(root)
             output.parentFile.mkdirs()
             output.writeText(Json { prettyPrint = true; encodeDefaults = true }.encodeToString(result))
-            echo("🏛️ Architecture report: ${output.absolutePath}")
         }
-        echo("🏛️ Architecture Intelligence")
-        echo("├─ Files analyzed: ${result.summary.filesAnalyzed}")
-        echo("├─ Dependency edges: ${result.summary.dependencyEdges}")
-        echo("├─ Findings: ${result.summary.findings}")
-        echo("├─ Cycles: ${result.summary.cycles}")
-        echo("├─ Cross-layer dependencies: ${result.summary.crossLayerDependencies}")
-        echo("└─ High-coupling files: ${result.summary.highCouplingFiles}")
-        result.findings.take(20).forEach { finding ->
-            echo("   ${finding.severity} ${finding.ruleId}: ${finding.source}${finding.target?.let { " -> $it" } ?: ""}")
-        }
+        echo(renderArchitectureSummary(result, outputPath = if (jsonOutput) outputPath(root).absolutePath else null))
     }
 }
+
+internal fun renderArchitectureSummary(
+    result: com.vericore.core.intelligence.ArchitectureIntelligenceResult,
+    outputPath: String? = null
+): String {
+    val sections = buildList {
+        outputPath?.let { add(HumanCommandOutput.section("Report", "Architecture report: $it")) }
+        add(
+            HumanCommandOutput.section(
+                "Summary",
+                "Files analyzed: ${result.summary.filesAnalyzed}",
+                "Dependency edges: ${result.summary.dependencyEdges}",
+                "Findings: ${result.summary.findings}",
+                "Cycles: ${result.summary.cycles}",
+                "Cross-layer dependencies: ${result.summary.crossLayerDependencies}",
+                "High-coupling files: ${result.summary.highCouplingFiles}"
+            )
+        )
+        result.findings.take(20).takeIf { it.isNotEmpty() }?.let { findings ->
+            add(
+                HumanCommandOutput.section(
+                    "Top findings",
+                    *findings.map { finding ->
+                        "${finding.severity} ${finding.ruleId}: ${finding.source}${finding.target?.let { " -> $it" } ?: ""}"
+                    }.toTypedArray()
+                )
+            )
+        }
+    }
+    return HumanCommandOutput.render(title = "🏛️ Architecture Intelligence", sections = sections)
+}
+
+private fun outputPath(root: File): File = root.resolve("output/architecture.json")
