@@ -88,6 +88,9 @@ verify = mcp([{
 
 contract_result = next(r["result"] for r in verify if r.get("id")==4)
 assert contract_result["isError"] is False, contract_result
+persisted_contract = json.loads(next(x["text"] for x in contract_result["content"]))
+assert persisted_contract["fingerprint"] == prepared["contract"]["fingerprint"]
+assert persisted_contract["specification"] == prepared["contract"]["specification"]
 verify_result = next(r["result"] for r in verify if r.get("id")==5)
 assert verify_result["isError"] is False, verify_result
 verification = json.loads(next(x["text"] for x in verify_result["content"]))
