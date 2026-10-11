@@ -16,6 +16,7 @@ import com.vericore.core.intelligence.EngineeringContextDiff
 import com.vericore.core.intelligence.EngineeringContextEngine
 import com.vericore.core.intelligence.EngineeringContextSnapshot
 import com.vericore.core.intelligence.GitChangeSetBuilder
+import com.vericore.core.planner.ChangeSpecification
 import com.vericore.core.planner.EngineeringPlan
 import com.vericore.core.scanner.RepositoryScanner
 import com.vericore.core.workflow.AgentChangeContract
@@ -37,9 +38,14 @@ object EngineeringContextGateway {
     fun diff(before: JsonObject, after: JsonObject): JsonObject { val b = json.decodeFromJsonElement(EngineeringContextSnapshot.serializer(), before); val a = json.decodeFromJsonElement(EngineeringContextSnapshot.serializer(), after); return json.encodeToJsonElement(EngineeringContextDiff.serializer(), EngineeringContextEngine.diff(b, a)).jsonObject }
     fun architectureDrift(repoPath: String, baseline: JsonObject): JsonObject { val root = repository(repoPath); val baselineResult = json.decodeFromJsonElement(ArchitectureIntelligenceResult.serializer(), baseline); val config = ConfigLoader.loadForRepository(root.path); val parsed = runBlocking { CodeParallelParser(CacheManager()).parseFiles(RepositoryScanner(config).scan(root.path)) }; val graph = RobustDependencyGraph(); graph.build(parsed).getOrThrow(); graph.analyze().getOrThrow(); val drift: ArchitectureDriftResult = ArchitectureDriftEngine.compare(baselineResult, ArchitectureIntelligenceEngine.analyze(graph.graph, root, config.architecture)); return json.encodeToJsonElement(ArchitectureDriftResult.serializer(), drift).jsonObject }
     fun architectureContract(repoPath: String, contract: JsonObject?): JsonObject { val root = repository(repoPath); val config = ConfigLoader.loadForRepository(root.path); val parsed = runBlocking { CodeParallelParser(CacheManager()).parseFiles(RepositoryScanner(config).scan(root.path)) }; val graph = RobustDependencyGraph(); graph.build(parsed).getOrThrow(); graph.analyze().getOrThrow(); val architecture = ArchitectureIntelligenceEngine.analyze(graph.graph, root, config.architecture); val contractValue = contract?.let { json.decodeFromJsonElement(ArchitectureContract.serializer(), it) } ?: ArchitectureContractFileResolver.resolve(root).file.takeIf { it.exists() }?.let { json.decodeFromString<ArchitectureContract>(it.readText()) } ?: ArchitectureContract(); return json.encodeToJsonElement(ArchitectureContractResult.serializer(), ArchitectureContractEngine.evaluate(architecture, contractValue)).jsonObject }
-    fun prepare(repoPath: String, changeSummary: String, plannedPaths: List<String> = emptyList()): JsonObject {
+    fun prepare(
+        repoPath: String,
+        changeSummary: String,
+        plannedPaths: List<String> = emptyList(),
+        specification: ChangeSpecification = ChangeSpecification()
+    ): JsonObject {
         val root = repository(repoPath)
-        val result = runBlocking { EngineeringPreparation.prepare(root.path, changeSummary, plannedPaths) }
+        val result = runBlocking { EngineeringPreparation.prepare(root.path, changeSummary, plannedPaths, specification) }
         val output = root.resolve("output").apply { mkdirs() }
         output.resolve("engineering-preparation.json").writeText(json.encodeToString(com.vericore.core.workflow.EngineeringPreparationResult.serializer(), result))
         output.resolve("engineering-plan.json").writeText(json.encodeToString(EngineeringPlan.serializer(), result.plan))
