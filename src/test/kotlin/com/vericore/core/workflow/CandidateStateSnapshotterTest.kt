@@ -77,6 +77,23 @@ class CandidateStateSnapshotterTest {
     }
 
     @Test
+    fun `digest changes when an executable bit changes on supported filesystems`() {
+        withRepository { root ->
+            val script = root.resolve("run.sh")
+            Files.writeString(script, "#!/bin/sh\nexit 0\n")
+            val beforeExecutable = Files.isExecutable(script)
+            val before = CandidateStateSnapshotter.capture(root.toFile())
+
+            val permissionChanged = script.toFile().setExecutable(true, true)
+            val afterExecutable = Files.isExecutable(script)
+            if (permissionChanged && beforeExecutable != afterExecutable) {
+                val after = CandidateStateSnapshotter.capture(root.toFile())
+                assertNotEquals(before.digest, after.digest)
+            }
+        }
+    }
+
+    @Test
     fun `generated outputs and build caches do not perturb candidate digest`() {
         withRepository { root ->
             val source = root.resolve("src/App.kt")
