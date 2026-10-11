@@ -51,7 +51,7 @@ data class ChangeSpecification(
         require(normalizedGroups.sumOf { it.second.size } <= MAX_TOTAL_ITEMS) {
             "A change specification may contain at most $MAX_TOTAL_ITEMS total entries"
         }
-        require(normalizedGroups.sumOf { (_, values) -> values.sumOf(String::length) } <= MAX_TOTAL_CHARACTERS) {
+        require(normalizedGroups.sumOf { (_, values) -> values.sumOf { it.length } } <= MAX_TOTAL_CHARACTERS) {
             "A change specification may contain at most $MAX_TOTAL_CHARACTERS total characters"
         }
         val values = normalizedGroups.associate { it.first to it.second }
