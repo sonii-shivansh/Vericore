@@ -36,22 +36,45 @@ class PRIntelligenceCommand : CliktCommand(
             PRIntelligenceAnalyzer.analyze(root.path, changeSet, config)
         }
 
-        if (jsonOutput) {
+        val artifactPath = if (jsonOutput) {
             val output = root.resolve("output/pr-intelligence.json")
             output.parentFile.mkdirs()
             output.writeText(Json { prettyPrint = true }.encodeToString(result))
-            echo("🧭 PR Intelligence: ${output.absolutePath}")
+            output.absolutePath
+        } else {
+            null
         }
 
-        echo("🧭 PR Intelligence")
-        echo("├─ Changed files: ${result.changeSummary.filesChanged}")
-        echo("├─ Lines: +${result.changeSummary.additions} / -${result.changeSummary.deletions}")
-        echo("├─ Impacted files: ${result.impactedFiles}")
-        echo("├─ Cross-package impacts: ${result.crossPackageImpacts}")
-        echo("├─ Test candidates: ${result.testCandidates.size}")
-        echo("└─ Aggregate severity: ${result.aggregateSeverity}")
-        result.findings.forEach { finding ->
-            echo("   [${finding.severity}] ${finding.ruleId}: ${finding.reason}")
+        echo(renderPRIntelligenceSummary(result, artifactPath))
+    }
+}
+
+
+internal fun renderPRIntelligenceSummary(
+    result: PRIntelligenceResult,
+    outputPath: String? = null
+): String {
+    val sections = buildList {
+        outputPath?.let { add(HumanCommandOutput.section("Report", "PR Intelligence: $it")) }
+        add(
+            HumanCommandOutput.section(
+                "Summary",
+                "Changed files: ${result.changeSummary.filesChanged}",
+                "Lines: +${result.changeSummary.additions} / -${result.changeSummary.deletions}",
+                "Impacted files: ${result.impactedFiles}",
+                "Cross-package impacts: ${result.crossPackageImpacts}",
+                "Test candidates: ${result.testCandidates.size}",
+                "Aggregate severity: ${result.aggregateSeverity}"
+            )
+        )
+        if (result.findings.isNotEmpty()) {
+            add(
+                HumanCommandOutput.section(
+                    "Findings",
+                    *result.findings.map { "[${it.severity}] ${it.ruleId}: ${it.reason}" }.toTypedArray()
+                )
+            )
         }
     }
+    return HumanCommandOutput.render(title = "🧭 PR Intelligence", sections = sections)
 }
