@@ -99,6 +99,14 @@ data class ChangeSpecification(
         require(normalizedBindings.map { it.criterionId }.distinct().size == normalizedBindings.size) {
             "Each criterion may have only one evidence binding"
         }
+        require(normalizedBindings.sumOf { it.evidenceIds.size } <= MAX_TOTAL_ITEMS) {
+            "A change specification may reference at most $MAX_TOTAL_ITEMS total evidence IDs"
+        }
+        require(normalizedBindings.sumOf { binding ->
+            binding.criterionId.length + binding.evidenceIds.sumOf { it.length }
+        } <= MAX_TOTAL_CHARACTERS) {
+            "Evidence bindings may contain at most $MAX_TOTAL_CHARACTERS total characters"
+        }
         val values = normalizedGroups.associate { it.first to it.second }
         return ChangeSpecification(
             requiredBehaviors = values.getValue("requiredBehaviors"),
