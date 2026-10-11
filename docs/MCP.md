@@ -161,13 +161,18 @@ Use `vericore_recommendations` when an agent needs actionable engineering priori
       {
         "criterionId": "acceptance-criterion-001",
         "evidenceIds": ["file.1"]
+      },
+      {
+        "criterionId": "required-evidence-001",
+        "evidenceIds": ["verification-command-001"],
+        "rule": "ALL_BOUND_COMMANDS_SUCCEEDED"
       }
     ]
   }
 }
 ```
 
-The `specification` object is optional. Its lists are caller-authored, validated, preserved in the plan and contract, and included in the contract fingerprint when non-empty. `evidenceBindings` maps stable criterion IDs to evidence IDs already included in the contract. Unknown criterion IDs or evidence IDs fail closed; a valid link is still `INCONCLUSIVE` until evidence content is evaluated. The presence of a criterion or an evidence link is not proof that Vericore has passed it.
+The `specification` object is optional. Its lists are caller-authored, validated, preserved in the plan and contract, and included in the contract fingerprint when non-empty. `evidenceBindings` maps stable criterion IDs to evidence IDs already included in the contract. Unknown criterion IDs or evidence IDs fail closed; a `MANUAL_REVIEW` link is `INCONCLUSIVE`. The narrow `ALL_BOUND_COMMANDS_SUCCEEDED` rule is allowed only for required-evidence criteria and passes only if all bound verification commands actually ran and exited 0; it does not prove arbitrary behavior semantics. The presence of a criterion or an evidence link is not proof that Vericore has passed it.
 
 Preparation persists repository-scoped artifacts, including:
 
