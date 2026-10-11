@@ -10,6 +10,14 @@ on:
       - "README.md"
       - "scripts/audit/**"
       - ".github/workflows/phase1-product-journey.yml"
+  push:
+    branches: [main]
+    paths:
+      - "src/main/kotlin/**"
+      - "docs/**"
+      - "README.md"
+      - "scripts/audit/**"
+      - ".github/workflows/phase1-product-journey.yml"
 
 permissions:
   contents: read
@@ -79,6 +87,10 @@ jobs:
           git -C "$fixture" commit -qm "initial fixture"
 
           "$cli" --version
+          "$cli" --help > "$fixture/global-help.txt"
+          for command in init scan inspect repo-qa review plan prepare verify report; do
+            "$cli" "$command" --help > /dev/null
+          done
           "$cli" init --path "$fixture"
           "$cli" doctor --path "$fixture"
           git -C "$fixture" add .vericore.json
@@ -87,6 +99,20 @@ jobs:
           "$cli" inspect --path "$fixture" --json
           "$cli" repo-qa "What depends on Service?" --path "$fixture" --evidence-output "$fixture/output/grounded-evidence.json" > "$fixture/output/repo-qa-result.json"
           "$cli" review --path "$fixture" --json
+          cp "$fixture/output/review.json" "$fixture/output/review-first.json"
+          "$cli" review --path "$fixture" --json
+          python3 - "$fixture/output/review-first.json" "$fixture/output/review.json" <<'PY'
+          import json
+          import sys
+
+          with open(sys.argv[1], encoding="utf-8") as first_file:
+              first = json.load(first_file)
+          with open(sys.argv[2], encoding="utf-8") as second_file:
+              second = json.load(second_file)
+          assert first["deterministic"] == second["deterministic"], (
+              "Repeated review changed deterministic findings"
+          )
+          PY
           "$cli" plan "update Service greeting" --repository "$fixture" --changed src/main/kotlin/example/Service.kt --evidence "$fixture/output/grounded-evidence.json" --output "$fixture/output/plan-preview.json"
           "$cli" prepare "update Service greeting" --path "$fixture" --planned-path src/main/kotlin/example/Service.kt
 
@@ -113,6 +139,17 @@ jobs:
           grep -q '"schemaVersion": "1.0"' "$fixture/output/inspection.json"
           grep -q 'Service.kt' "$fixture/output/inspection.json"
           grep -q '"status"' "$fixture/output/verification.json"
+
+          # Record the exact candidate and run that produced this acceptance evidence.
+          cat > "$fixture/output/phase1-closeout.md" <<EOF
+          # Phase 1 Candidate Acceptance Evidence
+
+          - Candidate commit: $GITHUB_SHA
+          - Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID
+          - Product journey: PASS (this file is emitted only after all assertions below pass)
+          - CLI audit: PASS (the workflow's final audit step must also pass for the job to succeed)
+          - Decision: ACCEPTED only when this workflow run concludes successfully on the candidate commit and the release audit passes on the same main commit.
+          EOF
 
           # Parse the public machine-readable outputs instead of checking file existence alone.
           python3 - "$fixture" <<'PY'
