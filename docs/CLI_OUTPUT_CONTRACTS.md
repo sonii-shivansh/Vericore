@@ -1,6 +1,6 @@
 # CLI Output Contract Inventory
 
-**Audited against:** `main` at `a42398a0a15511ee1131023b2cf5023254798b6f` (PR #239 merge)  
+**Audited against:** `main` at `4ce99a3c7c2a16e31fa9c6c082a3538206a70504` (PR #240 merge)  
 **Purpose:** Record observed stdout/file-output behavior before migrating more commands to the shared human-readable renderer.
 
 This is an implementation inventory, not a promise that every output shape is already ideal. The source code is authoritative if this document and implementation disagree. Update this inventory alongside future CLI output-contract changes.
@@ -35,7 +35,7 @@ This is an implementation inventory, not a promise that every output shape is al
 | `reality` | Human engineering-reality summary | `--json`: `output/engineering-reality.json` | JSON mode writes the file and still prints the summary. |
 | `pr-intelligence` | Human PR-intelligence summary | `--json`: `output/pr-intelligence.json` | JSON mode writes the file and still prints the summary. Base/head revisions must be supplied as a pair. |
 | `repo-qa` | JSON result to stdout | Optional `--evidence-output <file>` writes reusable grounded-evidence JSON | Default stdout is machine-readable JSON; do not prepend human progress output. |
-| `report` | Human report-generated summary | `--output <file>` selects the HTML report path | Generates HTML; this is not a JSON command. |
+| `report` | Human report-generated summary rendered through `HumanCommandOutput` | `--output <file>` selects the HTML report path | Generates HTML; this is not a JSON command. The summary layout is presentation-only; session selection and artifact paths are unchanged. |
 | `review` | Human deterministic review summary, and AI summary when `--ai` is enabled | `--json`: `output/review.json` | JSON mode writes the artifact and still prints the human summary. `--ai` augments deterministic findings; it does not replace them. |
 | `recommendations` | Human prioritized recommendations | `--json`: `output/recommendations.json` | Writes JSON and still prints human recommendations. Requires an analysis snapshot. |
 | `plan` | JSON to stdout by default | `--output <file>` writes plan JSON to a repository-local file | With `--output`, stdout becomes a human summary; without it, stdout is JSON. |
