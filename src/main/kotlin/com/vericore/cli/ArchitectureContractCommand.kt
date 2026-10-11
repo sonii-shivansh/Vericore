@@ -61,22 +61,52 @@ class ArchitectureContractCommand : CliktCommand(
             echo("🧾 Contract decision history: ${historyFile.absolutePath}")
         }
         if (jsonOutput) {
-            val output = root.resolve("output/architecture-contract.json")
+            val output = outputPath(root)
             output.parentFile.mkdirs()
             output.writeText(json.encodeToString<ArchitectureContractResult>(result))
-            echo("🛡️ Architecture contract: ${output.absolutePath}")
         }
-        echo("🛡️ Architecture Contract")
-        echo("├─ Passed: ${result.passed}")
-        echo("├─ Findings: ${architecture.findings.size}")
-        echo("├─ Cycles: ${architecture.cycles.size}")
-        echo("├─ Violations: ${result.violations.size}")
-        echo("└─ Contract fingerprint: ${decision.decisionId}")
+        echo(
+            renderArchitectureContractSummary(
+                result,
+                findingsCount = architecture.findings.size,
+                cyclesCount = architecture.cycles.size,
+                decisionId = decision.decisionId,
+                outputPath = if (jsonOutput) outputPath(root).absolutePath else null,
+                recordPath = recordPath?.let { File(it).absolutePath }
+            )
+        )
         if (!result.passed) {
-            result.violations.take(30).forEach { violation ->
-                echo("   ${violation.ruleId}: ${violation.message}")
-            }
             throw ValidationException("Architecture contract failed")
         }
     }
 }
+
+internal fun renderArchitectureContractSummary(
+    result: ArchitectureContractResult,
+    findingsCount: Int,
+    cyclesCount: Int,
+    decisionId: String,
+    outputPath: String? = null,
+    recordPath: String? = null
+): String {
+    val sections = buildList {
+        outputPath?.let { add(HumanCommandOutput.section("Report", "Architecture contract: $it")) }
+        recordPath?.let { add(HumanCommandOutput.section("History", "Contract decision history: $it")) }
+        add(
+            HumanCommandOutput.section(
+                "Summary",
+                "Passed: ${result.passed}",
+                "Findings: $findingsCount",
+                "Cycles: $cyclesCount",
+                "Violations: ${result.violations.size}",
+                "Contract fingerprint: $decisionId"
+            )
+        )
+        result.violations.take(30).takeIf { it.isNotEmpty() }?.let { violations ->
+            add(HumanCommandOutput.section("Violations", *violations.map { "${it.ruleId}: ${it.message}" }.toTypedArray()))
+        }
+    }
+    return HumanCommandOutput.render(title = "🛡️ Architecture Contract", sections = sections)
+}
+
+private fun outputPath(root: File): File = root.resolve("output/architecture-contract.json")
