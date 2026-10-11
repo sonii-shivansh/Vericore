@@ -43,7 +43,7 @@
 - persisted output/agent-change-contract.json
 - contract tamper, plan mismatch, repository mismatch, stale-HEAD, and unexpected-change detection
 - candidate repository-input state digests captured before analysis, before declared verification commands, and after those commands; relevant candidate drift fails closed
-- structured specification evaluation records stable per-criterion IDs; criterion IDs can bind to prepared evidence IDs, dangling references fail closed, and valid links remain `INCONCLUSIVE` until evidence content is evaluated; unevaluated/inconclusive criteria force overall `REVIEW_REQUIRED`
+- structured specification evaluation records stable per-criterion IDs; criterion IDs can bind to prepared evidence IDs; dangling references fail closed; manual links remain `INCONCLUSIVE`; the narrow `ALL_BOUND_COMMANDS_SUCCEEDED` rule can pass only required-evidence criteria whose bound commands all ran and exited 0; other unevaluated/inconclusive criteria force overall `REVIEW_REQUIRED`
 - verification against the persisted contract rather than a replacement derived from the mutated repository
 
 **Authoritative rule:** the persisted contract is the verification boundary.
