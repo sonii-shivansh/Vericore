@@ -39,16 +39,18 @@ class RealityCommand : CliktCommand(
         )
         val reality = EngineeringRealityEngine.build(analysis, context)
 
-        if (jsonOutput) {
-            val output = outputDir.resolve("engineering-reality.json")
-            output.writeText(EngineeringRealityEngine.encode(reality))
-            echo("🧭 Engineering reality: ${output.path}")
+        val output = if (jsonOutput) {
+            outputDir.resolve("engineering-reality.json").also {
+                it.writeText(EngineeringRealityEngine.encode(reality))
+            }
+        } else {
+            null
         }
 
         echo(
             renderEngineeringRealitySummary(
                 reality,
-                if (jsonOutput) outputDir.resolve("engineering-reality.json").path else null
+                output?.path
             )
         )
     }
