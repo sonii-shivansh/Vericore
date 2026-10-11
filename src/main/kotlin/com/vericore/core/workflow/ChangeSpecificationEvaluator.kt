@@ -98,7 +98,7 @@ object ChangeSpecificationEvaluator {
         kind: SpecificationCriterionKind
     ): List<SpecificationCriterionEvaluation> = mapIndexed { index, statement ->
         SpecificationCriterionEvaluation(
-            id = "%s-%03d".format(prefix, index + 1),
+            id = "$prefix-${(index + 1).toString().padStart(3, '0')}",
             kind = kind,
             statement = statement,
             status = CriterionEvaluationStatus.NOT_EVALUATED,
