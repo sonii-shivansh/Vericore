@@ -156,7 +156,7 @@ Use `vericore_recommendations` when an agent needs actionable engineering priori
     "forbiddenBehaviors": ["Do not log credentials"],
     "protectedInvariants": ["Retries remain idempotent"],
     "acceptanceCriteria": ["Invalid retry counts return a validation error"],
-    "requiredEvidence": ["Unit-test results for invalid retry counts"],
+    "requiredEvidence": ["The declared unit-test command exits successfully"],
     "evidenceBindings": [
       {
         "criterionId": "acceptance-criterion-001",
