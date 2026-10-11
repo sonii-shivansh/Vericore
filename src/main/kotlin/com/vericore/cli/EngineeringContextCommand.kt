@@ -21,18 +21,12 @@ class EngineeringContextSnapshotCommand : CliktCommand(name = "context-snapshot"
             root,
             com.vericore.core.scanner.RepositoryScanner(ConfigLoader.loadForRepository(root.path))
         )
-        val output = root.resolve("output/engineering-context.json")
+        val output = snapshotOutputPath(root)
         if (jsonOutput) {
             output.parentFile.mkdirs()
             output.writeText(EngineeringContextEngine.encode(snapshot))
-            echo("🧭 Engineering context: ${output.absolutePath}")
         }
-        echo("🧭 Engineering Context")
-        echo("├─ Commit: ${snapshot.repositoryCommit ?: "unknown"}")
-        echo("├─ Files: ${snapshot.totalFiles}")
-        echo("├─ Bytes: ${snapshot.totalBytes}")
-        echo("├─ Dirty: ${snapshot.dirty}")
-        echo("└─ Digest: ${snapshot.snapshotDigest}")
+        echo(renderEngineeringContextSnapshotSummary(snapshot, if (jsonOutput) output.absolutePath else null))
     }
 }
 
@@ -60,3 +54,25 @@ class EngineeringContextDiffCommand : CliktCommand(name = "context-diff", help =
         diff.changes.take(30).forEach { change -> echo("   ${change.type}: ${change.path}") }
     }
 }
+
+internal fun renderEngineeringContextSnapshotSummary(
+    snapshot: EngineeringContextSnapshot,
+    outputPath: String? = null
+): String {
+    val sections = buildList {
+        outputPath?.let { add(HumanCommandOutput.section("Report", "Engineering context: $it")) }
+        add(
+            HumanCommandOutput.section(
+                "Summary",
+                "Commit: ${snapshot.repositoryCommit ?: "unknown"}",
+                "Files: ${snapshot.totalFiles}",
+                "Bytes: ${snapshot.totalBytes}",
+                "Dirty: ${snapshot.dirty}",
+                "Digest: ${snapshot.snapshotDigest}"
+            )
+        )
+    }
+    return HumanCommandOutput.render(title = "🧭 Engineering Context", sections = sections)
+}
+
+private fun snapshotOutputPath(root: File): File = root.resolve("output/engineering-context.json")
