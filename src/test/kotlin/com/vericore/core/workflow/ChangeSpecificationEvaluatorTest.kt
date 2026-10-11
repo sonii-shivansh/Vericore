@@ -1,6 +1,9 @@
 package com.vericore.core.workflow
 
 import com.vericore.core.planner.ChangeSpecification
+import com.vericore.core.planner.CriterionEvidenceBinding
+import com.vericore.core.planner.CriterionEvidenceRule
+import com.vericore.core.planner.VerificationEvidenceIds
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -69,6 +72,77 @@ class ChangeSpecificationEvaluatorTest {
         assertEquals(CriterionEvaluationStatus.FAIL, evaluation.status)
         assertEquals(CriterionEvaluationStatus.FAIL, evaluation.criteria.single().status)
         assertTrue(evaluation.criteria.single().reason.contains("missing.evidence"))
+    }
+
+    @Test
+    fun `required evidence passes only when its bound command succeeds`() {
+        val specification = ChangeSpecification(
+            requiredEvidence = listOf("Unit-test command succeeds"),
+            evidenceBindings = listOf(
+                CriterionEvidenceBinding(
+                    "required-evidence-001",
+                    listOf(VerificationEvidenceIds.command(1)),
+                    CriterionEvidenceRule.ALL_BOUND_COMMANDS_SUCCEEDED
+                )
+            )
+        )
+        val evaluation = ChangeSpecificationEvaluator.evaluate(
+            specification,
+            availableEvidenceIds = setOf(VerificationEvidenceIds.command(1)),
+            commandResults = listOf(
+                VerificationCommandResult(command = "mvn -B test", executed = true, exitCode = 0)
+            )
+        )!!
+
+        assertEquals(CriterionEvaluationStatus.PASS, evaluation.status)
+        assertEquals(CriterionEvaluationStatus.PASS, evaluation.criteria.single().status)
+        assertEquals(1, evaluation.evaluatedCount)
+        assertEquals(0, evaluation.notEvaluatedCount)
+    }
+
+    @Test
+    fun `required evidence fails when its bound command exits nonzero`() {
+        val specification = ChangeSpecification(
+            requiredEvidence = listOf("Unit-test command succeeds"),
+            evidenceBindings = listOf(
+                CriterionEvidenceBinding(
+                    "required-evidence-001",
+                    listOf(VerificationEvidenceIds.command(1)),
+                    CriterionEvidenceRule.ALL_BOUND_COMMANDS_SUCCEEDED
+                )
+            )
+        )
+        val evaluation = ChangeSpecificationEvaluator.evaluate(
+            specification,
+            availableEvidenceIds = setOf(VerificationEvidenceIds.command(1)),
+            commandResults = listOf(
+                VerificationCommandResult(command = "mvn -B test", executed = true, exitCode = 1)
+            )
+        )!!
+
+        assertEquals(CriterionEvaluationStatus.FAIL, evaluation.status)
+        assertEquals(CriterionEvaluationStatus.FAIL, evaluation.criteria.single().status)
+    }
+
+    @Test
+    fun `contract-only verification leaves command evidence unevaluated`() {
+        val specification = ChangeSpecification(
+            requiredEvidence = listOf("Unit-test command succeeds"),
+            evidenceBindings = listOf(
+                CriterionEvidenceBinding(
+                    "required-evidence-001",
+                    listOf(VerificationEvidenceIds.command(1)),
+                    CriterionEvidenceRule.ALL_BOUND_COMMANDS_SUCCEEDED
+                )
+            )
+        )
+        val evaluation = ChangeSpecificationEvaluator.evaluate(
+            specification,
+            availableEvidenceIds = setOf(VerificationEvidenceIds.command(1))
+        )!!
+
+        assertEquals(CriterionEvaluationStatus.NOT_EVALUATED, evaluation.status)
+        assertEquals(CriterionEvaluationStatus.NOT_EVALUATED, evaluation.criteria.single().status)
     }
 
     @Test
