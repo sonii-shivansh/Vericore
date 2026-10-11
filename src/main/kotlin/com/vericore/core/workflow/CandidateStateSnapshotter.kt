@@ -42,7 +42,8 @@ object CandidateStateSnapshotter {
         val path: String,
         val kind: Byte,
         val size: Long,
-        val contentDigest: ByteArray
+        val contentDigest: ByteArray,
+        val executable: Boolean
     )
 
     fun capture(repository: File): CandidateStateSnapshot {
@@ -66,7 +67,7 @@ object CandidateStateSnapshotter {
                 val relativePath = rootPath.relativize(file).toString().replace(File.separatorChar, '/')
                 val entry = if (attrs.isSymbolicLink) {
                     val target = Files.readSymbolicLink(file).toString().toByteArray(Charsets.UTF_8)
-                    Entry(relativePath, 'L'.code.toByte(), target.size.toLong(), sha256(target))
+                    Entry(relativePath, 'L'.code.toByte(), target.size.toLong(), sha256(target), false)
                 } else {
                     hashRegularFile(file, relativePath, attrs)
                 }
@@ -88,6 +89,7 @@ object CandidateStateSnapshotter {
             digest.update(entry.kind)
             digest.update(ByteBuffer.allocate(Long.SIZE_BYTES).putLong(entry.size).array())
             digest.update(entry.contentDigest)
+            digest.update(if (entry.executable) 1 else 0)
             totalBytes = Math.addExact(totalBytes, entry.size)
         }
 
@@ -100,6 +102,7 @@ object CandidateStateSnapshotter {
 
     private fun hashRegularFile(path: Path, relativePath: String, initial: BasicFileAttributes): Entry {
         val contentDigest = MessageDigest.getInstance("SHA-256")
+        val initialExecutable = Files.isExecutable(path)
         var bytesRead = 0L
         Files.newInputStream(path).use { input ->
             val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
@@ -117,12 +120,13 @@ object CandidateStateSnapshotter {
             initial.size() != after.size() ||
             initial.lastModifiedTime() != after.lastModifiedTime() ||
             initial.fileKey() != after.fileKey() ||
+            initialExecutable != Files.isExecutable(path) ||
             bytesRead != after.size()
         ) {
             throw IOException("Repository candidate file changed while being snapshotted: $relativePath")
         }
 
-        return Entry(relativePath, 'F'.code.toByte(), bytesRead, contentDigest.digest())
+        return Entry(relativePath, 'F'.code.toByte(), bytesRead, contentDigest.digest(), initialExecutable)
     }
 
     private fun sha256(bytes: ByteArray): ByteArray = MessageDigest.getInstance("SHA-256").digest(bytes)
