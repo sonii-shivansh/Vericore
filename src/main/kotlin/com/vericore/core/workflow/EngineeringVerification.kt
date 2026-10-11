@@ -114,7 +114,7 @@ object EngineeringVerification {
         }
         val contractValid = contractReasons.isEmpty()
         val contractResult = AgentChangeContractResult(contract, contractValid, contractReasons)
-        val specificationEvaluation = ChangeSpecificationEvaluator.evaluate(contract.specification)
+        val specificationEvaluation = ChangeSpecificationEvaluator.evaluate(contract.specification, contract.evidenceIds.toSet())
         val execution = if (contractValid && safety.status != SafetyStatus.FAIL && analysisStateStable) {
             VerificationExecutionResult(commands = VerificationCommandExecutor.execute(root, contract.verificationCommands))
         } else {

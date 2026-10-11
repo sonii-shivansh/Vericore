@@ -36,6 +36,27 @@ class ChangeSpecificationTest {
     }
 
     @Test
+    fun `evidence bindings are normalized and must reference declared criterion IDs`() {
+        val normalized = ChangeSpecification(
+            acceptanceCriteria = listOf("Invalid input returns 400"),
+            evidenceBindings = listOf(
+                CriterionEvidenceBinding("acceptance-criterion-001", listOf(" hotspot.1 ", "file.1", "file.1"))
+            )
+        ).normalized()
+
+        assertEquals(
+            listOf(CriterionEvidenceBinding("acceptance-criterion-001", listOf("file.1", "hotspot.1"))),
+            normalized.evidenceBindings
+        )
+        assertFailsWith<IllegalArgumentException> {
+            ChangeSpecification(
+                acceptanceCriteria = listOf("Invalid input returns 400"),
+                evidenceBindings = listOf(CriterionEvidenceBinding("acceptance-criterion-002", listOf("file.1")))
+            ).normalized()
+        }
+    }
+
+    @Test
     fun `canonical form is stable and distinguishes delimiter-like user text`() {
         val first = ChangeSpecification(requiredBehaviors = listOf("a:b", "c"))
         val same = ChangeSpecification(requiredBehaviors = listOf("a:b", "c"))

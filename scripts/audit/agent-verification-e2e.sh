@@ -57,7 +57,10 @@ prepare = mcp([{
             "forbiddenBehaviors":["Do not alter unrelated files"],
             "protectedInvariants":["Keep the public method signature stable"],
             "acceptanceCriteria":["The target value is updated by the requested operation"],
-            "requiredEvidence":["Relevant unit test results"]
+            "requiredEvidence":["Relevant unit test results"],
+            "evidenceBindings":[
+                {"criterionId":"acceptance-criterion-001","evidenceIds":["file.1"]}
+            ]
         }
     }}
 }])
@@ -97,8 +100,11 @@ verification = json.loads(next(x["text"] for x in verify_result["content"]))
 assert verification["status"] == "REVIEW_REQUIRED", verification
 evaluation = verification["specificationEvaluation"]
 assert evaluation["status"] == "NOT_EVALUATED", evaluation
-assert evaluation["notEvaluatedCount"] == 5 and evaluation["evaluatedCount"] == 0, evaluation
-assert all(item["status"] == "NOT_EVALUATED" for item in evaluation["criteria"]), evaluation
+assert evaluation["notEvaluatedCount"] == 4 and evaluation["evaluatedCount"] == 1, evaluation
+criterion_statuses = {item["id"]: item["status"] for item in evaluation["criteria"]}
+assert criterion_statuses["acceptance-criterion-001"] == "INCONCLUSIVE", evaluation
+assert all(status == "NOT_EVALUATED" for criterion_id, status in criterion_statuses.items()
+           if criterion_id != "acceptance-criterion-001"), evaluation
 
 # The CLI receipt must carry the same explicit evaluation and remain REVIEW_REQUIRED.
 cli_verify = subprocess.run(

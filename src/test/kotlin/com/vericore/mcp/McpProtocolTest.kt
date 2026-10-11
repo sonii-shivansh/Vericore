@@ -30,6 +30,7 @@ class McpProtocolTest {
         assertTrue(result.contains("protectedInvariants"))
         assertTrue(result.contains("acceptanceCriteria"))
         assertTrue(result.contains("requiredEvidence"))
+        assertTrue(result.contains("evidenceBindings"))
         assertTrue(!result.contains("codecontext_"))
     }
 

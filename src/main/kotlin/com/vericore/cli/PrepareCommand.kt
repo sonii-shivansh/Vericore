@@ -25,6 +25,7 @@ class PrepareCommand : CliktCommand(name = "prepare", help = "Prepare an evidenc
     private val protectedInvariants by option("--protect-invariant", help = "Existing invariant this change must preserve").multiple()
     private val acceptanceCriteria by option("--acceptance-criterion", help = "Observable criterion for accepting this change").multiple()
     private val requiredEvidence by option("--required-evidence", help = "Evidence that must be supplied/reviewed for acceptance").multiple()
+    private val criterionEvidence by option("--criterion-evidence", help = "Bind a criterion ID to a prepared evidence ID as <criterion-id>=<evidence-id>; repeatable").multiple()
 
     override fun run() {
         val root = File(path).canonicalFile
@@ -33,7 +34,8 @@ class PrepareCommand : CliktCommand(name = "prepare", help = "Prepare an evidenc
             forbiddenBehaviors = forbiddenBehaviors,
             protectedInvariants = protectedInvariants,
             acceptanceCriteria = acceptanceCriteria,
-            requiredEvidence = requiredEvidence
+            requiredEvidence = requiredEvidence,
+            evidenceBindings = parseCriterionEvidenceBindings(criterionEvidence)
         )
         val result = runBlocking { EngineeringPreparation.prepare(root.path, changeSummary, plannedPaths, specification) }
         val json = Json { prettyPrint = true; encodeDefaults = true }

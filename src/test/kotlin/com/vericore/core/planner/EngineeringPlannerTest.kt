@@ -165,6 +165,56 @@ class EngineeringPlannerTest {
     }
 
     @Test
+    fun `planner rejects criterion bindings absent from grounded evidence`() {
+        val repo = Files.createTempDirectory("vericore-evidence-binding-test").toFile()
+        try {
+            File(repo, "build.gradle.kts").writeText("plugins {}\n")
+            assertFailsWith<IllegalArgumentException> {
+                planner.plan(
+                    EngineeringPlanRequest(
+                        changeSummary = "Require evidence for a criterion",
+                        evidence = GroundedEvidence(
+                            citations = listOf(EvidenceCitation("file.1", "file-graph-fact", "src/App.kt", "source evidence"))
+                        ),
+                        repositoryPath = repo.path,
+                        specification = ChangeSpecification(
+                            acceptanceCriteria = listOf("Invalid input returns 400"),
+                            evidenceBindings = listOf(CriterionEvidenceBinding("acceptance-criterion-001", listOf("missing.evidence")))
+                        )
+                    )
+                )
+            }
+        } finally {
+            repo.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `planner preserves valid criterion evidence bindings`() {
+        val repo = Files.createTempDirectory("vericore-valid-evidence-binding-test").toFile()
+        try {
+            File(repo, "build.gradle.kts").writeText("plugins {}\n")
+            val plan = planner.plan(
+                EngineeringPlanRequest(
+                    changeSummary = "Require evidence for a criterion",
+                    evidence = GroundedEvidence(
+                        citations = listOf(EvidenceCitation("file.1", "file-graph-fact", "src/App.kt", "source evidence"))
+                    ),
+                    repositoryPath = repo.path,
+                    specification = ChangeSpecification(
+                        acceptanceCriteria = listOf("Invalid input returns 400"),
+                        evidenceBindings = listOf(CriterionEvidenceBinding("acceptance-criterion-001", listOf("file.1")))
+                    )
+                )
+            )
+            assertEquals(listOf(CriterionEvidenceBinding("acceptance-criterion-001", listOf("file.1"))), plan.specification.evidenceBindings)
+            assertTrue("file.1" in plan.evidenceIds)
+        } finally {
+            repo.deleteRecursively()
+        }
+    }
+
+    @Test
     fun `unsafe changed paths are rejected`() {
         assertFailsWith<IllegalArgumentException> {
             planner.plan(

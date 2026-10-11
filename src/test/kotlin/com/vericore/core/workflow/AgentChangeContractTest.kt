@@ -77,6 +77,25 @@ class AgentChangeContractTest {
     }
 
     @Test
+    fun `criterion evidence bindings are included in contract fingerprint`() {
+        val base = plan("src/App.kt").copy(
+            specification = ChangeSpecification(acceptanceCriteria = listOf("Invalid input returns 400"))
+        )
+        val bound = base.copy(
+            specification = base.specification.copy(
+                evidenceBindings = listOf(
+                    com.vericore.core.planner.CriterionEvidenceBinding("acceptance-criterion-001", listOf("file.1"))
+                )
+            )
+        )
+
+        assertNotEquals(
+            AgentChangeContract.fingerprintFor(base),
+            AgentChangeContract.fingerprintFor(bound)
+        )
+    }
+
+    @Test
     fun `empty specification preserves legacy contract fingerprint semantics`() {
         val base = plan("src/App.kt")
         val explicitEmpty = base.copy(specification = ChangeSpecification())

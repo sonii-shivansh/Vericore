@@ -38,6 +38,40 @@ class ChangeSpecificationEvaluatorTest {
     }
 
     @Test
+    fun `linked evidence remains inconclusive until criterion-specific evaluation exists`() {
+        val evaluation = ChangeSpecificationEvaluator.evaluate(
+            ChangeSpecification(
+                acceptanceCriteria = listOf("Invalid input returns 400"),
+                evidenceBindings = listOf(
+                    com.vericore.core.planner.CriterionEvidenceBinding("acceptance-criterion-001", listOf("file.1"))
+                )
+            ),
+            availableEvidenceIds = setOf("file.1")
+        )!!
+
+        assertEquals(CriterionEvaluationStatus.INCONCLUSIVE, evaluation.status)
+        assertEquals(CriterionEvaluationStatus.INCONCLUSIVE, evaluation.criteria.single().status)
+        assertEquals(listOf("file.1"), evaluation.criteria.single().evidenceIds)
+    }
+
+    @Test
+    fun `dangling evidence binding fails closed`() {
+        val evaluation = ChangeSpecificationEvaluator.evaluate(
+            ChangeSpecification(
+                acceptanceCriteria = listOf("Invalid input returns 400"),
+                evidenceBindings = listOf(
+                    com.vericore.core.planner.CriterionEvidenceBinding("acceptance-criterion-001", listOf("missing.evidence"))
+                )
+            ),
+            availableEvidenceIds = setOf("file.1")
+        )!!
+
+        assertEquals(CriterionEvaluationStatus.FAIL, evaluation.status)
+        assertEquals(CriterionEvaluationStatus.FAIL, evaluation.criteria.single().status)
+        assertTrue(evaluation.criteria.single().reason.contains("missing.evidence"))
+    }
+
+    @Test
     fun `malformed persisted specification fails closed`() {
         val evaluation = ChangeSpecificationEvaluator.evaluate(
             ChangeSpecification(requiredBehaviors = listOf("   "))

@@ -156,12 +156,18 @@ Use `vericore_recommendations` when an agent needs actionable engineering priori
     "forbiddenBehaviors": ["Do not log credentials"],
     "protectedInvariants": ["Retries remain idempotent"],
     "acceptanceCriteria": ["Invalid retry counts return a validation error"],
-    "requiredEvidence": ["Unit-test results for invalid retry counts"]
+    "requiredEvidence": ["Unit-test results for invalid retry counts"],
+    "evidenceBindings": [
+      {
+        "criterionId": "acceptance-criterion-001",
+        "evidenceIds": ["file.1"]
+      }
+    ]
   }
 }
 ```
 
-The `specification` object is optional. Its lists are caller-authored, validated, preserved in the plan and contract, and included in the contract fingerprint when non-empty. The presence of a criterion is not proof that Vericore has evaluated or passed it.
+The `specification` object is optional. Its lists are caller-authored, validated, preserved in the plan and contract, and included in the contract fingerprint when non-empty. `evidenceBindings` maps stable criterion IDs to evidence IDs already included in the contract. Unknown criterion IDs or evidence IDs fail closed; a valid link is still `INCONCLUSIVE` until evidence content is evaluated. The presence of a criterion or an evidence link is not proof that Vericore has passed it.
 
 Preparation persists repository-scoped artifacts, including:
 

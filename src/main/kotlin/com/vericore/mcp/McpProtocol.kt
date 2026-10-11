@@ -149,6 +149,36 @@ ${diff.take(12000)}${if (diff.length > 12000) "\n...[diff truncated]" else ""}
             put("protectedInvariants", stringArrayProperty("Existing invariants the change must preserve"))
             put("acceptanceCriteria", stringArrayProperty("Observable criteria for accepting the change"))
             put("requiredEvidence", stringArrayProperty("Evidence that must be supplied or reviewed for acceptance"))
+            put("evidenceBindings", buildJsonObject {
+                put("type", JsonPrimitive("array"))
+                put("description", JsonPrimitive("Bind stable criterion IDs to evidence citation IDs already present in the prepared contract. A binding does not itself prove the criterion."))
+                put("maxItems", JsonPrimitive(200))
+                put("items", buildJsonObject {
+                    put("type", JsonPrimitive("object"))
+                    put("required", buildJsonArray {
+                        add(JsonPrimitive("criterionId"))
+                        add(JsonPrimitive("evidenceIds"))
+                    })
+                    put("additionalProperties", JsonPrimitive(false))
+                    put("properties", buildJsonObject {
+                        put("criterionId", buildJsonObject {
+                            put("type", JsonPrimitive("string"))
+                            put("minLength", JsonPrimitive(1))
+                            put("maxLength", JsonPrimitive(100))
+                        })
+                        put("evidenceIds", buildJsonObject {
+                            put("type", JsonPrimitive("array"))
+                            put("minItems", JsonPrimitive(1))
+                            put("maxItems", JsonPrimitive(20))
+                            put("items", buildJsonObject {
+                                put("type", JsonPrimitive("string"))
+                                put("minLength", JsonPrimitive(1))
+                                put("maxLength", JsonPrimitive(200))
+                            })
+                        })
+                    })
+                })
+            })
         })
     }
     private fun stringArrayProperty(description: String): JsonObject = buildJsonObject {
