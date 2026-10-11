@@ -23,7 +23,7 @@ Unless stated otherwise, `path` means a local repository directory. Vericore ana
 
 ### JSON output
 
-Commands that provide `--json` write their machine-readable artifact under the analyzed repository's `output/` directory. Commands that do not provide `--json` print their human-readable result to stdout.
+Most analysis commands that provide `--json` write a machine-readable artifact under the analyzed repository's `output/` directory and still print a human-readable summary to stdout. This flag does not universally mean JSON-only stdout. Exceptions include `init --json`, which emits a product-result JSON envelope to stdout, and commands such as `plan` and `verify`, whose stdout/file behavior is controlled by their own `--output` options. See [CLI Output Contract Inventory](CLI_OUTPUT_CONTRACTS.md) for the command-by-command behavior.
 
 ---
 
