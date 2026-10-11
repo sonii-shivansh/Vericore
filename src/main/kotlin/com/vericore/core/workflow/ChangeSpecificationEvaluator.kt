@@ -9,7 +9,8 @@ enum class SpecificationCriterionKind {
     FORBIDDEN_BEHAVIOR,
     PROTECTED_INVARIANT,
     ACCEPTANCE_CRITERION,
-    REQUIRED_EVIDENCE
+    REQUIRED_EVIDENCE,
+    SPECIFICATION_VALIDITY
 }
 
 @Serializable
@@ -51,7 +52,21 @@ object ChangeSpecificationEvaluator {
         "No criterion-specific evidence evaluator is implemented; this obligation requires explicit review."
 
     fun evaluate(specification: ChangeSpecification): ChangeSpecificationEvaluation? {
-        val normalized = specification.normalized()
+        val normalized = runCatching { specification.normalized() }.getOrElse { error ->
+            val invalid = SpecificationCriterionEvaluation(
+                id = "specification-validity-001",
+                kind = SpecificationCriterionKind.SPECIFICATION_VALIDITY,
+                statement = "The persisted specification must satisfy the documented size and content limits.",
+                status = CriterionEvaluationStatus.FAIL,
+                reason = "Invalid persisted specification: ${error.message ?: "validation failed"}"
+            )
+            return ChangeSpecificationEvaluation(
+                status = CriterionEvaluationStatus.FAIL,
+                criteria = listOf(invalid),
+                evaluatedCount = 1,
+                notEvaluatedCount = 0
+            )
+        }
         if (normalized.isEmpty()) return null
 
         val criteria = buildList {
