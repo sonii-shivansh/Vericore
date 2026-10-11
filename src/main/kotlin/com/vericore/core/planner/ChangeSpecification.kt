@@ -9,9 +9,16 @@ import kotlinx.serialization.Serializable
  * Their presence does not imply that each criterion has already been semantically evaluated.
  */
 @Serializable
+enum class CriterionEvidenceRule {
+    MANUAL_REVIEW,
+    ALL_BOUND_COMMANDS_SUCCEEDED
+}
+
+@Serializable
 data class CriterionEvidenceBinding(
     val criterionId: String,
-    val evidenceIds: List<String>
+    val evidenceIds: List<String>,
+    val rule: CriterionEvidenceRule = CriterionEvidenceRule.MANUAL_REVIEW
 )
 
 @Serializable
@@ -94,7 +101,15 @@ data class ChangeSpecification(
                 }
                 trimmed
             }.distinct().sorted()
-            CriterionEvidenceBinding(criterionId, ids)
+            if (binding.rule == CriterionEvidenceRule.ALL_BOUND_COMMANDS_SUCCEEDED) {
+                require(criterionId.startsWith("required-evidence-")) {
+                    "ALL_BOUND_COMMANDS_SUCCEEDED is only supported for required-evidence criteria"
+                }
+                require(ids.all { it.matches(Regex("^verification-command-[0-9]{3}$")) }) {
+                    "ALL_BOUND_COMMANDS_SUCCEEDED bindings must reference verification-command-NNN evidence IDs"
+                }
+            }
+            CriterionEvidenceBinding(criterionId, ids, binding.rule)
         }.sortedBy { it.criterionId }
         require(normalizedBindings.map { it.criterionId }.distinct().size == normalizedBindings.size) {
             "Each criterion may have only one evidence binding"
@@ -103,7 +118,8 @@ data class ChangeSpecification(
             "A change specification may reference at most $MAX_TOTAL_ITEMS total evidence IDs"
         }
         require(normalizedBindings.sumOf { binding ->
-            binding.criterionId.length + binding.evidenceIds.sumOf { it.length }
+            binding.criterionId.length + binding.evidenceIds.sumOf { it.length } +
+                if (binding.rule == CriterionEvidenceRule.MANUAL_REVIEW) 0 else binding.rule.name.length
         } <= MAX_TOTAL_CHARACTERS) {
             "Evidence bindings may contain at most $MAX_TOTAL_CHARACTERS total characters"
         }
@@ -136,6 +152,10 @@ data class ChangeSpecification(
                     val ids = binding.evidenceIds.distinct().sorted()
                     append(ids.size).append(':')
                     ids.forEach { id -> append(id.length).append(':').append(id) }
+                    // Preserve fingerprints for bindings created before evidence rules existed.
+                    if (binding.rule != CriterionEvidenceRule.MANUAL_REVIEW) {
+                        append(binding.rule.name.length).append(':').append(binding.rule.name)
+                    }
                 }
             })
         }
