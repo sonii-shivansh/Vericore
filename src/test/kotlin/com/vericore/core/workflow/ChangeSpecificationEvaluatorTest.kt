@@ -38,6 +38,18 @@ class ChangeSpecificationEvaluatorTest {
     }
 
     @Test
+    fun `malformed persisted specification fails closed`() {
+        val evaluation = ChangeSpecificationEvaluator.evaluate(
+            ChangeSpecification(requiredBehaviors = listOf("   "))
+        )!!
+
+        assertEquals(CriterionEvaluationStatus.FAIL, evaluation.status)
+        assertEquals(1, evaluation.evaluatedCount)
+        assertEquals(0, evaluation.notEvaluatedCount)
+        assertEquals(SpecificationCriterionKind.SPECIFICATION_VALIDITY, evaluation.criteria.single().kind)
+    }
+
+    @Test
     fun `empty specification does not change legacy verification behavior`() {
         assertNull(ChangeSpecificationEvaluator.evaluate(ChangeSpecification()))
     }
