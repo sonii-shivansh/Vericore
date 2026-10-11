@@ -37,6 +37,11 @@ object CandidateStateSnapshotter {
         "output",
         "target"
     )
+    private val sourceOrFixtureDirectoryNames = setOf(
+        "src", "test", "tests", "testdata", "test-fixtures", "test-fixture",
+        "fixtures", "fixture", "resources", "examples", "benchmark", "docs"
+    )
+    private val diagnosticOutputExtensions = setOf("log", "tmp", "temp", "trace", "out")
 
     private data class Entry(
         val path: String,
@@ -50,6 +55,7 @@ object CandidateStateSnapshotter {
         val root = repository.canonicalFile
         require(root.isDirectory) { "Repository path is not a directory: ${repository.path}" }
         val rootPath = root.toPath().normalize()
+        val trackedPaths = trackedPaths(root)
         val entries = mutableListOf<Entry>()
 
         Files.walkFileTree(rootPath, object : SimpleFileVisitor<Path>() {
@@ -65,6 +71,9 @@ object CandidateStateSnapshotter {
                     return FileVisitResult.CONTINUE
                 }
                 val relativePath = rootPath.relativize(file).toString().replace(File.separatorChar, '/')
+                if (isUntrackedDiagnosticOutput(relativePath, trackedPaths)) {
+                    return FileVisitResult.CONTINUE
+                }
                 val entry = if (attrs.isSymbolicLink) {
                     val target = Files.readSymbolicLink(file).toString().toByteArray(Charsets.UTF_8)
                     Entry(relativePath, 'L'.code.toByte(), target.size.toLong(), sha256(target), false)
@@ -99,6 +108,34 @@ object CandidateStateSnapshotter {
             totalBytes = totalBytes
         )
     }
+
+    /**
+     * Untracked diagnostic logs commonly appear as side effects of test commands.
+     * Tracked files and files under source/test/fixture trees remain part of the digest.
+     * When Git metadata is unavailable, do not make this heuristic exclusion.
+     */
+    private fun isUntrackedDiagnosticOutput(relativePath: String, trackedPaths: Set<String>?): Boolean {
+        if (trackedPaths == null || relativePath in trackedPaths) return false
+        val parts = relativePath.split('/')
+        if (parts.any { it in sourceOrFixtureDirectoryNames }) return false
+        val extension = parts.last().substringAfterLast('.', "").lowercase()
+        return extension in diagnosticOutputExtensions
+    }
+
+    private fun trackedPaths(root: File): Set<String>? = runCatching {
+        val process = ProcessBuilder("git", "ls-files", "--cached", "-z")
+            .directory(root)
+            .redirectErrorStream(true)
+            .start()
+        val output = process.inputStream.readBytes()
+        val exitCode = process.waitFor()
+        if (exitCode != 0) return@runCatching null
+        output.toString(Charsets.UTF_8)
+            .split('\\u0000')
+            .filter(String::isNotEmpty)
+            .map { it.replace('\\\\', '/') }
+            .toSet()
+    }.getOrNull()
 
     private fun hashRegularFile(path: Path, relativePath: String, initial: BasicFileAttributes): Entry {
         val contentDigest = MessageDigest.getInstance("SHA-256")
