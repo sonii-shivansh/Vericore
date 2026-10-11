@@ -15,8 +15,9 @@ import java.security.MessageDigest
  * A deterministic digest of repository inputs at one observed point in time.
  *
  * Version-control metadata and common generated/build-output directories are excluded.
- * Everything else is content-hashed, including untracked files and non-source build inputs,
- * so changes to tests, manifests, configuration, or source without a new Git HEAD are visible.
+ * Tracked files and untracked repository inputs are content-hashed, including non-source build
+ * inputs. When Git is available, untracked diagnostic files (log/tmp/temp/trace/out) outside
+ * source, test, fixture, resource, example, benchmark, and documentation trees are excluded.
  */
 data class CandidateStateSnapshot(
     val schemaVersion: String = "1.0",
