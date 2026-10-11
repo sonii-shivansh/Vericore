@@ -1,5 +1,6 @@
 package com.vericore.cli
 
+import com.vericore.core.temporal.CodebaseSnapshot
 import com.vericore.core.temporal.TemporalAnalyzer
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
@@ -28,33 +29,41 @@ class EvolutionCommand : CliktCommand(
         val analyzer = TemporalAnalyzer(root.path)
         try {
             val snapshots = analyzer.analyzeEvolution(months, interval)
-
-            echo("\n📈 Evolution Report")
-            echo("------------------------------------------------")
-            echo("Timestamp            | Commit  | Files | Lines")
-            echo("------------------------------------------------")
-            val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneId.systemDefault())
-
-            snapshots.forEach { snapshot ->
-                echo(
-                    "${formatter.format(snapshot.timestamp)} | ${snapshot.commitHash.take(7)} | " +
-                        "${snapshot.totalFiles.toString().padStart(5)} | ${snapshot.totalLines}"
-                )
-            }
+            echo(renderEvolutionReport(snapshots))
 
             if (snapshots.isEmpty()) {
                 throw IllegalStateException("No historical snapshots were found. Is this a git repository with commit history?")
             }
+        } catch (e: Exception) {
+            throw IllegalStateException("Evolution analysis failed: ${e.message ?: e::class.simpleName}", e)
+        }
+    }
+}
 
+internal fun renderEvolutionReport(
+    snapshots: List<CodebaseSnapshot>,
+    zoneId: ZoneId = ZoneId.systemDefault()
+): String {
+    val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(zoneId)
+    val sections = buildList {
+        add(
+            HumanCommandOutput.section(
+                "Snapshots",
+                "Timestamp            | Commit  | Files | Lines",
+                *snapshots.map { snapshot ->
+                    "${formatter.format(snapshot.timestamp)} | ${snapshot.commitHash.take(7)} | " +
+                        "${snapshot.totalFiles.toString().padStart(5)} | ${snapshot.totalLines}"
+                }.toTypedArray()
+            )
+        )
+        if (snapshots.isNotEmpty()) {
             val initialFiles = snapshots.first().totalFiles
             val finalFiles = snapshots.last().totalFiles
             val growth = if (initialFiles > 0) {
                 ((finalFiles - initialFiles).toDouble() / initialFiles) * 100
             } else 0.0
-
-            echo("\n📊 Net file growth: ${String.format("%.1f", growth)}% ($initialFiles → $finalFiles files)")
-        } catch (e: Exception) {
-            throw IllegalStateException("Evolution analysis failed: ${e.message ?: e::class.simpleName}", e)
+            add(HumanCommandOutput.section("Growth", "Net file growth: ${String.format("%.1f", growth)}% ($initialFiles → $finalFiles files)"))
         }
     }
+    return HumanCommandOutput.render(title = "📈 Evolution Report", sections = sections)
 }
