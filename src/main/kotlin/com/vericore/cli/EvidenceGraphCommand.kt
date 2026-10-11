@@ -34,17 +34,34 @@ class EvidenceGraphCommand : CliktCommand(
         val graph = SemanticEvidenceGraphBuilder.build(analysis)
         val artifact = SemanticEvidenceGraphArtifact.fromGraph(graph)
 
-        if (jsonOutput) {
+        val artifactPath = if (jsonOutput) {
             val output = outputDir.resolve("semantic-evidence-graph.json")
             output.writeText(SemanticEvidenceGraphArtifactCodec.encode(artifact))
-            echo("🔗 Semantic evidence graph: ${output.path}")
+            output.path
+        } else {
+            null
         }
 
-        echo("🔗 Semantic Evidence Graph")
-        echo("├─ Repository: ${artifact.repositoryId}")
-        echo("├─ Commit: ${artifact.observedCommit}")
-        echo("├─ Nodes: ${artifact.nodeCount}")
-        echo("├─ Edges: ${artifact.edgeCount}")
-        echo("└─ Graph digest: ${artifact.digest}")
+        echo(renderSemanticEvidenceGraphSummary(artifact, artifactPath))
     }
+}
+
+internal fun renderSemanticEvidenceGraphSummary(
+    artifact: SemanticEvidenceGraphArtifact,
+    outputPath: String? = null
+): String {
+    val sections = buildList {
+        outputPath?.let { add(HumanCommandOutput.section("Report", "Semantic evidence graph: $it")) }
+        add(
+            HumanCommandOutput.section(
+                "Summary",
+                "Repository: ${artifact.repositoryId}",
+                "Commit: ${artifact.observedCommit}",
+                "Nodes: ${artifact.nodeCount}",
+                "Edges: ${artifact.edgeCount}",
+                "Graph digest: ${artifact.digest}"
+            )
+        )
+    }
+    return HumanCommandOutput.render(title = "🔗 Semantic Evidence Graph", sections = sections)
 }
