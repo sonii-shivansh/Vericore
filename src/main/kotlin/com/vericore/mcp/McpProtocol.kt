@@ -176,6 +176,14 @@ ${diff.take(12000)}${if (diff.length > 12000) "\n...[diff truncated]" else ""}
                                 put("maxLength", JsonPrimitive(200))
                             })
                         })
+                        put("rule", buildJsonObject {
+                            put("type", JsonPrimitive("string"))
+                            put("enum", buildJsonArray {
+                                add(JsonPrimitive("MANUAL_REVIEW"))
+                                add(JsonPrimitive("ALL_BOUND_COMMANDS_SUCCEEDED"))
+                            })
+                            put("description", JsonPrimitive("ALL_BOUND_COMMANDS_SUCCEEDED is only valid for required-evidence criteria and proves command success only, not arbitrary behavior semantics."))
+                        })
                     })
                 })
             })
