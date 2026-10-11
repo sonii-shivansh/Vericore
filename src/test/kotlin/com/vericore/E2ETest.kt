@@ -17,12 +17,12 @@ class E2ETest {
             Files.createDirectories(repository.resolve("src/main/kotlin/example"))
             Files.writeString(
                 repository.resolve("src/main/kotlin/example/Test.kt"),
-                "package example\\nclass Test { fun hello(): String = \"hello\" }\\n"
+                "package example\nclass Test { fun hello(): String = \"hello\" }\n"
             )
 
             val result = ImprovedAnalyzeCommand().test(repository.toString(), "--no-cache")
 
-            assertEquals(0, result.statusCode, result.output)
+            assertEquals(0, result.statusCode, result.stdout)
             assertTrue(result.stdout.contains("Analysis snapshot"), result.stdout)
             assertTrue(Files.isRegularFile(repository.resolve("output/analysis-snapshot.json")))
             assertTrue(Files.size(repository.resolve("output/analysis-snapshot.json")) > 0)
