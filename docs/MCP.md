@@ -148,10 +148,20 @@ Use `vericore_recommendations` when an agent needs actionable engineering priori
 
 ```json
 {
-  "repoPath":"/absolute/path/to/repository",
-  "changeSummary":"Add payment retry validation",\n  "plannedPaths":["src/main/kotlin/com/example/PaymentService.kt"]
+  "repoPath": "/absolute/path/to/repository",
+  "changeSummary": "Add payment retry validation",
+  "plannedPaths": ["src/main/kotlin/com/example/PaymentService.kt"],
+  "specification": {
+    "requiredBehaviors": ["Reject invalid retry counts"],
+    "forbiddenBehaviors": ["Do not log credentials"],
+    "protectedInvariants": ["Retries remain idempotent"],
+    "acceptanceCriteria": ["Invalid retry counts return a validation error"],
+    "requiredEvidence": ["Unit-test results for invalid retry counts"]
+  }
 }
 ```
+
+The `specification` object is optional. Its lists are caller-authored, validated, preserved in the plan and contract, and included in the contract fingerprint when non-empty. The presence of a criterion is not proof that Vericore has evaluated or passed it.
 
 Preparation persists repository-scoped artifacts, including:
 
@@ -181,7 +191,7 @@ Verify ORIGINAL persisted contract
 Tests / human review
 ```
 
-The contract binds repository identity and prepared Git `HEAD` to planned paths. Agents may supply explicit `plannedPaths` during MCP/CLI preparation so the verification scope can be declared before source edits exist., expected components, verification commands, evidence IDs, architecture expectations, and a SHA-256 fingerprint.
+The contract binds repository identity and prepared Git `HEAD` to planned paths, expected components, verification commands, evidence IDs, architecture expectations, and a SHA-256 fingerprint. Optional `specification` lists let an agent record required behaviors, forbidden behaviors, protected invariants, acceptance criteria, and required evidence. These declarations are fingerprint-bound, but their presence does not mean Vericore has already semantically evaluated them. Empty specifications preserve legacy contract fingerprints.
 
 ### Agent workflow guarantee
 
