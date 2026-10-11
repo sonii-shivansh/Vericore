@@ -203,11 +203,29 @@ class EngineeringPlannerTest {
                     repositoryPath = repo.path,
                     specification = ChangeSpecification(
                         acceptanceCriteria = listOf("Invalid input returns 400"),
-                        evidenceBindings = listOf(CriterionEvidenceBinding("acceptance-criterion-001", listOf("file.1")))
+                        requiredEvidence = listOf("Unit-test command succeeds"),
+                        evidenceBindings = listOf(
+                            CriterionEvidenceBinding("acceptance-criterion-001", listOf("file.1")),
+                            CriterionEvidenceBinding(
+                                "required-evidence-001",
+                                listOf(VerificationEvidenceIds.command(1)),
+                                CriterionEvidenceRule.ALL_BOUND_COMMANDS_SUCCEEDED
+                            )
+                        )
                     )
                 )
             )
-            assertEquals(listOf(CriterionEvidenceBinding("acceptance-criterion-001", listOf("file.1"))), plan.specification.evidenceBindings)
+            assertEquals(
+                listOf(
+                    CriterionEvidenceBinding("acceptance-criterion-001", listOf("file.1")),
+                    CriterionEvidenceBinding(
+                        "required-evidence-001",
+                        listOf(VerificationEvidenceIds.command(1)),
+                        CriterionEvidenceRule.ALL_BOUND_COMMANDS_SUCCEEDED
+                    )
+                ),
+                plan.specification.evidenceBindings
+            )
             assertTrue("file.1" in plan.evidenceIds)
         } finally {
             repo.deleteRecursively()
