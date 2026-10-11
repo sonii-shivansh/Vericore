@@ -45,13 +45,34 @@ class RealityCommand : CliktCommand(
             echo("🧭 Engineering reality: ${output.path}")
         }
 
-        echo("🧭 Engineering Reality")
-        echo("├─ Commit: ${reality.repositoryCommit ?: "unknown"}")
-        echo("├─ Files: ${reality.fileCount}")
-        echo("├─ Graph: ${reality.graphNodes} nodes / ${reality.graphEdges} edges")
-        echo("├─ Parse failures: ${reality.parseFailures}")
-        echo("├─ Cycles: ${if (reality.hasCycles) "detected" else "none detected"}")
-        echo("├─ Dirty: ${reality.dirty}")
-        echo("└─ Reality digest: ${reality.realityDigest}")
+        echo(
+            renderEngineeringRealitySummary(
+                reality,
+                if (jsonOutput) outputDir.resolve("engineering-reality.json").path else null
+            )
+        )
     }
+}
+
+
+internal fun renderEngineeringRealitySummary(
+    reality: com.vericore.core.reality.EngineeringRealitySnapshot,
+    outputPath: String? = null
+): String {
+    val sections = buildList {
+        outputPath?.let { add(HumanCommandOutput.section("Report", "Engineering reality: $it")) }
+        add(
+            HumanCommandOutput.section(
+                "Repository",
+                "Commit: ${reality.repositoryCommit ?: "unknown"}",
+                "Files: ${reality.fileCount}",
+                "Graph: ${reality.graphNodes} nodes / ${reality.graphEdges} edges",
+                "Parse failures: ${reality.parseFailures}",
+                "Cycles: ${if (reality.hasCycles) "detected" else "none detected"}",
+                "Dirty: ${reality.dirty}",
+                "Reality digest: ${reality.realityDigest}"
+            )
+        )
+    }
+    return HumanCommandOutput.render(title = "🧭 Engineering Reality", sections = sections)
 }
