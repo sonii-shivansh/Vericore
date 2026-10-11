@@ -192,7 +192,5 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: phase1-product-journey-evidence
-          path: |
-            ${{ runner.temp }}/vericore-phase1-fixture/output/
-            ${{ runner.temp }}/vericore-phase1-fixture/verification-executed.log
+          path: ${{ runner.temp }}/vericore-phase1-fixture/output/
           if-no-files-found: ignore
