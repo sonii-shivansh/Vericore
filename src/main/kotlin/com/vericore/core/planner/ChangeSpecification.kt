@@ -8,6 +8,15 @@ import kotlinx.serialization.Serializable
  * Vericore records these declarations and binds them into the plan/contract fingerprint.
  * Their presence does not imply that each criterion has already been semantically evaluated.
  */
+object VerificationEvidenceIds {
+    fun command(index: Int): String {
+        require(index > 0) { "Verification command indices are one-based" }
+        return "verification-command-${index.toString().padStart(3, '0')}"
+    }
+
+    fun isCommand(id: String): Boolean = id.matches(Regex("^verification-command-[0-9]{3}$"))
+}
+
 @Serializable
 enum class CriterionEvidenceRule {
     MANUAL_REVIEW,
@@ -105,7 +114,7 @@ data class ChangeSpecification(
                 require(criterionId.startsWith("required-evidence-")) {
                     "ALL_BOUND_COMMANDS_SUCCEEDED is only supported for required-evidence criteria"
                 }
-                require(ids.all { it.matches(Regex("^verification-command-[0-9]{3}$")) }) {
+                require(ids.all(VerificationEvidenceIds::isCommand)) {
                     "ALL_BOUND_COMMANDS_SUCCEEDED bindings must reference verification-command-NNN evidence IDs"
                 }
             }
