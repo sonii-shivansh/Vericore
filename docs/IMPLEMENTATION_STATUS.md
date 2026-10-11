@@ -43,6 +43,7 @@
 - persisted output/agent-change-contract.json
 - contract tamper, plan mismatch, repository mismatch, stale-HEAD, and unexpected-change detection
 - candidate repository-input state digests captured before analysis, before declared verification commands, and after those commands; relevant candidate drift fails closed
+- optional structured change specifications (required/forbidden behaviors, protected invariants, acceptance criteria, required evidence) preserved in plans/contracts and bound into the contract fingerprint; semantic evaluation of these declarations is not yet implemented
 - verification against the persisted contract rather than a replacement derived from the mutated repository
 
 **Authoritative rule:** the persisted contract is the verification boundary.
@@ -101,7 +102,7 @@ The master strategic roadmap is documented in [Product Direction](PRODUCT_DIRECT
 
 **Current operational priority: validate post-release fixes and maintain exact-SHA release discipline.** The v0.9.0 publication is complete. Follow-up commits on `main` are unreleased development; they must pass the required gates on the exact candidate SHA before a new patch tag or artifacts are published.
 
-**Next product focus after the release: Phase 1 — The 60-Second Vericore.** Make the existing capabilities discoverable through a coherent end-user journey without removing lower-level commands or weakening the deterministic verification boundary.
+**Current product focus: structured change specification.** The prepare/plan CLI and MCP paths can record explicit required behaviors, forbidden behaviors, protected invariants, acceptance criteria, and required evidence, with the specification bound to the plan and contract fingerprint. Deterministic evaluation of each declared criterion remains future work; the current feature records obligations rather than claiming they have passed.
 
 ### Ongoing regression expectations
 
