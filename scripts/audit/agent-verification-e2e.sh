@@ -57,7 +57,7 @@ prepare = mcp([{
             "forbiddenBehaviors":["Do not alter unrelated files"],
             "protectedInvariants":["Keep the public method signature stable"],
             "acceptanceCriteria":["The target value is updated by the requested operation"],
-            "requiredEvidence":["Relevant unit test results"],
+            "requiredEvidence":["The declared unit-test command exits successfully"],
             "evidenceBindings":[
                 {"criterionId":"acceptance-criterion-001","evidenceIds":["file.1"]},
                 {"criterionId":"required-evidence-001","evidenceIds":["verification-command-001"],"rule":"ALL_BOUND_COMMANDS_SUCCEEDED"}
