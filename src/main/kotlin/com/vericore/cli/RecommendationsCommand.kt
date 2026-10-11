@@ -32,14 +32,25 @@ class RecommendationsCommand : CliktCommand(
             output.writeText(Json { prettyPrint = true; encodeDefaults = true }.encodeToString(recommendations))
             echo("💡 Recommendations: ${output.absolutePath}")
         }
-        echo("💡 Engineering Recommendations")
-        recommendations.forEachIndexed { index, recommendation ->
-            echo("${index + 1}. [${recommendation.priority}] ${recommendation.title}")
-            echo("   ${recommendation.reason}")
-            echo("   Action: ${recommendation.action}")
-            if (recommendation.evidencePaths.isNotEmpty()) {
-                echo("   Evidence: ${recommendation.evidencePaths.joinToString(", ")}")
-            }
-        }
+        echo(renderRecommendationsSummary(recommendations))
     }
 }
+
+
+/** Formats only the human summary; recommendation generation and JSON output remain unchanged. */
+internal fun renderRecommendationsSummary(recommendations: List<EngineeringRecommendation>): String =
+    HumanCommandOutput.render(
+        title = "💡 Engineering Recommendations",
+        sections = recommendations.mapIndexed { index, recommendation ->
+            HumanCommandOutput.Section(
+                title = "${index + 1}. [${recommendation.priority}] ${recommendation.title}",
+                lines = buildList {
+                    add(recommendation.reason)
+                    add("Action: ${recommendation.action}")
+                    if (recommendation.evidencePaths.isNotEmpty()) {
+                        add("Evidence: ${recommendation.evidencePaths.joinToString(", ")}")
+                    }
+                }
+            )
+        }
+    )
