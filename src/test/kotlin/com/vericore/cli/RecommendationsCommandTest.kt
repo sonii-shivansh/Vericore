@@ -68,7 +68,8 @@ class RecommendationsCommandTest {
             assertEquals(0, result.statusCode)
             assertTrue(artifact.isFile, "JSON artifact should retain output/recommendations.json")
             assertTrue(result.stdout.contains("Engineering Recommendations"))
-            assertTrue(result.stdout.contains("Recommendations: ${artifact.absolutePath}"))
+            val expectedArtifactPath = artifact.absolutePath.replace("\\", "/")
+            assertTrue(result.stdout.contains("Recommendations: $expectedArtifactPath"))
             val json = Json.parseToJsonElement(artifact.readText()).jsonArray
             assertEquals("BASELINE_HEALTHY", json.first().jsonObject["id"]?.jsonPrimitive?.content)
         } finally {
