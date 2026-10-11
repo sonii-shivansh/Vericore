@@ -131,7 +131,7 @@ object CandidateStateSnapshotter {
         val exitCode = process.waitFor()
         if (exitCode != 0) return@runCatching null
         output.toString(Charsets.UTF_8)
-            .split('\\u0000')
+            .split('\u0000')
             .filter(String::isNotEmpty)
             .map { it.replace('\\\\', '/') }
             .toSet()
