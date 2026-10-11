@@ -12,6 +12,7 @@ import com.vericore.core.workflow.EngineeringVerification
 import com.vericore.core.workflow.RepositoryState
 import com.vericore.core.workflow.VerificationReceipt
 import com.vericore.core.workflow.ChangeSpecificationEvaluation
+import com.vericore.core.planner.VerificationEvidenceIds
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
@@ -93,7 +94,12 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
 
         val changes = collectContractOnlyChanges(root)
         val safety = ChangeSafetyAnalyzer.verify(changes, plan.plannedPaths)
-        val specificationEvaluation = ChangeSpecificationEvaluator.evaluate(contract.specification, contract.evidenceIds.toSet())
+        val availableSpecificationEvidenceIds = contract.evidenceIds.toSet() +
+            contract.verificationCommands.indices.map { VerificationEvidenceIds.command(it + 1) }
+        val specificationEvaluation = ChangeSpecificationEvaluator.evaluate(
+            contract.specification,
+            availableSpecificationEvidenceIds
+        )
         val specificationReasons = specificationEvaluation?.criteria
             ?.filter { it.status != CriterionEvaluationStatus.PASS }
             ?.map { criterion -> "Specification criterion '${criterion.id}' is ${criterion.status}: ${criterion.reason}" }
