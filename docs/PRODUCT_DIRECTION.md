@@ -63,11 +63,13 @@ No large new feature should displace these foundation tasks before their accepta
 Make Vericore understandable and usable through one coherent public workflow:
 
 ~~~text
-init → scan → inspect → ask → explain → review → plan
+init → scan → inspect → ask/repo-qa → review → plan
      → prepare → agent works → verify → report
 ~~~
 
-Keep specialized commands. The unified journey is the product surface, not a reason to delete useful lower-level commands.
+The journey's explanation step is delivered through grounded `repo-qa` answers and the evidence-backed explanations available in `review`; Phase 1 does not define a separate `explain` CLI command. Do not document or test a standalone `explain` command unless a separate product decision introduces one. Keep specialized commands. The unified journey is the product surface, not a reason to delete useful lower-level commands.
+
+Phase 1 completion is gated by the measurable checks in [Phase 1 Acceptance Checklist](PHASE1_ACCEPTANCE_CHECKLIST.md). A passing individual PR or unit-test suite is not, by itself, phase-completion evidence.
 
 ### Phase 2 — Universal Agent Layer
 
