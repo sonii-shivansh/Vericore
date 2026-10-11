@@ -89,7 +89,7 @@ object CandidateStateSnapshotter {
             digest.update(entry.kind)
             digest.update(ByteBuffer.allocate(Long.SIZE_BYTES).putLong(entry.size).array())
             digest.update(entry.contentDigest)
-            digest.update(if (entry.executable) 1 else 0)
+            digest.update((if (entry.executable) 1 else 0).toByte())
             totalBytes = Math.addExact(totalBytes, entry.size)
         }
 
