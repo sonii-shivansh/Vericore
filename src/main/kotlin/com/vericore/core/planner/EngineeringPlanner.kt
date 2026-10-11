@@ -9,7 +9,8 @@ data class EngineeringPlanRequest(
     val changeSummary: String,
     val changedPaths: List<String> = emptyList(),
     val evidence: GroundedEvidence,
-    val repositoryPath: String = "."
+    val repositoryPath: String = ".",
+    val specification: ChangeSpecification = ChangeSpecification()
 )
 
 @Serializable
@@ -35,7 +36,8 @@ data class EngineeringPlan(
     val evidenceIds: List<String>,
     val uncertainties: List<String>,
     val contractFingerprint: String = "",
-    val buildSystem: BuildSystem = BuildSystem.UNKNOWN
+    val buildSystem: BuildSystem = BuildSystem.UNKNOWN,
+    val specification: ChangeSpecification = ChangeSpecification()
 )
 
 @Serializable
@@ -55,6 +57,7 @@ class EngineeringPlanner {
         val repository = root.path
         val build = buildSystemDetector.detect(root, windowsPlatform)
 
+        val specification = request.specification.normalized()
         val citations = request.evidence.citations.sortedBy { it.id }
         val plannedPaths = request.changedPaths.map(::normalizePath).filter { it.isNotEmpty() && !it.startsWith("<outside-") && !isGeneratedPath(it) }.distinct().sorted().take(100)
         require(plannedPaths.all(::isRepositoryRelative)) { "changedPaths must be repository-relative paths without '..' traversal" }
@@ -111,7 +114,8 @@ class EngineeringPlanner {
             verificationCommands = verificationCommands,
             evidenceIds = evidenceIds,
             uncertainties = uncertainties,
-            buildSystem = build.system
+            buildSystem = build.system,
+            specification = specification
         )
         return provisional.copy(contractFingerprint = com.vericore.core.workflow.AgentChangeContract.fingerprintFor(provisional))
     }
