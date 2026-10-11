@@ -26,9 +26,10 @@ internal fun parseCriterionEvidenceBindings(
         val rule = runCatching { CriterionEvidenceRule.valueOf(ruleName.uppercase()) }.getOrElse {
             throw IllegalArgumentException("Unknown criterion evidence rule '$ruleName'")
         }
-        require(rules.putIfAbsent(criterionId, rule) == null) {
+        require(!rules.containsKey(criterionId)) {
             "A criterion may have only one --criterion-evidence-rule"
         }
+        rules[criterionId] = rule
     }
     values.forEach { raw ->
         val separator = raw.indexOf('=')
