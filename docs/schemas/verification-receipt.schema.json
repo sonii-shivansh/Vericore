@@ -250,7 +250,8 @@
                   "FORBIDDEN_BEHAVIOR",
                   "PROTECTED_INVARIANT",
                   "ACCEPTANCE_CRITERION",
-                  "REQUIRED_EVIDENCE"
+                  "REQUIRED_EVIDENCE",
+                  "SPECIFICATION_VALIDITY"
                 ]
               },
               "statement": {
