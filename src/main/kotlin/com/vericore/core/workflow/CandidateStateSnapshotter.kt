@@ -53,7 +53,7 @@ object CandidateStateSnapshotter {
 
         Files.walkFileTree(rootPath, object : SimpleFileVisitor<Path>() {
             override fun preVisitDirectory(dir: Path, attrs: BasicFileAttributes): FileVisitResult {
-                if (dir != rootPath && dir.fileName?.toString() in excludedDirectoryNames) {
+                if (dir != rootPath && dir.fileName?.toString()?.let(excludedDirectoryNames::contains) == true) {
                     return FileVisitResult.SKIP_SUBTREE
                 }
                 return FileVisitResult.CONTINUE
