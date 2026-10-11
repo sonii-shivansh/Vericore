@@ -1,5 +1,6 @@
 package com.vericore.cli
 
+import com.github.ajalt.clikt.testing.test
 import com.vericore.core.intelligence.ChangeSummary
 import com.vericore.core.intelligence.FindingSeverity
 import com.vericore.core.intelligence.PRFinding
