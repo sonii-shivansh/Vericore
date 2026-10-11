@@ -1,6 +1,6 @@
 # CLI Output Contract Inventory
 
-**Audited against:** `main` at `1088663e3e590c21b56595e59f6a926907f5eb00` (PR #246 merge)  
+**Audited against:** `main` at `914102875b2094769ae11db62f9172fde37e3cbf` (PR #247 merge)  
 **Purpose:** Record observed stdout/file-output behavior before migrating more commands to the shared human-readable renderer.
 
 This is an implementation inventory, not a promise that every output shape is already ideal. The source code is authoritative if this document and implementation disagree. Update this inventory alongside future CLI output-contract changes.
@@ -29,7 +29,7 @@ This is an implementation inventory, not a promise that every output shape is al
 | `architecture` | Human architecture summary rendered through `HumanCommandOutput` | `--json`: `output/architecture.json` | Writes JSON and still prints the human summary. Summary rendering preserves the architecture result, JSON schema, artifact path, and analysis behavior. |
 | `architecture-drift` | Human drift summary rendered through `HumanCommandOutput` | `--json`: `output/architecture-drift.json` | Requires a baseline argument; JSON mode still prints a human summary. Summary rendering preserves drift calculations, JSON schema, artifact path, and error behavior. |
 | `architecture-contract` | Human contract decision summary rendered through `HumanCommandOutput` | `--json`: `output/architecture-contract.json` | Also may print legacy-contract warnings and decision-history path. A failed contract still raises `ValidationException`; JSON mode does not mean summary-free stdout. Rendering preserves decision, fingerprint, artifact path, and the 30-violation display limit. |
-| `context-snapshot` | Human context summary | `--json`: `output/engineering-context.json` | JSON mode writes the file and still prints the summary. |
+| `context-snapshot` | Human context summary rendered through `HumanCommandOutput` | `--json`: `output/engineering-context.json` | JSON mode writes the file and still prints the summary. Rendering preserves snapshot values, JSON encoding, and artifact path. |
 | `context-diff` | Human context-diff summary and up to 30 changes | `--json`: `output/engineering-context-diff.json` | JSON mode writes the file and still prints the summary. |
 | `evidence-graph` | Human graph summary | `--json`: `output/semantic-evidence-graph.json` | JSON mode writes the file and still prints the summary. |
 | `reality` | Human engineering-reality summary | `--json`: `output/engineering-reality.json` | JSON mode writes the file and still prints the summary. |
