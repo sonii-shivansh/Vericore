@@ -60,7 +60,9 @@ class RecommendationsCommandTest {
             snapshotFile.parentFile.mkdirs()
             snapshotFile.writeText(Json { encodeDefaults = true }.encodeToString(snapshot))
 
-            val result = RecommendationsCommand().test("${root.absolutePath} --json")
+            // Clikt's test-string tokenizer treats Windows backslashes as escapes.
+            val repositoryArgument = root.absolutePath.replace(File.separatorChar, '/')
+            val result = RecommendationsCommand().test("$repositoryArgument --json")
             val artifact = root.resolve("output/recommendations.json")
 
             assertEquals(0, result.statusCode)
