@@ -96,6 +96,37 @@ class AgentChangeContractTest {
     }
 
     @Test
+    fun `non-default evidence rule changes contract fingerprint`() {
+        val manual = plan("src/App.kt").copy(
+            specification = ChangeSpecification(
+                requiredEvidence = listOf("Unit-test command succeeds"),
+                evidenceBindings = listOf(
+                    com.vericore.core.planner.CriterionEvidenceBinding(
+                        "required-evidence-001",
+                        listOf("verification-command-001")
+                    )
+                )
+            )
+        )
+        val commandRule = manual.copy(
+            specification = manual.specification.copy(
+                evidenceBindings = listOf(
+                    com.vericore.core.planner.CriterionEvidenceBinding(
+                        "required-evidence-001",
+                        listOf("verification-command-001"),
+                        com.vericore.core.planner.CriterionEvidenceRule.ALL_BOUND_COMMANDS_SUCCEEDED
+                    )
+                )
+            )
+        )
+
+        assertNotEquals(
+            AgentChangeContract.fingerprintFor(manual),
+            AgentChangeContract.fingerprintFor(commandRule)
+        )
+    }
+
+    @Test
     fun `empty specification preserves legacy contract fingerprint semantics`() {
         val base = plan("src/App.kt")
         val explicitEmpty = base.copy(specification = ChangeSpecification())
