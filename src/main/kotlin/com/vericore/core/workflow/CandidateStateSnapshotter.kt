@@ -15,9 +15,8 @@ import java.security.MessageDigest
  * A deterministic digest of repository inputs at one observed point in time.
  *
  * Version-control metadata and common generated/build-output directories are excluded.
- * Tracked files and untracked repository inputs are content-hashed, including non-source build
- * inputs. When Git is available, untracked diagnostic files (log/tmp/temp/trace/out) outside
- * source, test, fixture, resource, example, benchmark, and documentation trees are excluded.
+ * Other files are content-hashed regardless of Git tracking status, including source, tests,
+ * configuration, build inputs, and newly created files.
  */
 data class CandidateStateSnapshot(
     val schemaVersion: String = "1.0",
@@ -38,11 +37,6 @@ object CandidateStateSnapshotter {
         "output",
         "target"
     )
-    private val sourceOrFixtureDirectoryNames = setOf(
-        "src", "test", "tests", "testdata", "test-fixtures", "test-fixture",
-        "fixtures", "fixture", "resources", "examples", "benchmark", "docs"
-    )
-    private val diagnosticOutputExtensions = setOf("log", "tmp", "temp", "trace", "out")
 
     private data class Entry(
         val path: String,
@@ -56,7 +50,6 @@ object CandidateStateSnapshotter {
         val root = repository.canonicalFile
         require(root.isDirectory) { "Repository path is not a directory: ${repository.path}" }
         val rootPath = root.toPath().normalize()
-        val trackedPaths = trackedPaths(root)
         val entries = mutableListOf<Entry>()
 
         Files.walkFileTree(rootPath, object : SimpleFileVisitor<Path>() {
@@ -72,9 +65,6 @@ object CandidateStateSnapshotter {
                     return FileVisitResult.CONTINUE
                 }
                 val relativePath = rootPath.relativize(file).toString().replace(File.separatorChar, '/')
-                if (isUntrackedDiagnosticOutput(relativePath, trackedPaths)) {
-                    return FileVisitResult.CONTINUE
-                }
                 val entry = if (attrs.isSymbolicLink) {
                     val target = Files.readSymbolicLink(file).toString().toByteArray(Charsets.UTF_8)
                     Entry(relativePath, 'L'.code.toByte(), target.size.toLong(), sha256(target), false)
@@ -109,33 +99,6 @@ object CandidateStateSnapshotter {
             totalBytes = totalBytes
         )
     }
-
-    /**
-     * Untracked diagnostic logs commonly appear as side effects of test commands.
-     * Tracked files and files under source/test/fixture trees remain part of the digest.
-     * When Git metadata is unavailable, do not make this heuristic exclusion.
-     */
-    private fun isUntrackedDiagnosticOutput(relativePath: String, trackedPaths: Set<String>?): Boolean {
-        if (trackedPaths == null || relativePath in trackedPaths) return false
-        val parts = relativePath.split('/')
-        if (parts.any { it in sourceOrFixtureDirectoryNames }) return false
-        val extension = parts.last().substringAfterLast('.', "").lowercase()
-        return extension in diagnosticOutputExtensions
-    }
-
-    private fun trackedPaths(root: File): Set<String>? = runCatching {
-        val process = ProcessBuilder("git", "ls-files", "--cached", "-z")
-            .directory(root)
-            .redirectErrorStream(true)
-            .start()
-        val output = process.inputStream.readBytes()
-        val exitCode = process.waitFor()
-        if (exitCode != 0) return@runCatching null
-        output.toString(Charsets.UTF_8)
-            .split(0.toChar())
-            .filter(String::isNotEmpty)
-            .toSet()
-    }.getOrNull()
 
     private fun hashRegularFile(path: Path, relativePath: String, initial: BasicFileAttributes): Entry {
         val contentDigest = MessageDigest.getInstance("SHA-256")
