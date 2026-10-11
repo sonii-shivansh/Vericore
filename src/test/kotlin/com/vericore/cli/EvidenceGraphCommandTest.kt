@@ -90,7 +90,12 @@ Summary
             assertEquals(0, result.statusCode)
             assertTrue(artifact.isFile, "JSON mode should write output/semantic-evidence-graph.json")
             assertTrue(result.stdout.contains("Semantic Evidence Graph"))
-            assertTrue(result.stdout.contains("Semantic evidence graph: ${artifact.path}"))
+            val normalizedStdout = result.stdout.replace("\\", "/").lowercase()
+            val normalizedArtifactPath = artifact.path.replace("\\", "/").lowercase()
+            assertTrue(
+                normalizedStdout.contains("semantic evidence graph: $normalizedArtifactPath"),
+                "stdout should include the normalized artifact path: ${result.stdout}"
+            )
             assertTrue(result.stdout.contains("Graph digest:"))
 
             val json = Json.parseToJsonElement(artifact.readText()).jsonObject
