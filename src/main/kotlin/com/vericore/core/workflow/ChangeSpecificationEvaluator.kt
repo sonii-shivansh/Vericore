@@ -158,7 +158,7 @@ object ChangeSpecificationEvaluator {
     ): Pair<CriterionEvaluationStatus, String> {
         val match = metricPattern.matchEntire(statement)
             ?: return CriterionEvaluationStatus.FAIL to
-                "Malformed metric criterion. Expected metric:<citation-id>.<metric-key><operator><number>."
+                "Malformed metric criterion. Expected metric:<citation-id>.<metric-key><operator><number-or-boolean>."
         val leftHandSide = match.groupValues[1]
         val separator = leftHandSide.lastIndexOf('.')
         if (separator <= 0 || separator == leftHandSide.lastIndex) {
