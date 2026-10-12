@@ -64,7 +64,8 @@ object ChangeSpecificationEvaluator {
     fun evaluate(
         specification: ChangeSpecification,
         availableEvidenceIds: Set<String> = emptySet(),
-        evidenceCitations: List<EvidenceCitation> = emptyList()
+        evidenceCitations: List<EvidenceCitation> = emptyList(),
+        currentCandidateEvidenceAvailable: Boolean = true
     ): ChangeSpecificationEvaluation? {
         val normalized = try {
             specification.normalized()
@@ -89,11 +90,11 @@ object ChangeSpecificationEvaluator {
         val availableIds = availableEvidenceIds.toSet()
         val citationsById = evidenceCitations.associateBy { it.id }
         val criteria = buildList {
-            addAll(normalized.requiredBehaviors.withIds("required-behavior", SpecificationCriterionKind.REQUIRED_BEHAVIOR, bindings, availableIds, citationsById))
-            addAll(normalized.forbiddenBehaviors.withIds("forbidden-behavior", SpecificationCriterionKind.FORBIDDEN_BEHAVIOR, bindings, availableIds, citationsById))
-            addAll(normalized.protectedInvariants.withIds("protected-invariant", SpecificationCriterionKind.PROTECTED_INVARIANT, bindings, availableIds, citationsById))
-            addAll(normalized.acceptanceCriteria.withIds("acceptance-criterion", SpecificationCriterionKind.ACCEPTANCE_CRITERION, bindings, availableIds, citationsById))
-            addAll(normalized.requiredEvidence.withIds("required-evidence", SpecificationCriterionKind.REQUIRED_EVIDENCE, bindings, availableIds, citationsById))
+            addAll(normalized.requiredBehaviors.withIds("required-behavior", SpecificationCriterionKind.REQUIRED_BEHAVIOR, bindings, availableIds, citationsById, currentCandidateEvidenceAvailable))
+            addAll(normalized.forbiddenBehaviors.withIds("forbidden-behavior", SpecificationCriterionKind.FORBIDDEN_BEHAVIOR, bindings, availableIds, citationsById, currentCandidateEvidenceAvailable))
+            addAll(normalized.protectedInvariants.withIds("protected-invariant", SpecificationCriterionKind.PROTECTED_INVARIANT, bindings, availableIds, citationsById, currentCandidateEvidenceAvailable))
+            addAll(normalized.acceptanceCriteria.withIds("acceptance-criterion", SpecificationCriterionKind.ACCEPTANCE_CRITERION, bindings, availableIds, citationsById, currentCandidateEvidenceAvailable))
+            addAll(normalized.requiredEvidence.withIds("required-evidence", SpecificationCriterionKind.REQUIRED_EVIDENCE, bindings, availableIds, citationsById, currentCandidateEvidenceAvailable))
         }
         val notEvaluatedCount = criteria.count { it.status == CriterionEvaluationStatus.NOT_EVALUATED }
         val status = when {
@@ -115,13 +116,14 @@ object ChangeSpecificationEvaluator {
         kind: SpecificationCriterionKind,
         bindings: Map<String, CriterionEvidenceBinding>,
         availableEvidenceIds: Set<String>,
-        citationsById: Map<String, EvidenceCitation>
+        citationsById: Map<String, EvidenceCitation>,
+        currentCandidateEvidenceAvailable: Boolean
     ): List<SpecificationCriterionEvaluation> = mapIndexed { index, statement ->
         val id = "$prefix-${(index + 1).toString().padStart(3, '0')}"
         val binding = bindings[id]
         val missingEvidence = binding?.evidenceIds.orEmpty().filterNot(availableEvidenceIds::contains)
         val metricEvaluation = if (binding != null && missingEvidence.isEmpty() && statement.startsWith(METRIC_PREFIX)) {
-            evaluateMetric(statement, binding.evidenceIds, citationsById)
+            evaluateMetric(statement, binding.evidenceIds, citationsById, currentCandidateEvidenceAvailable)
         } else {
             null
         }
@@ -154,7 +156,8 @@ object ChangeSpecificationEvaluator {
     private fun evaluateMetric(
         statement: String,
         boundEvidenceIds: List<String>,
-        citationsById: Map<String, EvidenceCitation>
+        citationsById: Map<String, EvidenceCitation>,
+        currentCandidateEvidenceAvailable: Boolean
     ): Pair<CriterionEvaluationStatus, String> {
         val match = metricPattern.matchEntire(statement)
             ?: return CriterionEvaluationStatus.FAIL to
@@ -173,9 +176,13 @@ object ChangeSpecificationEvaluator {
             return CriterionEvaluationStatus.FAIL to
                 "Metric citation '$citationId' is not bound to this criterion."
         }
-        val citation = citationsById[citationId]
-            ?: return CriterionEvaluationStatus.FAIL to
+        val citation = citationsById[citationId] ?: return if (currentCandidateEvidenceAvailable) {
+            CriterionEvaluationStatus.FAIL to
                 "Metric citation '$citationId' is absent from the current candidate's evidence."
+        } else {
+            CriterionEvaluationStatus.NOT_EVALUATED to
+                "Current-candidate evidence is not rebuilt in contract-only mode; rerun full verify to evaluate this metric."
+        }
         val actualText = citation.metrics[metricKey]
             ?: return CriterionEvaluationStatus.FAIL to
                 "Metric '$metricKey' is absent from evidence citation '$citationId'."

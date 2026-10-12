@@ -93,7 +93,11 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
 
         val changes = collectContractOnlyChanges(root)
         val safety = ChangeSafetyAnalyzer.verify(changes, plan.plannedPaths)
-        val specificationEvaluation = ChangeSpecificationEvaluator.evaluate(contract.specification, contract.evidenceIds.toSet())
+        val specificationEvaluation = ChangeSpecificationEvaluator.evaluate(
+            contract.specification,
+            contract.evidenceIds.toSet(),
+            currentCandidateEvidenceAvailable = false
+        )
         val specificationReasons = specificationEvaluation?.criteria
             ?.filter { it.status != CriterionEvaluationStatus.PASS }
             ?.map { criterion -> "Specification criterion '${criterion.id}' is ${criterion.status}: ${criterion.reason}" }
