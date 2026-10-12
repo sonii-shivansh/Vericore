@@ -542,7 +542,7 @@ def main() -> int:
     result = {
         "schemaVersion": "1.0",
         "benchmarkId": "vericore-agent-change",
-        "benchmarkVersion": "0.1.0",
+        "benchmarkVersion": "0.2.0",
         "fixtureId": audit.fixture_id,
         "candidateSha": os.environ.get("GITHUB_SHA") or subprocess.run(
             ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, capture_output=True, check=False
