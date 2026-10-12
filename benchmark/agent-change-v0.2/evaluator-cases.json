@@ -17,7 +17,7 @@
       "citations": [
         {
           "id": "repo.metrics",
-          "source": "repository-metrics",
+          "type": "repository-metrics",
           "detail": "five files",
           "metrics": {
             "files": "5"
@@ -40,7 +40,7 @@
       "citations": [
         {
           "id": "architecture.summary",
-          "source": "architecture-summary",
+          "type": "architecture-summary",
           "detail": "no cycles",
           "metrics": {
             "cycles": "false"
@@ -63,7 +63,7 @@
       "citations": [
         {
           "id": "repo.metrics",
-          "source": "repository-metrics",
+          "type": "repository-metrics",
           "detail": "five files",
           "metrics": {
             "files": "5"
@@ -87,7 +87,7 @@
       "citations": [
         {
           "id": "repo.metrics",
-          "source": "repository-metrics",
+          "type": "repository-metrics",
           "detail": "five files",
           "metrics": {
             "files": "5"
@@ -110,7 +110,7 @@
       "citations": [
         {
           "id": "repo.metrics",
-          "source": "repository-metrics",
+          "type": "repository-metrics",
           "detail": "node count only",
           "metrics": {
             "nodes": "5"
@@ -133,7 +133,7 @@
       "citations": [
         {
           "id": "file.1",
-          "source": "source-file",
+          "type": "source-file",
           "detail": "linked file evidence",
           "metrics": {}
         }
