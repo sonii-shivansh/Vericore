@@ -126,6 +126,74 @@ class ChangeSpecificationEvaluatorTest {
     }
 
     @Test
+    fun `boolean metric criterion passes when current candidate matches`() {
+        val evaluation = ChangeSpecificationEvaluator.evaluate(
+            ChangeSpecification(
+                acceptanceCriteria = listOf("metric:architecture.summary.cycles==false"),
+                evidenceBindings = listOf(CriterionEvidenceBinding("acceptance-criterion-001", listOf("architecture.summary")))
+            ),
+            availableEvidenceIds = setOf("architecture.summary"),
+            evidenceCitations = listOf(
+                EvidenceCitation("architecture.summary", "architecture-summary", detail = "no cycles", metrics = mapOf("cycles" to "false"))
+            )
+        )!!
+
+        assertEquals(CriterionEvaluationStatus.PASS, evaluation.status)
+        assertEquals(CriterionEvaluationStatus.PASS, evaluation.criteria.single().status)
+    }
+
+    @Test
+    fun `boolean metric criterion fails when current candidate contradicts it`() {
+        val evaluation = ChangeSpecificationEvaluator.evaluate(
+            ChangeSpecification(
+                acceptanceCriteria = listOf("metric:architecture.summary.cycles==false"),
+                evidenceBindings = listOf(CriterionEvidenceBinding("acceptance-criterion-001", listOf("architecture.summary")))
+            ),
+            availableEvidenceIds = setOf("architecture.summary"),
+            evidenceCitations = listOf(
+                EvidenceCitation("architecture.summary", "architecture-summary", detail = "cycles exist", metrics = mapOf("cycles" to "true"))
+            )
+        )!!
+
+        assertEquals(CriterionEvaluationStatus.FAIL, evaluation.status)
+        assertEquals(CriterionEvaluationStatus.FAIL, evaluation.criteria.single().status)
+    }
+
+    @Test
+    fun `boolean metric rejects ordered comparisons`() {
+        val evaluation = ChangeSpecificationEvaluator.evaluate(
+            ChangeSpecification(
+                acceptanceCriteria = listOf("metric:architecture.summary.cycles>=true"),
+                evidenceBindings = listOf(CriterionEvidenceBinding("acceptance-criterion-001", listOf("architecture.summary")))
+            ),
+            availableEvidenceIds = setOf("architecture.summary"),
+            evidenceCitations = listOf(
+                EvidenceCitation("architecture.summary", "architecture-summary", detail = "cycles exist", metrics = mapOf("cycles" to "true"))
+            )
+        )!!
+
+        assertEquals(CriterionEvaluationStatus.FAIL, evaluation.status)
+        assertTrue(evaluation.criteria.single().reason.contains("supports only == and !="))
+    }
+
+    @Test
+    fun `boolean criterion fails closed for non-boolean evidence value`() {
+        val evaluation = ChangeSpecificationEvaluator.evaluate(
+            ChangeSpecification(
+                acceptanceCriteria = listOf("metric:architecture.summary.cycles==true"),
+                evidenceBindings = listOf(CriterionEvidenceBinding("acceptance-criterion-001", listOf("architecture.summary")))
+            ),
+            availableEvidenceIds = setOf("architecture.summary"),
+            evidenceCitations = listOf(
+                EvidenceCitation("architecture.summary", "architecture-summary", detail = "invalid metric", metrics = mapOf("cycles" to "sometimes"))
+            )
+        )!!
+
+        assertEquals(CriterionEvaluationStatus.FAIL, evaluation.status)
+        assertTrue(evaluation.criteria.single().reason.contains("not a boolean"))
+    }
+
+    @Test
     fun `dangling evidence binding fails closed`() {
         val evaluation = ChangeSpecificationEvaluator.evaluate(
             ChangeSpecification(
