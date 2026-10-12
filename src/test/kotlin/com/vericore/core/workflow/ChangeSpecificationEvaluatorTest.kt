@@ -277,7 +277,7 @@ class ChangeSpecificationEvaluatorTest {
                 val citation = citationElement.jsonObject
                 EvidenceCitation(
                     id = citation.getValue("id").jsonPrimitive.content,
-                    source = citation.getValue("source").jsonPrimitive.content,
+                    type = citation.getValue("type").jsonPrimitive.content,
                     detail = citation.getValue("detail").jsonPrimitive.content,
                     metrics = citation.getValue("metrics").jsonObject.mapValues { (_, value) ->
                         value.jsonPrimitive.content
