@@ -1,0 +1,144 @@
+{
+  "benchmarkId": "vericore-agent-change",
+  "benchmarkVersion": "0.2.0",
+  "purpose": "Deterministic regression vectors guarding against false acceptance and false rejection in change-specification evaluation. These vectors are executed by ChangeSpecificationEvaluatorTest in the full Gradle unit suite; they are not counted as executed in the separate Phase 0 CLI audit result.",
+  "cases": [
+    {
+      "id": "numeric-threshold-met-passes",
+      "classification": "false-rejection-guard",
+      "criterion": "metric:repo.metrics.files>=3",
+      "bindingCriterionId": "acceptance-criterion-001",
+      "boundEvidenceIds": [
+        "repo.metrics"
+      ],
+      "availableEvidenceIds": [
+        "repo.metrics"
+      ],
+      "citations": [
+        {
+          "id": "repo.metrics",
+          "source": "repository-metrics",
+          "detail": "five files",
+          "metrics": {
+            "files": "5"
+          }
+        }
+      ],
+      "expectedStatus": "PASS"
+    },
+    {
+      "id": "boolean-false-matches-passes",
+      "classification": "false-rejection-guard",
+      "criterion": "metric:architecture.summary.cycles==false",
+      "bindingCriterionId": "acceptance-criterion-001",
+      "boundEvidenceIds": [
+        "architecture.summary"
+      ],
+      "availableEvidenceIds": [
+        "architecture.summary"
+      ],
+      "citations": [
+        {
+          "id": "architecture.summary",
+          "source": "architecture-summary",
+          "detail": "no cycles",
+          "metrics": {
+            "cycles": "false"
+          }
+        }
+      ],
+      "expectedStatus": "PASS"
+    },
+    {
+      "id": "numeric-threshold-missed-fails",
+      "classification": "false-acceptance-guard",
+      "criterion": "metric:repo.metrics.files>=10",
+      "bindingCriterionId": "acceptance-criterion-001",
+      "boundEvidenceIds": [
+        "repo.metrics"
+      ],
+      "availableEvidenceIds": [
+        "repo.metrics"
+      ],
+      "citations": [
+        {
+          "id": "repo.metrics",
+          "source": "repository-metrics",
+          "detail": "five files",
+          "metrics": {
+            "files": "5"
+          }
+        }
+      ],
+      "expectedStatus": "FAIL"
+    },
+    {
+      "id": "unbound-citation-fails",
+      "classification": "false-acceptance-guard",
+      "criterion": "metric:repo.metrics.files>=3",
+      "bindingCriterionId": "acceptance-criterion-001",
+      "boundEvidenceIds": [
+        "file.1"
+      ],
+      "availableEvidenceIds": [
+        "file.1",
+        "repo.metrics"
+      ],
+      "citations": [
+        {
+          "id": "repo.metrics",
+          "source": "repository-metrics",
+          "detail": "five files",
+          "metrics": {
+            "files": "5"
+          }
+        }
+      ],
+      "expectedStatus": "FAIL"
+    },
+    {
+      "id": "missing-metric-fails",
+      "classification": "false-acceptance-guard",
+      "criterion": "metric:repo.metrics.files>=3",
+      "bindingCriterionId": "acceptance-criterion-001",
+      "boundEvidenceIds": [
+        "repo.metrics"
+      ],
+      "availableEvidenceIds": [
+        "repo.metrics"
+      ],
+      "citations": [
+        {
+          "id": "repo.metrics",
+          "source": "repository-metrics",
+          "detail": "node count only",
+          "metrics": {
+            "nodes": "5"
+          }
+        }
+      ],
+      "expectedStatus": "FAIL"
+    },
+    {
+      "id": "free-form-evidence-remains-inconclusive",
+      "classification": "fail-closed-guard",
+      "criterion": "The changed service handles invalid input safely",
+      "bindingCriterionId": "acceptance-criterion-001",
+      "boundEvidenceIds": [
+        "file.1"
+      ],
+      "availableEvidenceIds": [
+        "file.1"
+      ],
+      "citations": [
+        {
+          "id": "file.1",
+          "source": "source-file",
+          "detail": "linked file evidence",
+          "metrics": {}
+        }
+      ],
+      "expectedStatus": "INCONCLUSIVE"
+    }
+  ]
+}
