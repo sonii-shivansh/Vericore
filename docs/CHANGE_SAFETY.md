@@ -83,7 +83,7 @@ Verification loads the persisted contract and validates:
 9. recommended verification commands;
 10. verification provenance.
 
-For a fast boundary check, `vericore verify --contract-only` validates the persisted contract, repository identity, prepared `HEAD`, plan binding, and current mutation scope without rebuilding the full dependency analysis graph. It also reports the structured specification evaluation; a non-empty specification whose criteria are `NOT_EVALUATED` or `INCONCLUSIVE` cannot receive `PASS` in this mode.
+For a fast boundary check, `vericore verify --contract-only` validates the persisted contract, repository identity, prepared `HEAD`, plan binding, and current mutation scope without rebuilding the full dependency analysis graph. It also reports the structured specification evaluation. Because this mode does not rebuild current-candidate evidence, supported metric criteria whose citation is unavailable in this mode remain `NOT_EVALUATED` rather than being incorrectly marked `FAIL`; the result remains `REVIEW_REQUIRED`. Use full `vericore verify` to evaluate metric criteria against current-candidate evidence.
 
 A missing, tampered, mismatched, cross-repository, or stale contract produces `FAIL`. Verification does not silently reconstruct a replacement contract from a mutable plan.
 
