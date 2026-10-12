@@ -1,12 +1,12 @@
-# Vericore Agent Change Verification Benchmark — v0.1
+# Vericore Agent Change Verification Benchmark — v0.2
 
 ## Purpose
 
 The benchmark is a public, reproducible set of controlled repository states for measuring behaviors Vericore intends to verify. It begins as a correctness/contract benchmark, not a claim that Vericore outperforms another agent or product.
 
-Task definitions live in benchmark/agent-change-v0.1/cases.json. The starter golden repository is testdata/phase0/golden-java. A candidate run uses scripts/audit/phase0-foundation-audit.py and records a JSON result artifact.
+The current task catalog lives in [benchmark/agent-change-v0.2/cases.json](../benchmark/agent-change-v0.2/cases.json); the original v0.1 catalog remains unchanged for historical baseline interpretation. The starter golden repository is testdata/phase0/golden-java. A candidate run uses scripts/audit/phase0-foundation-audit.py and records a JSON result artifact.
 
-## v0.1 case families
+## Case families
 
 - Deterministic analysis: same fixture and commit produce the same normalized source/graph output.
 - Evidence freshness: source edits without a commit invalidate cached analysis/evidence binding.
@@ -17,6 +17,10 @@ Task definitions live in benchmark/agent-change-v0.1/cases.json. The starter gol
 - Command injection: shell separators/newlines must be rejected before command execution.
 - Artifact compatibility: generated core artifacts validate against published schemas; legacy evidence is readable but not eligible for fresh reuse.
 
+## Deterministic evaluator regression vectors
+
+`benchmark/agent-change-v0.2/evaluator-cases.json` contains candidate-independent vectors for supported numeric/boolean comparisons, failed thresholds, unbound or missing metrics, and free-form criteria. `ChangeSpecificationEvaluatorTest` reads and executes these vectors in the full Gradle unit suite. They are deliberately not counted as executed CLI audit cases in the Phase 0 audit JSON; CI's unit-test result is the evidence that these vectors ran. The vectors guard against false acceptance and false rejection, but do not measure semantic correctness for arbitrary natural-language requirements.
+
 ## Metrics
 
 Every run records candidate SHA, Vericore version, operating system, fixture/task versions, per-case expected and observed outcomes, pass/fail, and elapsed time. Correctness is reported as counts of expected outcomes matched/mismatched; latency is recorded independently and must not be compared across unlike runner profiles.
@@ -25,7 +29,7 @@ The run artifact is evidence of the cases actually executed on that candidate. D
 
 ## Initial baseline policy
 
-- The v0.1 fixture manifest and expected behaviors are version-controlled.
+- The original v0.1 catalog is retained unchanged. The v0.2 catalog adds deterministic evaluator regression vectors for false acceptance and false rejection.
 - CI produces a machine-readable result for each candidate tested by the Phase 0 Foundation workflow.
 - The recorded Phase 0 baseline is documented in [Phase 0 Benchmark Baseline](PHASE0_BENCHMARK_BASELINE.md), including the closeout SHA, workflow run, result count, elapsed time, artifact digest, and limits. Treat that record as the initial baseline; later runs must append new candidate/SHA-specific evidence rather than overwriting it.
 - Expand to more repositories/languages only after current cases are stable. Broader coverage for cross-agent and cross-repository omissions belongs to the later ecosystem phase in the master roadmap.
