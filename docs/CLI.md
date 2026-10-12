@@ -535,7 +535,7 @@ vericore verify --path . --plan output/engineering-plan.json --contract output/a
 | `--plan <file>` | `output/engineering-plan.json` | Persisted engineering plan. |
 | `--contract <file>` | `output/agent-change-contract.json` | Original immutable Agent Change Contract. Required to exist. |
 | `--output <file>` | stdout | Optional verification artifact. |
-| `--contract-only` | off | Validate contract identity, prepared `HEAD`, and mutation scope without rebuilding the full analysis graph. Also returns specification evaluation; unevaluated criteria keep the status at `REVIEW_REQUIRED`. |
+| `--contract-only` | off | Validate contract identity, prepared `HEAD`, and mutation scope without rebuilding the full analysis graph. Metrics needing current-candidate evidence remain `NOT_EVALUATED` in this mode and keep the result at `REVIEW_REQUIRED`; use full verification to evaluate them. |
 
 Verification executes the persisted build/test commands using the native shell and wrapper conventions for the current platform. On Windows, Maven/Gradle wrapper commands use `mvnw.cmd`/`gradlew.bat` and `cmd` directory syntax; on Unix-like systems they use the executable wrapper form. Verification fails when the contract is missing, tampered, stale, cross-repository, inconsistent with the plan, or when changes fall outside the prepared boundary. `PASS` and `REVIEW_REQUIRED` are not substitutes for tests or human review.
 
