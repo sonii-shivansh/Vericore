@@ -3,10 +3,15 @@ package com.vericore.core.workflow
 import com.vericore.core.ai.EvidenceCitation
 import com.vericore.core.planner.ChangeSpecification
 import com.vericore.core.planner.CriterionEvidenceBinding
+import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 class ChangeSpecificationEvaluatorTest {
     @Test
@@ -252,5 +257,47 @@ class ChangeSpecificationEvaluatorTest {
         val second = ChangeSpecificationEvaluator.evaluate(spec)!!
 
         assertEquals(first, second)
+    }
+
+    @Test
+    fun `benchmark evaluator vectors guard false acceptance and false rejection`() {
+        val fixture = File("benchmark/agent-change-v0.2/evaluator-cases.json")
+        val root = Json.parseToJsonElement(fixture.readText()).jsonObject
+        val cases = root.getValue("cases").jsonArray
+
+        for (element in cases) {
+            val case = element.jsonObject
+            val caseId = case.getValue("id").jsonPrimitive.content
+            val criterion = case.getValue("criterion").jsonPrimitive.content
+            val bindingId = case.getValue("bindingCriterionId").jsonPrimitive.content
+            val boundIds = case.getValue("boundEvidenceIds").jsonArray.map { it.jsonPrimitive.content }
+            val availableIds = case.getValue("availableEvidenceIds").jsonArray.map { it.jsonPrimitive.content }
+            val citations = case.getValue("citations").jsonArray.map { citationElement ->
+                val citation = citationElement.jsonObject
+                EvidenceCitation(
+                    id = citation.getValue("id").jsonPrimitive.content,
+                    type = citation.getValue("type").jsonPrimitive.content,
+                    detail = citation.getValue("detail").jsonPrimitive.content,
+                    metrics = citation.getValue("metrics").jsonObject.mapValues { (_, value) ->
+                        value.jsonPrimitive.content
+                    }
+                )
+            }
+            val specification = ChangeSpecification(
+                acceptanceCriteria = listOf(criterion),
+                evidenceBindings = listOf(CriterionEvidenceBinding(bindingId, boundIds))
+            )
+            val evaluation = ChangeSpecificationEvaluator.evaluate(
+                specification,
+                availableEvidenceIds = availableIds.toSet(),
+                evidenceCitations = citations
+            )!!
+
+            assertEquals(
+                CriterionEvaluationStatus.valueOf(case.getValue("expectedStatus").jsonPrimitive.content),
+                evaluation.criteria.single().status,
+                "Benchmark vector $caseId: ${evaluation.criteria.single().reason}"
+            )
+        }
     }
 }
