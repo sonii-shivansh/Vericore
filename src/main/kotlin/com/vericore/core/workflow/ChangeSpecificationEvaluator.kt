@@ -59,7 +59,7 @@ object ChangeSpecificationEvaluator {
     private const val NOT_EVALUATED_REASON =
         "No criterion-specific evidence evaluator is implemented; this obligation requires explicit review."
     private const val METRIC_PREFIX = "metric:"
-    private val metricPattern = Regex("^metric:(.+?)(>=|<=|==|!=|>|<)(-?(?:\\d+(?:\\.\\d+)?|\\.\\d+))$")
+    private val metricPattern = Regex("^metric:(.+?)(>=|<=|==|!=|>|<)((?:true|false)|-?(?:\\d+(?:\\.\\d+)?|\\.\\d+))$")
 
     fun evaluate(
         specification: ChangeSpecification,
@@ -168,8 +168,7 @@ object ChangeSpecificationEvaluator {
         val citationId = leftHandSide.substring(0, separator)
         val metricKey = leftHandSide.substring(separator + 1)
         val operator = match.groupValues[2]
-        val expected = match.groupValues[3].toBigDecimalOrNull()
-            ?: return CriterionEvaluationStatus.FAIL to "Metric threshold is not a valid decimal number."
+        val expectedText = match.groupValues[3]
         if (citationId !in boundEvidenceIds) {
             return CriterionEvaluationStatus.FAIL to
                 "Metric citation '$citationId' is not bound to this criterion."
@@ -180,22 +179,35 @@ object ChangeSpecificationEvaluator {
         val actualText = citation.metrics[metricKey]
             ?: return CriterionEvaluationStatus.FAIL to
                 "Metric '$metricKey' is absent from evidence citation '$citationId'."
-        val actual = actualText.toBigDecimalOrNull()
-            ?: return CriterionEvaluationStatus.FAIL to
-                "Metric '$metricKey' in evidence citation '$citationId' is not numeric."
-
-        val comparison = actual.compareTo(expected)
-        val satisfied = when (operator) {
-            ">=" -> comparison >= 0
-            "<=" -> comparison <= 0
-            "==" -> comparison == 0
-            "!=" -> comparison != 0
-            ">" -> comparison > 0
-            "<" -> comparison < 0
-            else -> false
+        val satisfied = if (expectedText == "true" || expectedText == "false") {
+            if (operator != "==" && operator != "!=") {
+                return CriterionEvaluationStatus.FAIL to
+                    "Boolean metric '$citationId.$metricKey' supports only == and != comparisons."
+            }
+            val actualBoolean = actualText.toBooleanStrictOrNull()
+                ?: return CriterionEvaluationStatus.FAIL to
+                    "Metric '$metricKey' in evidence citation '$citationId' is not a boolean."
+            val expectedBoolean = expectedText == "true"
+            if (operator == "==") actualBoolean == expectedBoolean else actualBoolean != expectedBoolean
+        } else {
+            val actual = actualText.toBigDecimalOrNull()
+                ?: return CriterionEvaluationStatus.FAIL to
+                    "Metric '$metricKey' in evidence citation '$citationId' is not numeric."
+            val expected = expectedText.toBigDecimalOrNull()
+                ?: return CriterionEvaluationStatus.FAIL to "Metric threshold is not a valid decimal number."
+            val comparison = actual.compareTo(expected)
+            when (operator) {
+                ">=" -> comparison >= 0
+                "<=" -> comparison <= 0
+                "==" -> comparison == 0
+                "!=" -> comparison != 0
+                ">" -> comparison > 0
+                "<" -> comparison < 0
+                else -> false
+            }
         }
         val result = if (satisfied) CriterionEvaluationStatus.PASS else CriterionEvaluationStatus.FAIL
-        val reason = "Current candidate metric '$citationId.$metricKey' is $actualText; criterion requires $operator$expected."
+        val reason = "Current candidate metric '$citationId.$metricKey' is $actualText; criterion requires $operator$expectedText."
         return result to reason
     }
 }
