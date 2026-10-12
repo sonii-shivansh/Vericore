@@ -139,6 +139,158 @@
         }
       ],
       "expectedStatus": "INCONCLUSIVE"
+    },
+    {
+      "id": "numeric-decimal-equality-passes",
+      "classification": "false-rejection-guard",
+      "criterion": "metric:repo.metrics.files==5",
+      "bindingCriterionId": "acceptance-criterion-001",
+      "boundEvidenceIds": [
+        "repo.metrics"
+      ],
+      "availableEvidenceIds": [
+        "repo.metrics"
+      ],
+      "citations": [
+        {
+          "id": "repo.metrics",
+          "type": "repository-metrics",
+          "detail": "files metric 5.0",
+          "metrics": {
+            "files": "5.0"
+          }
+        }
+      ],
+      "expectedStatus": "PASS"
+    },
+    {
+      "id": "numeric-inequality-equal-value-fails",
+      "classification": "false-acceptance-guard",
+      "criterion": "metric:repo.metrics.files!=5.00",
+      "bindingCriterionId": "acceptance-criterion-001",
+      "boundEvidenceIds": [
+        "repo.metrics"
+      ],
+      "availableEvidenceIds": [
+        "repo.metrics"
+      ],
+      "citations": [
+        {
+          "id": "repo.metrics",
+          "type": "repository-metrics",
+          "detail": "files metric 5",
+          "metrics": {
+            "files": "5"
+          }
+        }
+      ],
+      "expectedStatus": "FAIL"
+    },
+    {
+      "id": "boolean-true-matches-passes",
+      "classification": "false-rejection-guard",
+      "criterion": "metric:architecture.summary.cycles==true",
+      "bindingCriterionId": "acceptance-criterion-001",
+      "boundEvidenceIds": [
+        "architecture.summary"
+      ],
+      "availableEvidenceIds": [
+        "architecture.summary"
+      ],
+      "citations": [
+        {
+          "id": "architecture.summary",
+          "type": "architecture-summary",
+          "detail": "cycles metric true",
+          "metrics": {
+            "cycles": "true"
+          }
+        }
+      ],
+      "expectedStatus": "PASS"
+    },
+    {
+      "id": "boolean-inequality-matches-passes",
+      "classification": "false-rejection-guard",
+      "criterion": "metric:architecture.summary.cycles!=true",
+      "bindingCriterionId": "acceptance-criterion-001",
+      "boundEvidenceIds": [
+        "architecture.summary"
+      ],
+      "availableEvidenceIds": [
+        "architecture.summary"
+      ],
+      "citations": [
+        {
+          "id": "architecture.summary",
+          "type": "architecture-summary",
+          "detail": "cycles metric false",
+          "metrics": {
+            "cycles": "false"
+          }
+        }
+      ],
+      "expectedStatus": "PASS"
+    },
+    {
+      "id": "boolean-inequality-contradiction-fails",
+      "classification": "false-acceptance-guard",
+      "criterion": "metric:architecture.summary.cycles!=false",
+      "bindingCriterionId": "acceptance-criterion-001",
+      "boundEvidenceIds": [
+        "architecture.summary"
+      ],
+      "availableEvidenceIds": [
+        "architecture.summary"
+      ],
+      "citations": [
+        {
+          "id": "architecture.summary",
+          "type": "architecture-summary",
+          "detail": "cycles metric false",
+          "metrics": {
+            "cycles": "false"
+          }
+        }
+      ],
+      "expectedStatus": "FAIL"
+    },
+    {
+      "id": "non-numeric-evidence-fails",
+      "classification": "false-acceptance-guard",
+      "criterion": "metric:repo.metrics.files>=3",
+      "bindingCriterionId": "acceptance-criterion-001",
+      "boundEvidenceIds": [
+        "repo.metrics"
+      ],
+      "availableEvidenceIds": [
+        "repo.metrics"
+      ],
+      "citations": [
+        {
+          "id": "repo.metrics",
+          "type": "repository-metrics",
+          "detail": "files metric five",
+          "metrics": {
+            "files": "five"
+          }
+        }
+      ],
+      "expectedStatus": "FAIL"
+    },
+    {
+      "id": "citation-absent-from-current-candidate-fails",
+      "classification": "false-acceptance-guard",
+      "criterion": "metric:repo.metrics.files>=3",
+      "bindingCriterionId": "acceptance-criterion-001",
+      "boundEvidenceIds": [
+        "repo.metrics"
+      ],
+      "availableEvidenceIds": [
+        "repo.metrics"
+      ],
+      "citations": [],
+      "expectedStatus": "FAIL"
     }
   ]
 }
