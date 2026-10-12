@@ -1,7 +1,9 @@
 package com.vericore.core.workflow
 
+import com.vericore.core.ai.EvidenceCitation
 import com.vericore.core.planner.ChangeSpecification
 import com.vericore.core.planner.CriterionEvidenceBinding
+import java.math.BigDecimal
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -42,19 +44,27 @@ data class ChangeSpecificationEvaluation(
 )
 
 /**
- * Converts declared obligations into explicit evaluation records.
+ * Evaluates only explicitly supported, machine-readable criteria.
  *
- * This first evaluator intentionally does not infer semantic success from tests, file changes,
- * or the existence of a statement. Until a criterion-specific evidence evaluator is available,
- * each declared obligation remains NOT_EVALUATED and must not silently count as a pass.
+ * The initial syntax is:
+ *   metric:<citation-id>.<metric-key><operator><number>
+ *
+ * Example: metric:repo.metrics.files>=10
+ *
+ * A metric criterion must bind the named citation, and the citation must be present in the
+ * evidence generated for the candidate currently under verification. Free-form statements
+ * remain unevaluated/inconclusive; citation presence alone never proves them.
  */
 object ChangeSpecificationEvaluator {
     private const val NOT_EVALUATED_REASON =
         "No criterion-specific evidence evaluator is implemented; this obligation requires explicit review."
+    private const val METRIC_PREFIX = "metric:"
+    private val metricPattern = Regex("^metric:(.+?)(>=|<=|==|!=|>|<)(-?(?:\\d+(?:\\.\\d+)?|\\.\\d+))$")
 
     fun evaluate(
         specification: ChangeSpecification,
-        availableEvidenceIds: Set<String> = emptySet()
+        availableEvidenceIds: Set<String> = emptySet(),
+        evidenceCitations: List<EvidenceCitation> = emptyList()
     ): ChangeSpecificationEvaluation? {
         val normalized = try {
             specification.normalized()
@@ -77,12 +87,13 @@ object ChangeSpecificationEvaluator {
 
         val bindings = normalized.evidenceBindings.associateBy { it.criterionId }
         val availableIds = availableEvidenceIds.toSet()
+        val citationsById = evidenceCitations.associateBy { it.id }
         val criteria = buildList {
-            addAll(normalized.requiredBehaviors.withIds("required-behavior", SpecificationCriterionKind.REQUIRED_BEHAVIOR, bindings, availableIds))
-            addAll(normalized.forbiddenBehaviors.withIds("forbidden-behavior", SpecificationCriterionKind.FORBIDDEN_BEHAVIOR, bindings, availableIds))
-            addAll(normalized.protectedInvariants.withIds("protected-invariant", SpecificationCriterionKind.PROTECTED_INVARIANT, bindings, availableIds))
-            addAll(normalized.acceptanceCriteria.withIds("acceptance-criterion", SpecificationCriterionKind.ACCEPTANCE_CRITERION, bindings, availableIds))
-            addAll(normalized.requiredEvidence.withIds("required-evidence", SpecificationCriterionKind.REQUIRED_EVIDENCE, bindings, availableIds))
+            addAll(normalized.requiredBehaviors.withIds("required-behavior", SpecificationCriterionKind.REQUIRED_BEHAVIOR, bindings, availableIds, citationsById))
+            addAll(normalized.forbiddenBehaviors.withIds("forbidden-behavior", SpecificationCriterionKind.FORBIDDEN_BEHAVIOR, bindings, availableIds, citationsById))
+            addAll(normalized.protectedInvariants.withIds("protected-invariant", SpecificationCriterionKind.PROTECTED_INVARIANT, bindings, availableIds, citationsById))
+            addAll(normalized.acceptanceCriteria.withIds("acceptance-criterion", SpecificationCriterionKind.ACCEPTANCE_CRITERION, bindings, availableIds, citationsById))
+            addAll(normalized.requiredEvidence.withIds("required-evidence", SpecificationCriterionKind.REQUIRED_EVIDENCE, bindings, availableIds, citationsById))
         }
         val notEvaluatedCount = criteria.count { it.status == CriterionEvaluationStatus.NOT_EVALUATED }
         val status = when {
@@ -103,14 +114,21 @@ object ChangeSpecificationEvaluator {
         prefix: String,
         kind: SpecificationCriterionKind,
         bindings: Map<String, CriterionEvidenceBinding>,
-        availableEvidenceIds: Set<String>
+        availableEvidenceIds: Set<String>,
+        citationsById: Map<String, EvidenceCitation>
     ): List<SpecificationCriterionEvaluation> = mapIndexed { index, statement ->
         val id = "$prefix-${(index + 1).toString().padStart(3, '0')}"
         val binding = bindings[id]
         val missingEvidence = binding?.evidenceIds.orEmpty().filterNot(availableEvidenceIds::contains)
+        val metricEvaluation = if (binding != null && missingEvidence.isEmpty() && statement.startsWith(METRIC_PREFIX)) {
+            evaluateMetric(statement, binding.evidenceIds, citationsById)
+        } else {
+            null
+        }
         val status = when {
             binding == null -> CriterionEvaluationStatus.NOT_EVALUATED
             missingEvidence.isNotEmpty() -> CriterionEvaluationStatus.FAIL
+            metricEvaluation != null -> metricEvaluation.first
             else -> CriterionEvaluationStatus.INCONCLUSIVE
         }
         val reason = when {
@@ -119,6 +137,7 @@ object ChangeSpecificationEvaluator {
             binding == null -> NOT_EVALUATED_REASON
             missingEvidence.isNotEmpty() ->
                 "Evidence binding references IDs absent from the prepared contract: ${missingEvidence.sorted().joinToString(", ")}."
+            metricEvaluation != null -> metricEvaluation.second
             else ->
                 "Evidence IDs are bound to this criterion, but their content has not been semantically evaluated."
         }
@@ -130,5 +149,53 @@ object ChangeSpecificationEvaluator {
             reason = reason,
             evidenceIds = binding?.evidenceIds.orEmpty()
         )
+    }
+
+    private fun evaluateMetric(
+        statement: String,
+        boundEvidenceIds: List<String>,
+        citationsById: Map<String, EvidenceCitation>
+    ): Pair<CriterionEvaluationStatus, String> {
+        val match = metricPattern.matchEntire(statement)
+            ?: return CriterionEvaluationStatus.FAIL to
+                "Malformed metric criterion. Expected metric:<citation-id>.<metric-key><operator><number>."
+        val leftHandSide = match.groupValues[1]
+        val separator = leftHandSide.lastIndexOf('.')
+        if (separator <= 0 || separator == leftHandSide.lastIndex) {
+            return CriterionEvaluationStatus.FAIL to
+                "Malformed metric reference. Include both a citation ID and metric key."
+        }
+        val citationId = leftHandSide.substring(0, separator)
+        val metricKey = leftHandSide.substring(separator + 1)
+        val operator = match.groupValues[2]
+        val expected = match.groupValues[3].toBigDecimalOrNull()
+            ?: return CriterionEvaluationStatus.FAIL to "Metric threshold is not a valid decimal number."
+        if (citationId !in boundEvidenceIds) {
+            return CriterionEvaluationStatus.FAIL to
+                "Metric citation '$citationId' is not bound to this criterion."
+        }
+        val citation = citationsById[citationId]
+            ?: return CriterionEvaluationStatus.FAIL to
+                "Metric citation '$citationId' is absent from the current candidate's evidence."
+        val actualText = citation.metrics[metricKey]
+            ?: return CriterionEvaluationStatus.FAIL to
+                "Metric '$metricKey' is absent from evidence citation '$citationId'."
+        val actual = actualText.toBigDecimalOrNull()
+            ?: return CriterionEvaluationStatus.FAIL to
+                "Metric '$metricKey' in evidence citation '$citationId' is not numeric."
+
+        val comparison = actual.compareTo(expected)
+        val satisfied = when (operator) {
+            ">=" -> comparison >= 0
+            "<=" -> comparison <= 0
+            "==" -> comparison == 0
+            "!=" -> comparison != 0
+            ">" -> comparison > 0
+            "<" -> comparison < 0
+            else -> false
+        }
+        val result = if (satisfied) CriterionEvaluationStatus.PASS else CriterionEvaluationStatus.FAIL
+        val reason = "Current candidate metric '$citationId.$metricKey' is $actualText; criterion requires $operator$expected."
+        return result to reason
     }
 }

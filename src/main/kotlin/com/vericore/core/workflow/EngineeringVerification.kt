@@ -12,6 +12,7 @@ import com.vericore.core.scanner.OptimizedGitAnalyzer
 import com.vericore.core.scanner.RepositoryScanner
 import com.vericore.cli.CodeParallelParser
 import com.vericore.core.cache.CacheManager
+import com.vericore.core.ai.GroundedEvidenceBuilder
 import com.vericore.core.planner.EngineeringPlan
 import java.io.File
 import kotlinx.serialization.Serializable
@@ -114,7 +115,12 @@ object EngineeringVerification {
         }
         val contractValid = contractReasons.isEmpty()
         val contractResult = AgentChangeContractResult(contract, contractValid, contractReasons)
-        val specificationEvaluation = ChangeSpecificationEvaluator.evaluate(contract.specification, contract.evidenceIds.toSet())
+        val currentCandidateEvidence = GroundedEvidenceBuilder.fromSnapshot(snapshot)
+        val specificationEvaluation = ChangeSpecificationEvaluator.evaluate(
+            contract.specification,
+            contract.evidenceIds.toSet(),
+            currentCandidateEvidence.citations
+        )
         val execution = if (contractValid && safety.status != SafetyStatus.FAIL && analysisStateStable) {
             VerificationExecutionResult(commands = VerificationCommandExecutor.execute(root, contract.verificationCommands))
         } else {

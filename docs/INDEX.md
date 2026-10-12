@@ -36,6 +36,7 @@
 | [Artifact Schema Catalog](ARTIFACT_SCHEMA_CATALOG.md) | Artifact contracts, schema versions, compatibility and source locations |
 | [Semantic Evidence Graph](PHASE_6_SEMANTIC_EVIDENCE_GRAPH.md) | Evidence graph design and implementation scope |
 | [PR Intelligence](PR_INTELLIGENCE.md) | Deterministic pull-request analysis |
+| [Deterministic Evidence Evaluators](DETERMINISTIC_EVIDENCE_EVALUATORS.md) | Supported machine-readable criterion syntax and evaluation limits |
 
 Machine-readable schemas live in [`docs/schemas/`](schemas/). They are interface contracts; update the relevant schema, tests, and catalog together when an artifact contract changes.
 
