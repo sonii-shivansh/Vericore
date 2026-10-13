@@ -43,7 +43,7 @@
 - persisted output/agent-change-contract.json
 - contract tamper, plan mismatch, repository mismatch, stale-HEAD, and unexpected-change detection
 - candidate repository-input state digests captured before analysis, before declared verification commands, and after those commands; relevant candidate drift fails closed
-- structured specification evaluation records stable per-criterion IDs; criterion IDs can bind to prepared evidence IDs, dangling references fail closed, and valid links remain `INCONCLUSIVE` until evidence content is evaluated; unevaluated/inconclusive criteria force overall `REVIEW_REQUIRED`
+- structured specification evaluation records stable per-criterion IDs; numeric and Boolean metric criteria are evaluated against current-candidate grounded evidence; malformed expressions, unbound/dangling citations, missing metrics, and type mismatches fail closed; unsupported free-form criteria remain `NOT_EVALUATED` or `INCONCLUSIVE`; any failed criterion makes the overall verification `FAIL`, while unevaluated/inconclusive criteria require review; contract-only verification leaves metrics `NOT_EVALUATED` because it does not rebuild candidate evidence
 - verification against the persisted contract rather than a replacement derived from the mutated repository
 
 **Authoritative rule:** the persisted contract is the verification boundary.
@@ -102,7 +102,7 @@ The master strategic roadmap is documented in [Product Direction](PRODUCT_DIRECT
 
 **Current operational priority: validate post-release fixes and maintain exact-SHA release discipline.** The v0.9.0 publication is complete. Follow-up commits on `main` are unreleased development; they must pass the required gates on the exact candidate SHA before a new patch tag or artifacts are published.
 
-**Current product focus: structured change specification.** The prepare/plan CLI and MCP paths can record explicit required behaviors, forbidden behaviors, protected invariants, acceptance criteria, and required evidence, with the specification bound to the plan and contract fingerprint. Deterministic evaluation of each declared criterion remains future work; the current feature records obligations rather than claiming they have passed.
+**Current product focus: structured change specification.** The prepare/plan CLI and MCP paths record explicit required behaviors, forbidden behaviors, protected invariants, acceptance criteria, and required evidence, with the specification bound to the plan and contract fingerprint. The deterministic evaluator currently supports numeric and Boolean metric comparisons against current-candidate evidence. Natural-language obligations without a suitable evaluator remain `NOT_EVALUATED` or `INCONCLUSIVE`; citation presence alone is not proof, and contract-only verification does not rebuild candidate evidence.
 
 ### Ongoing regression expectations
 
