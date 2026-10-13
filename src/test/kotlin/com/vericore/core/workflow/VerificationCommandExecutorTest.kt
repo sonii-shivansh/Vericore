@@ -183,7 +183,7 @@ class VerificationCommandExecutorTest {
         try {
             val marker = File(root, "late-child-mutation")
             File(root, "mvnw").writeText(
-                "#!/bin/sh\\n(sleep 2; printf 'late' > 'undefined') &\\nwait\\n"
+                "#!/bin/sh\n(sleep 2; printf 'late' > '" + marker.absolutePath + "') &\nwait\n"
             )
             Files.setPosixFilePermissions(
                 File(root, "mvnw").toPath(),
