@@ -63,8 +63,7 @@ object CandidateStateSnapshotter {
                 }
                 val relativePath = rootPath.relativize(file).toString().replace(File.separatorChar, '/')
                 val entry = if (attrs.isSymbolicLink) {
-                    val target = Files.readSymbolicLink(file).toString().toByteArray(Charsets.UTF_8)
-                    Entry(relativePath, 'L'.code.toByte(), target.size.toLong(), sha256(target), false)
+                    hashSymbolicLink(file, relativePath)
                 } else {
                     hashRegularFile(file, relativePath, attrs)
                 }
@@ -94,6 +93,36 @@ object CandidateStateSnapshotter {
             digest = digest.digest().toHex(),
             fileCount = entries.size,
             totalBytes = totalBytes
+        )
+    }
+
+    private fun hashSymbolicLink(link: Path, relativePath: String): Entry {
+        val target = Files.readSymbolicLink(link)
+        val resolved = try {
+            link.toRealPath()
+        } catch (error: IOException) {
+            throw IOException("Unable to snapshot dangling or inaccessible symbolic link '${relativePath}'.", error)
+        }
+        val targetAttributes = Files.readAttributes(resolved, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
+        if (!targetAttributes.isRegularFile) {
+            throw IOException("Unable to snapshot symbolic link '${relativePath}': only links to regular files are supported.")
+        }
+
+        // Hash the referent as well as the link text: the link's unchanged target string does
+        // not prove that the bytes consumed through that link are unchanged.
+        val targetEntry = hashRegularFile(resolved, relativePath, targetAttributes)
+        if (Files.readSymbolicLink(link) != target || link.toRealPath() != resolved) {
+            throw IOException("Repository candidate symbolic link changed while being snapshotted: ${relativePath}")
+        }
+        val combined = MessageDigest.getInstance("SHA-256")
+        combined.update(target.toString().toByteArray(Charsets.UTF_8))
+        combined.update(targetEntry.contentDigest)
+        return Entry(
+            path = relativePath,
+            kind = 'L'.code.toByte(),
+            size = targetEntry.size,
+            contentDigest = combined.digest(),
+            executable = targetEntry.executable
         )
     }
 
@@ -135,13 +164,11 @@ object CandidateStateSnapshotter {
             initialExecutable != Files.isExecutable(path) ||
             bytesRead != after.size()
         ) {
-            throw IOException("Repository candidate file changed while being snapshotted: $relativePath")
+            throw IOException("Repository candidate file changed while being snapshotted: ${relativePath}")
         }
 
         return Entry(relativePath, 'F'.code.toByte(), bytesRead, contentDigest.digest(), initialExecutable)
     }
-
-    private fun sha256(bytes: ByteArray): ByteArray = MessageDigest.getInstance("SHA-256").digest(bytes)
 
     private fun ByteArray.toHex(): String = joinToString("") { "%02x".format(it) }
 }

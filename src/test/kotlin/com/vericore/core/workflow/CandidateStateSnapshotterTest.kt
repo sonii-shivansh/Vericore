@@ -1,6 +1,8 @@
 package com.vericore.core.workflow
 
+import java.io.IOException
 import java.nio.file.Files
+import org.junit.jupiter.api.Assumptions.assumeTrue
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
@@ -150,6 +152,52 @@ class CandidateStateSnapshotterTest {
 
             assertEquals(before.digest, after.digest)
             assertEquals(1, after.fileCount)
+        }
+    }
+
+    @Test
+    fun `digest changes when an external symlink target changes`() {
+        val externalFile = Files.createTempFile("vericore-external-target", ".txt")
+        try {
+            Files.writeString(externalFile, "version one")
+            withRepository { root ->
+                try {
+                    Files.createSymbolicLink(root.resolve("linked-config"), externalFile)
+                } catch (error: Exception) {
+                    assumeTrue(false, "Symbolic links are unavailable on this filesystem: ${error.message}")
+                    return@withRepository
+                }
+
+                val before = CandidateStateSnapshotter.capture(root.toFile())
+                Files.writeString(externalFile, "version two")
+                val after = CandidateStateSnapshotter.capture(root.toFile())
+
+                assertNotEquals(before.digest, after.digest)
+            }
+        } finally {
+            Files.deleteIfExists(externalFile)
+        }
+    }
+
+    @Test
+    fun `directory symlinks fail closed instead of omitting linked inputs`() {
+        val externalDirectory = Files.createTempDirectory("vericore-external-directory")
+        try {
+            Files.writeString(externalDirectory.resolve("config.json"), "{}")
+            withRepository { root ->
+                try {
+                    Files.createSymbolicLink(root.resolve("linked-directory"), externalDirectory)
+                } catch (error: Exception) {
+                    assumeTrue(false, "Symbolic links are unavailable on this filesystem: ${error.message}")
+                    return@withRepository
+                }
+
+                kotlin.test.assertFailsWith<IOException> {
+                    CandidateStateSnapshotter.capture(root.toFile())
+                }
+            }
+        } finally {
+            externalDirectory.toFile().deleteRecursively()
         }
     }
 
