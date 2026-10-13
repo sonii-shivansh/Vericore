@@ -96,7 +96,7 @@ Full verification now records three candidate digests:
 - `candidateStateDigest`: repository-input state immediately before declared verification commands.
 - `postVerificationCandidateDigest`: repository-input state after those commands finish.
 
-A stable candidate requires the three digests to match and Git HEAD to remain unchanged from analysis start through command completion. If the candidate changes during analysis, declared verification commands are not run. If it changes during verification, the result fails closed rather than claiming the commands verified a stable state. The receipt also records whether the state was stable and the file counts at command start and after execution.
+A stable candidate requires the three digests to match and Git HEAD to remain unchanged from analysis start through command completion. If the candidate changes during analysis, declared verification commands are not run. If it changes during verification, the result fails closed rather than claiming the commands verified a stable state. The receipt also records whether the state was stable and the file counts at command start and after execution. A timed-out verification command is terminated together with its captured child-process tree so a wrapper-spawned build or test process cannot continue mutating the repository after the post-verification snapshot.
 
 The deterministic digest includes tracked and untracked repository files, except version-control metadata (`.git`, `.gradle`, `.idea`, `.vericore`, `.codecontext`, `node_modules`) and conventional generated/build-output directories. The repository-root `output/` directory is treated as Vericore-generated output; `build/` and `target/` directories are treated as generated outside source/test/fixture/input trees, so a source package or resource directory with one of those names is still hashed. File extensions do not create exclusions: an untracked root-level log is included because a build may read arbitrary repository files. Test harnesses that produce diagnostic output should write it under the generated `output/` directory. Regular-file symlinks include both the link target and the referent's content in the digest, including when the referent is outside the repository. Dangling symlinks and symlinks to directories or other non-regular targets fail snapshotting closed because their consumed input tree cannot currently be represented safely. This is repository-input integrity, not a complete build-environment attestation: external services and toolchain identity require separate controls. Snapshot read errors fail verification rather than being interpreted as a stable candidate.
 
@@ -122,7 +122,8 @@ The release and E2E test suites exercise the safety boundary against:
 - unexpected source changes;
 - missing contract;
 - malformed contract;
-- repository restoration after mutation.
+- repository restoration after mutation;
+- timed-out build wrappers whose child processes attempt to mutate files after timeout.
 
 The goal is to fail closed when the prepared verification boundary is no longer trustworthy.
 
