@@ -84,14 +84,15 @@ object VerificationCommandExecutor {
             process.toHandle().descendants().use { stream -> stream.toList() }
         }.getOrDefault(emptyList())
 
-        // Kill descendants first so inherited stdout/stderr pipes close promptly.
-        descendants.asReversed().forEach { descendant ->
-            runCatching { if (descendant.isAlive) descendant.destroyForcibly() }
-        }
+        // Stop the shell first: while it remains alive, it can spawn new descendants
+        // after the initial snapshot and escape the captured process list.
         runCatching { if (process.isAlive) process.destroyForcibly() }
         runCatching { process.waitFor(5, TimeUnit.SECONDS) }
 
-        // Recheck captured handles in case a process did not exit on the first request.
+        // Then terminate the captured descendants, deepest first, and recheck survivors.
+        descendants.asReversed().forEach { descendant ->
+            runCatching { if (descendant.isAlive) descendant.destroyForcibly() }
+        }
         descendants.forEach { descendant ->
             runCatching { if (descendant.isAlive) descendant.destroyForcibly() }
         }
