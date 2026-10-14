@@ -51,8 +51,10 @@ object VerificationCommandExecutor {
             stderrThread.start()
             val finished = process.waitFor(timeoutSeconds, TimeUnit.SECONDS)
             if (!finished) {
-                process.destroy()
-                if (!process.waitFor(5, TimeUnit.SECONDS)) process.destroyForcibly()
+                // A build wrapper can spawn Maven/Gradle and other child processes. Killing
+                // only this shell lets those descendants continue mutating the repository
+                // after verification has returned and its candidate digest was captured.
+                terminateProcessTree(process)
             }
             stdoutThread.join(5_000)
             stderrThread.join(5_000)
@@ -73,6 +75,25 @@ object VerificationCommandExecutor {
                 durationMillis = elapsedMillis(started),
                 error = e.message ?: e::class.java.simpleName
             )
+        }
+    }
+
+    /** Best-effort termination of the command shell and every descendant it spawned. */
+    private fun terminateProcessTree(process: Process) {
+        val descendants = runCatching {
+            process.toHandle().descendants().use { stream -> stream.toList() }
+        }.getOrDefault(emptyList())
+
+        // Kill descendants first so inherited stdout/stderr pipes close promptly.
+        descendants.asReversed().forEach { descendant ->
+            runCatching { if (descendant.isAlive) descendant.destroyForcibly() }
+        }
+        runCatching { if (process.isAlive) process.destroyForcibly() }
+        runCatching { process.waitFor(5, TimeUnit.SECONDS) }
+
+        // Recheck captured handles in case a process did not exit on the first request.
+        descendants.forEach { descendant ->
+            runCatching { if (descendant.isAlive) descendant.destroyForcibly() }
         }
     }
 

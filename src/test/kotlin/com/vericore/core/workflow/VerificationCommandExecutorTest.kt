@@ -177,6 +177,32 @@ class VerificationCommandExecutorTest {
     }
 
     @Test
+    fun `timed out command descendants cannot mutate the repository afterward`() {
+        if (System.getProperty("os.name").lowercase().contains("win")) return
+        val root = linuxFixture()
+        try {
+            val marker = File(root, "late-child-mutation")
+            File(root, "mvnw").writeText(
+                "#!/bin/sh\n(sleep 2; printf 'late' > '" + marker.absolutePath + "') &\nwait\n"
+            )
+            Files.setPosixFilePermissions(
+                File(root, "mvnw").toPath(),
+                setOf(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_EXECUTE)
+            )
+            val command = "cd '" + root.canonicalPath + "' && ./mvnw test"
+
+            val result = VerificationCommandExecutor.execute(root, listOf(command), timeoutSeconds = 1).single()
+
+            assertTrue(result.executed)
+            assertTrue(result.timedOut)
+            Thread.sleep(2_500)
+            assertFalse(marker.exists(), "A timed-out verification command must not leave child processes mutating the repository")
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
     fun `timed out command is reported`() {
         if (System.getProperty("os.name").lowercase().contains("win")) return
         val root = linuxFixture()
