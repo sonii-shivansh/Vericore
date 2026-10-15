@@ -176,13 +176,12 @@ object ChangeSpecificationEvaluator {
             return CriterionEvaluationStatus.FAIL to
                 "Metric citation '$citationId' is not bound to this criterion."
         }
-        val citation = citationsById[citationId] ?: return if (currentCandidateEvidenceAvailable) {
-            CriterionEvaluationStatus.FAIL to
-                "Metric citation '$citationId' is absent from the current candidate's evidence."
-        } else {
-            CriterionEvaluationStatus.NOT_EVALUATED to
+        if (!currentCandidateEvidenceAvailable) {
+            return CriterionEvaluationStatus.NOT_EVALUATED to
                 "Current-candidate evidence is not rebuilt in contract-only mode; rerun full verify to evaluate this metric."
         }
+        val citation = citationsById[citationId] ?: return CriterionEvaluationStatus.FAIL to
+            "Metric citation '$citationId' is absent from the current candidate's evidence."
         val actualText = citation.metrics[metricKey]
             ?: return CriterionEvaluationStatus.FAIL to
                 "Metric '$metricKey' is absent from evidence citation '$citationId'."
