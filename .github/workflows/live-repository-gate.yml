@@ -52,7 +52,7 @@ jobs:
         with:
           fetch-depth: 0
       - name: Set up JDK 21
-        uses: actions/setup-java@v6
+        uses: actions/setup-java@v5
         with:
           java-version: 21
           distribution: temurin
@@ -330,7 +330,7 @@ jobs:
           test -z "$(git ls-files --others --exclude-standard | grep -Ev '^(output/|\.vericore/)' || true)"
       - name: Upload release-gate evidence
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: live-release-gate-${{ github.run_id }}
           path: |

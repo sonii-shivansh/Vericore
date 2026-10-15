@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download review artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v8
         with:
           name: vericore-pr-review
           path: ${{ runner.temp }}/vericore-pr-review
@@ -24,7 +24,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Update PR review comment
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           ARTIFACT_DIR: ${{ runner.temp }}/vericore-pr-review
         with:
