@@ -148,6 +148,26 @@ class ChangeSpecificationEvaluatorTest {
     }
 
     @Test
+    fun `metric criterion ignores supplied citations when candidate evidence is unavailable`() {
+        val evaluation = ChangeSpecificationEvaluator.evaluate(
+            ChangeSpecification(
+                acceptanceCriteria = listOf("metric:repo.metrics.files>=3"),
+                evidenceBindings = listOf(CriterionEvidenceBinding("acceptance-criterion-001", listOf("repo.metrics")))
+            ),
+            availableEvidenceIds = setOf("repo.metrics"),
+            evidenceCitations = listOf(
+                EvidenceCitation("repo.metrics", "repository-metrics", detail = "stale metric", metrics = mapOf("files" to "500"))
+            ),
+            currentCandidateEvidenceAvailable = false
+        )!!
+
+        assertEquals(CriterionEvaluationStatus.NOT_EVALUATED, evaluation.status)
+        assertEquals(CriterionEvaluationStatus.NOT_EVALUATED, evaluation.criteria.single().status)
+        assertEquals(1, evaluation.notEvaluatedCount)
+        assertTrue(evaluation.criteria.single().reason.contains("contract-only mode"))
+    }
+
+    @Test
     fun `boolean metric criterion passes when current candidate matches`() {
         val evaluation = ChangeSpecificationEvaluator.evaluate(
             ChangeSpecification(
