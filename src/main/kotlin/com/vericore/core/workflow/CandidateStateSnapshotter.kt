@@ -10,6 +10,7 @@ import java.nio.file.Path
 import java.nio.file.SimpleFileVisitor
 import java.nio.file.attribute.BasicFileAttributes
 import java.security.MessageDigest
+import kotlinx.serialization.Serializable
 
 /**
  * A deterministic digest of repository inputs at one observed point in time.
@@ -24,6 +25,55 @@ data class CandidateStateSnapshot(
     val fileCount: Int,
     val totalBytes: Long
 )
+
+/** One normalized repository-relative input in a prepare-time baseline manifest. */
+@Serializable
+data class CandidateStateManifestEntry(
+    val path: String,
+    /** "F" for a regular file, "L" for a symbolic link to a regular file. */
+    val kind: String,
+    val size: Long,
+    val contentDigest: String,
+    val executable: Boolean
+)
+
+/**
+ * Portable description of the exact candidate inputs observed during prepare.
+ * The digest is recomputed from all sorted entries and must be validated before use.
+ */
+@Serializable
+data class CandidateStateManifest(
+    val schemaVersion: String = "1.0",
+    val entries: List<CandidateStateManifestEntry>,
+    val digest: String,
+    val fileCount: Int,
+    val totalBytes: Long
+) {
+    fun isValid(): Boolean = runCatching {
+        if (schemaVersion != "1.0") return@runCatching false
+        if (entries != entries.sortedBy { it.path }) return@runCatching false
+        if (entries.map { it.path }.distinct().size != entries.size) return@runCatching false
+        if (entries.any {
+                it.path.isBlank() ||
+                    it.path.startsWith("/") ||
+                    it.path.split('/').any { segment -> segment.isBlank() || segment == "." || segment == ".." } ||
+                    it.kind !in setOf("F", "L") ||
+                    it.size < 0 ||
+                    !it.contentDigest.matches(Regex("^[a-f0-9]{64}$"))
+            }) return@runCatching false
+        if (fileCount != entries.size) return@runCatching false
+        val computedBytes = entries.fold(0L) { total, entry -> Math.addExact(total, entry.size) }
+        if (computedBytes != totalBytes || totalBytes < 0) return@runCatching false
+        digest == CandidateStateSnapshotter.digestManifestEntries(entries)
+    }.getOrDefault(false)
+
+    fun snapshot(): CandidateStateSnapshot = CandidateStateSnapshot(
+        schemaVersion = schemaVersion,
+        digest = digest,
+        fileCount = fileCount,
+        totalBytes = totalBytes
+    )
+}
 
 object CandidateStateSnapshotter {
     private val excludedMetadataDirectoryNames = setOf(
@@ -43,7 +93,9 @@ object CandidateStateSnapshotter {
         val executable: Boolean
     )
 
-    fun capture(repository: File): CandidateStateSnapshot {
+    fun capture(repository: File): CandidateStateSnapshot = captureManifest(repository).snapshot()
+
+    fun captureManifest(repository: File): CandidateStateManifest {
         val root = repository.canonicalFile
         require(root.isDirectory) { "Repository path is not a directory: ${repository.path}" }
         val rootPath = root.toPath().normalize()
@@ -76,24 +128,63 @@ object CandidateStateSnapshotter {
             }
         })
 
+        val sortedEntries = entries.sortedBy { it.path }
+        val manifestEntries = sortedEntries.map { entry ->
+            CandidateStateManifestEntry(
+                path = entry.path,
+                kind = if (entry.kind == 'L'.code.toByte()) "L" else "F",
+                size = entry.size,
+                contentDigest = entry.contentDigest.toHex(),
+                executable = entry.executable
+            )
+        }
+        val totalBytes = sortedEntries.fold(0L) { total, entry -> Math.addExact(total, entry.size) }
+        val manifest = CandidateStateManifest(
+            entries = manifestEntries,
+            digest = digestManifestEntries(manifestEntries),
+            fileCount = manifestEntries.size,
+            totalBytes = totalBytes
+        )
+        check(manifest.isValid()) { "Generated candidate baseline manifest failed its own integrity validation." }
+        return manifest
+    }
+
+    /**
+     * Returns sorted repository-relative paths whose state differs from the prepare-time
+     * baseline and which are not explicitly in the planned path scope. A planned directory
+     * authorizes changes below that directory; an exact planned file authorizes that file.
+     */
+    fun unplannedDrift(
+        baseline: CandidateStateManifest,
+        current: CandidateStateManifest,
+        plannedPaths: List<String>
+    ): List<String> {
+        require(baseline.isValid()) { "Prepare-time candidate baseline manifest is invalid or tampered." }
+        require(current.isValid()) { "Current candidate manifest is invalid." }
+        val beforeByPath = baseline.entries.associateBy { it.path }
+        val afterByPath = current.entries.associateBy { it.path }
+        val planned = plannedPaths.map(::normalizePath).filter(String::isNotBlank).distinct()
+        return (beforeByPath.keys + afterByPath.keys)
+            .distinct()
+            .sorted()
+            .filter { path ->
+                beforeByPath[path] != afterByPath[path] &&
+                    planned.none { allowed -> path == allowed || path.startsWith("${allowed}/") }
+            }
+    }
+
+    internal fun digestManifestEntries(entries: List<CandidateStateManifestEntry>): String {
         val digest = MessageDigest.getInstance("SHA-256")
-        var totalBytes = 0L
         for (entry in entries.sortedBy { it.path }) {
             val pathBytes = entry.path.toByteArray(Charsets.UTF_8)
             digest.update(ByteBuffer.allocate(Int.SIZE_BYTES).putInt(pathBytes.size).array())
             digest.update(pathBytes)
-            digest.update(entry.kind)
+            digest.update(if (entry.kind == "L") 'L'.code.toByte() else 'F'.code.toByte())
             digest.update(ByteBuffer.allocate(Long.SIZE_BYTES).putLong(entry.size).array())
-            digest.update(entry.contentDigest)
+            digest.update(entry.contentDigest.hexToBytes())
             digest.update((if (entry.executable) 1 else 0).toByte())
-            totalBytes = Math.addExact(totalBytes, entry.size)
         }
-
-        return CandidateStateSnapshot(
-            digest = digest.digest().toHex(),
-            fileCount = entries.size,
-            totalBytes = totalBytes
-        )
+        return digest.digest().toHex()
     }
 
     private fun hashSymbolicLink(link: Path, relativePath: String): Entry {
@@ -168,6 +259,14 @@ object CandidateStateSnapshotter {
         }
 
         return Entry(relativePath, 'F'.code.toByte(), bytesRead, contentDigest.digest(), initialExecutable)
+    }
+
+    private fun normalizePath(path: String): String =
+        path.replace('\\', '/').trim().removePrefix("./").trimEnd('/')
+
+    private fun String.hexToBytes(): ByteArray {
+        require(length % 2 == 0 && matches(Regex("^[a-f0-9]+$"))) { "Invalid hexadecimal digest." }
+        return chunked(2).map { it.toInt(16).toByte() }.toByteArray()
     }
 
     private fun ByteArray.toHex(): String = joinToString("") { "%02x".format(it) }
