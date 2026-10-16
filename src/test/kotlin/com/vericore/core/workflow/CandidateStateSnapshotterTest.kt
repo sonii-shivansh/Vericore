@@ -249,7 +249,7 @@ class CandidateStateSnapshotterTest {
     }
 
     @Test
-    fun `baseline detects unplanned deletions and permits explicitly planned subtree changes`() {
+    fun `baseline detects unplanned deletions and permits only explicitly planned paths`() {
         withRepository { root ->
             Files.createDirectories(root.resolve("src/main"))
             Files.writeString(root.resolve("src/main/App.kt"), "class App\n")
@@ -264,7 +264,7 @@ class CandidateStateSnapshotterTest {
             assertEquals(listOf("src/main/App.kt"), CandidateStateSnapshotter.unplannedDrift(
                 baseline,
                 current,
-                listOf("src/test")
+                listOf("src/test/AppTest.kt")
             ))
         }
     }
