@@ -115,7 +115,10 @@ cli_verify = subprocess.run(
 )
 assert cli_verify.returncode == 0, cli_verify.stdout + chr(10) + cli_verify.stderr
 receipt = json.loads((root/"output/verification-receipt.json").read_text())
-assert receipt["schemaVersion"] == "1.2", receipt
+assert receipt["schemaVersion"] == "1.3", receipt
+assert receipt["preparedBaselineDigest"] and len(receipt["preparedBaselineDigest"]) == 64, receipt
+assert receipt["baselineManifestValid"] is True, receipt
+assert receipt["unplannedBaselineDriftPaths"] == [], receipt
 assert receipt["status"] == "REVIEW_REQUIRED", receipt
 assert receipt["specificationEvaluation"]["status"] == "NOT_EVALUATED", receipt
 assert receipt["specificationEvaluation"] == evaluation, receipt
