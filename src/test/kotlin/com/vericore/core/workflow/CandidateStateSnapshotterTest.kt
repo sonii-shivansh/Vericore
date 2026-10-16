@@ -201,6 +201,74 @@ class CandidateStateSnapshotterTest {
         }
     }
 
+    @Test
+    fun `baseline manifest is deterministic and validates every entry`() {
+        withRepository { root ->
+            Files.createDirectories(root.resolve("src"))
+            Files.writeString(root.resolve("src/App.kt"), "class App\n")
+            Files.writeString(root.resolve("gradle.properties"), "org.gradle.caching=true\n")
+
+            val first = CandidateStateSnapshotter.captureManifest(root.toFile())
+            val second = CandidateStateSnapshotter.captureManifest(root.toFile())
+
+            assertTrue(first.isValid())
+            assertEquals(first, second)
+            assertEquals(first.digest, first.snapshot().digest)
+            assertEquals(listOf("gradle.properties", "src/App.kt"), first.entries.map { it.path })
+            val tampered = first.copy(entries = first.entries.mapIndexed { index, entry ->
+                if (index == 0) entry.copy(contentDigest = "0".repeat(64)) else entry
+            })
+            assertTrue(!tampered.isValid(), "an entry changed without updating the manifest digest must be rejected")
+        }
+    }
+
+    @Test
+    fun `baseline detects ignored and untracked input drift while allowing planned changes`() {
+        withRepository { root ->
+            Files.createDirectories(root.resolve("src"))
+            Files.writeString(root.resolve("src/App.kt"), "class App\n")
+            Files.writeString(root.resolve(".gitignore"), "*.secret\n")
+            val baseline = CandidateStateSnapshotter.captureManifest(root.toFile())
+
+            // This file is Git-ignored, but it remains a candidate input.
+            Files.writeString(root.resolve("credentials.secret"), "placeholder-not-a-real-secret")
+            Files.writeString(root.resolve("build-config.properties"), "mode=production\n")
+            Files.writeString(root.resolve("src/App.kt"), "class App { fun changed() = Unit }\n")
+            Files.createDirectories(root.resolve("output"))
+            Files.writeString(root.resolve("output/verification-receipt.json"), "{}")
+
+            val current = CandidateStateSnapshotter.captureManifest(root.toFile())
+            val drift = CandidateStateSnapshotter.unplannedDrift(
+                baseline,
+                current,
+                listOf("src/App.kt")
+            )
+
+            assertEquals(listOf("build-config.properties", "credentials.secret"), drift)
+        }
+    }
+
+    @Test
+    fun `baseline detects unplanned deletions and permits explicitly planned subtree changes`() {
+        withRepository { root ->
+            Files.createDirectories(root.resolve("src/main"))
+            Files.writeString(root.resolve("src/main/App.kt"), "class App\n")
+            Files.createDirectories(root.resolve("src/test"))
+            Files.writeString(root.resolve("src/test/AppTest.kt"), "class AppTest\n")
+            val baseline = CandidateStateSnapshotter.captureManifest(root.toFile())
+
+            Files.delete(root.resolve("src/main/App.kt"))
+            Files.writeString(root.resolve("src/test/AppTest.kt"), "class AppTest { fun newer() = Unit }\n")
+            val current = CandidateStateSnapshotter.captureManifest(root.toFile())
+
+            assertEquals(listOf("src/main/App.kt"), CandidateStateSnapshotter.unplannedDrift(
+                baseline,
+                current,
+                listOf("src/test")
+            ))
+        }
+    }
+
     private fun withRepository(block: (java.nio.file.Path) -> Unit) {
         val root = Files.createTempDirectory("vericore-candidate-state")
         try {
