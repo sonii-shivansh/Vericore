@@ -74,9 +74,9 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
     }
 
     private fun verifyContractOnly(root: File, plan: EngineeringPlan, contract: AgentChangeContract, json: Json) {
-        val currentManifest = CandidateStateSnapshotter.captureManifest(root)
-        val baselineDriftPaths = contract.baselineManifest
-            ?.takeIf { it.isValid() }
+        val validBaseline = contract.baselineManifest?.takeIf { it.isValid() }
+        val currentManifest = CandidateStateSnapshotter.captureManifest(root, validBaseline?.excludedPaths.orEmpty())
+        val baselineDriftPaths = validBaseline
             ?.let { CandidateStateSnapshotter.unplannedDrift(it, currentManifest, contract.plannedPaths) }
             .orEmpty()
         val reasons = buildList {

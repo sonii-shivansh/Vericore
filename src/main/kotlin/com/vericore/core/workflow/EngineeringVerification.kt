@@ -58,7 +58,9 @@ object EngineeringVerification {
         val root = File(repoPath).canonicalFile
         require(root.isDirectory) { "Repository path is not a directory: $repoPath" }
         val headBeforeAnalysis = RepositoryState.head(root.path).orEmpty()
-        val analysisManifest = CandidateStateSnapshotter.captureManifest(root)
+        val validBaseline = contract.baselineManifest?.takeIf { it.isValid() }
+        val excludedPaths = validBaseline?.excludedPaths.orEmpty()
+        val analysisManifest = CandidateStateSnapshotter.captureManifest(root, excludedPaths)
         val analysisInput = analysisManifest.snapshot()
         val config = ConfigLoader.loadForRepository(root.path)
         val files = RepositoryScanner(config).scan(root.path)
@@ -100,7 +102,7 @@ object EngineeringVerification {
 
         // The analysis and the verification commands must refer to the same candidate state.
         // A content digest catches uncommitted and untracked changes that do not move Git HEAD.
-        val candidateAtVerification = CandidateStateSnapshotter.capture(root)
+        val candidateAtVerification = CandidateStateSnapshotter.capture(root, excludedPaths)
         val analysisStateStable = analysisInput.digest == candidateAtVerification.digest
         val currentHead = RepositoryState.head(root.path).orEmpty()
         val expectedContractFingerprint = AgentChangeContract.fingerprintFor(contract)
@@ -109,8 +111,7 @@ object EngineeringVerification {
         }
         val expectedPlanFingerprint = expectedPlanFingerprintResult.getOrNull().orEmpty()
         val planSpecificationError = expectedPlanFingerprintResult.exceptionOrNull()?.message
-        val baselineDriftPaths = contract.baselineManifest
-            ?.takeIf { it.isValid() }
+        val baselineDriftPaths = validBaseline
             ?.let { CandidateStateSnapshotter.unplannedDrift(it, analysisManifest, contract.plannedPaths) }
             .orEmpty()
         val contractReasons = buildList {
@@ -141,7 +142,7 @@ object EngineeringVerification {
         } else {
             VerificationExecutionResult()
         }
-        val postVerificationCandidate = CandidateStateSnapshotter.capture(root)
+        val postVerificationCandidate = CandidateStateSnapshotter.capture(root, excludedPaths)
         val headAfterVerification = RepositoryState.head(root.path).orEmpty()
         val candidateStateDriftReasons = buildList {
             if (headBeforeAnalysis != currentHead) {

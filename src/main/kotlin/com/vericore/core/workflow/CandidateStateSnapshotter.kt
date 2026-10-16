@@ -47,12 +47,15 @@ data class CandidateStateManifest(
     val entries: List<CandidateStateManifestEntry>,
     val digest: String,
     val fileCount: Int,
-    val totalBytes: Long
+    val totalBytes: Long,
+    val excludedPaths: List<String> = emptyList()
 ) {
     fun isValid(): Boolean = runCatching {
         if (schemaVersion != "1.0") return@runCatching false
         if (entries != entries.sortedBy { it.path }) return@runCatching false
         if (entries.map { it.path }.distinct().size != entries.size) return@runCatching false
+        if (excludedPaths != excludedPaths.map(::normalizePath).distinct().sorted()) return@runCatching false
+        if (excludedPaths.any { path -> path.isBlank() || path.startsWith("/") || path.matches(Regex("^[A-Za-z]:/.*")) || path.split('/').any { it.isBlank() || it == "." || it == ".." } }) return@runCatching false
         if (entries.any {
                 it.path.isBlank() ||
                     it.path.startsWith("/") ||
@@ -67,7 +70,7 @@ data class CandidateStateManifest(
         if (fileCount != entries.size) return@runCatching false
         val computedBytes = entries.fold(0L) { total, entry -> Math.addExact(total, entry.size) }
         if (computedBytes != totalBytes || totalBytes < 0) return@runCatching false
-        digest == CandidateStateSnapshotter.digestManifestEntries(entries)
+        digest == CandidateStateSnapshotter.digestManifestEntries(entries, excludedPaths)
     }.getOrDefault(false)
 
     fun snapshot(): CandidateStateSnapshot = CandidateStateSnapshot(
@@ -96,10 +99,11 @@ object CandidateStateSnapshotter {
         val executable: Boolean
     )
 
-    fun capture(repository: File): CandidateStateSnapshot = captureManifest(repository).snapshot()
+    fun capture(repository: File, excludedPaths: List<String> = emptyList()): CandidateStateSnapshot = captureManifest(repository, excludedPaths).snapshot()
 
-    fun captureManifest(repository: File): CandidateStateManifest {
+    fun captureManifest(repository: File, excludedPaths: List<String> = emptyList()): CandidateStateManifest {
         val root = repository.canonicalFile
+        val normalizedExclusions = excludedPaths.map(::normalizePath).filter(String::isNotBlank).distinct().sorted()
         require(root.isDirectory) { "Repository path is not a directory: ${repository.path}" }
         val rootPath = root.toPath().normalize()
         val entries = mutableListOf<Entry>()
@@ -117,6 +121,7 @@ object CandidateStateSnapshotter {
                     return FileVisitResult.CONTINUE
                 }
                 val relativePath = rootPath.relativize(file).toString().replace(File.separatorChar, '/')
+                if (relativePath in normalizedExclusions) return FileVisitResult.CONTINUE
                 val entry = if (attrs.isSymbolicLink) {
                     hashSymbolicLink(file, relativePath)
                 } else {
@@ -144,9 +149,10 @@ object CandidateStateSnapshotter {
         val totalBytes = sortedEntries.fold(0L) { total, entry -> Math.addExact(total, entry.size) }
         val manifest = CandidateStateManifest(
             entries = manifestEntries,
-            digest = digestManifestEntries(manifestEntries),
+            digest = digestManifestEntries(manifestEntries, normalizedExclusions),
             fileCount = manifestEntries.size,
-            totalBytes = totalBytes
+            totalBytes = totalBytes,
+            excludedPaths = normalizedExclusions
         )
         check(manifest.isValid()) { "Generated candidate baseline manifest failed its own integrity validation." }
         return manifest
@@ -173,11 +179,11 @@ object CandidateStateSnapshotter {
             .sorted()
             .filter { path ->
                 beforeByPath[path] != afterByPath[path] &&
-                    path !in planned
+                    planned.none { plannedPath -> path == plannedPath || path.startsWith("$plannedPath/") }
             }
     }
 
-    internal fun digestManifestEntries(entries: List<CandidateStateManifestEntry>): String {
+    internal fun digestManifestEntries(entries: List<CandidateStateManifestEntry>, excludedPaths: List<String> = emptyList()): String {
         val digest = MessageDigest.getInstance("SHA-256")
         for (entry in entries.sortedBy { it.path }) {
             val pathBytes = entry.path.toByteArray(Charsets.UTF_8)
@@ -187,6 +193,15 @@ object CandidateStateSnapshotter {
             digest.update(ByteBuffer.allocate(Long.SIZE_BYTES).putLong(entry.size).array())
             digest.update(entry.contentDigest.hexToBytes())
             digest.update((if (entry.executable) 1 else 0).toByte())
+        }
+        val exclusions = excludedPaths.map(::normalizePath).filter(String::isNotBlank).distinct().sorted()
+        if (exclusions.isNotEmpty()) {
+            digest.update("EXCLUDED-PATHS".toByteArray(Charsets.UTF_8))
+            exclusions.forEach { path ->
+                val bytes = path.toByteArray(Charsets.UTF_8)
+                digest.update(ByteBuffer.allocate(Int.SIZE_BYTES).putInt(bytes.size).array())
+                digest.update(bytes)
+            }
         }
         return digest.digest().toHex()
     }

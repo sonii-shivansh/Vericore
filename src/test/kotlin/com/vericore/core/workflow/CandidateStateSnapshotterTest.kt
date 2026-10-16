@@ -296,6 +296,22 @@ class CandidateStateSnapshotterTest {
         }
     }
 
+    @Test
+    fun `explicit generated artifact paths are excluded and fingerprint-bound`() {
+        withRepository { root ->
+            Files.createDirectories(root.resolve("artifacts"))
+            Files.createDirectories(root.resolve("src"))
+            Files.writeString(root.resolve("src/App.kt"), "class App\\n")
+            val baseline = CandidateStateSnapshotter.captureManifest(root.toFile(), listOf("artifacts/plan.json"))
+            Files.writeString(root.resolve("artifacts/plan.json"), """{"generated":true}""")
+            val current = CandidateStateSnapshotter.captureManifest(root.toFile(), baseline.excludedPaths)
+            assertTrue(baseline.isValid())
+            assertEquals(listOf("artifacts/plan.json"), baseline.excludedPaths)
+            assertEquals(emptyList(), CandidateStateSnapshotter.unplannedDrift(baseline, current, emptyList()))
+            assertTrue(!baseline.copy(excludedPaths = emptyList()).isValid())
+        }
+    }
+
     private fun withRepository(block: (java.nio.file.Path) -> Unit) {
         val root = Files.createTempDirectory("vericore-candidate-state")
         try {

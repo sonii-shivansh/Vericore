@@ -44,13 +44,14 @@ object EngineeringPreparation {
         repoPath: String,
         changeSummary: String,
         plannedPaths: List<String> = emptyList(),
-        specification: ChangeSpecification = ChangeSpecification()
+        specification: ChangeSpecification = ChangeSpecification(),
+        excludedPaths: List<String> = emptyList()
     ): EngineeringPreparationResult {
         val root = File(repoPath).canonicalFile
         require(root.isDirectory) { "Repository path is not a directory: $repoPath" }
         // Capture all relevant inputs before analysis. A second capture below detects changes
         // that occurred during prepare, rather than binding an inconsistent preparation run.
-        val preparedBaseline = CandidateStateSnapshotter.captureManifest(root)
+        val preparedBaseline = CandidateStateSnapshotter.captureManifest(root, excludedPaths)
         val config = ConfigLoader.loadForRepository(root.path)
 
         val scanner = RepositoryScanner(config)
@@ -94,7 +95,7 @@ object EngineeringPreparation {
             )
         )
         val preparedHead = RepositoryState.head(root.path).orEmpty()
-        val baselineAfterAnalysis = CandidateStateSnapshotter.captureManifest(root)
+        val baselineAfterAnalysis = CandidateStateSnapshotter.captureManifest(root, excludedPaths)
         require(preparedBaseline.digest == baselineAfterAnalysis.digest) {
             "Repository candidate inputs changed during prepare; discard these artifacts and run prepare again."
         }

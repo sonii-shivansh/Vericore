@@ -169,7 +169,8 @@
         "entries",
         "digest",
         "fileCount",
-        "totalBytes"
+        "totalBytes",
+        "excludedPaths"
       ],
       "properties": {
         "schemaVersion": {
@@ -224,6 +225,14 @@
         "totalBytes": {
           "type": "integer",
           "minimum": 0
+        },
+        "excludedPaths": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
         }
       },
       "additionalProperties": false,
@@ -255,7 +264,8 @@
               "entries",
               "digest",
               "fileCount",
-              "totalBytes"
+              "totalBytes",
+              "excludedPaths"
             ],
             "properties": {
               "schemaVersion": {
@@ -310,6 +320,14 @@
               "totalBytes": {
                 "type": "integer",
                 "minimum": 0
+              },
+              "excludedPaths": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "uniqueItems": true
               }
             },
             "additionalProperties": false
