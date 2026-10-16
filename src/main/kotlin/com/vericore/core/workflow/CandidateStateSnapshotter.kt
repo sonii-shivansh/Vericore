@@ -151,8 +151,9 @@ object CandidateStateSnapshotter {
 
     /**
      * Returns sorted repository-relative paths whose state differs from the prepare-time
-     * baseline and which are not explicitly in the planned path scope. A planned directory
-     * authorizes changes below that directory; an exact planned file authorizes that file.
+     * baseline and which are not explicitly listed as planned paths. Planned paths are exact
+     * path identities, matching ChangeSafetyAnalyzer; a directory does not implicitly authorize
+     * every descendant file.
      */
     fun unplannedDrift(
         baseline: CandidateStateManifest,
@@ -169,7 +170,7 @@ object CandidateStateSnapshotter {
             .sorted()
             .filter { path ->
                 beforeByPath[path] != afterByPath[path] &&
-                    planned.none { allowed -> path == allowed || path.startsWith("${allowed}/") }
+                    path !in planned
             }
     }
 
