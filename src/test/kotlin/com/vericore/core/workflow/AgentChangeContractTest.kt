@@ -6,6 +6,7 @@ import com.vericore.core.planner.RiskLevel
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotEquals
+import kotlin.test.assertTrue
 
 class AgentChangeContractTest {
     private fun plan(path: String, repository: String = "") = EngineeringPlan(
@@ -110,6 +111,50 @@ class AgentChangeContractTest {
         val base = AgentChangeContract.fromPlan(plan("src/App.kt"))
         val changed = base.copy(schemaVersion = "3.0")
         assertNotEquals(AgentChangeContract.fingerprintFor(base), AgentChangeContract.fingerprintFor(changed))
+    }
+
+    @Test
+    fun `contract binds baseline digest and rejects tampered manifest entries`() {
+        val root = java.nio.file.Files.createTempDirectory("contract-baseline")
+        try {
+            val source = root.resolve("src/App.kt")
+            java.nio.file.Files.createDirectories(source.parent)
+            java.nio.file.Files.writeString(source, "class App\n")
+            val baseline = CandidateStateSnapshotter.captureManifest(root.toFile())
+            val prepared = AgentChangeContract.fromPlan(
+                plan("src/App.kt", root.toFile().canonicalPath),
+                root.toFile().canonicalPath,
+                "prepared-head",
+                baseline
+            )
+
+            assertEquals("3.0", prepared.schemaVersion)
+            assertEquals(prepared.fingerprint, AgentChangeContract.fingerprintFor(prepared))
+            assertTrue(baseline.isValid())
+
+            java.nio.file.Files.writeString(source, "class App { fun changed() = Unit }\n")
+            val changedBaseline = CandidateStateSnapshotter.captureManifest(root.toFile())
+            val changedContract = AgentChangeContract.fromPlan(
+                plan("src/App.kt", root.toFile().canonicalPath),
+                root.toFile().canonicalPath,
+                "prepared-head",
+                changedBaseline
+            )
+            assertNotEquals(prepared.fingerprint, changedContract.fingerprint)
+
+            val tamperedManifest = baseline.copy(
+                entries = baseline.entries.mapIndexed { index, entry ->
+                    if (index == 0) entry.copy(contentDigest = "0".repeat(64)) else entry
+                }
+            )
+            val tamperedContract = prepared.copy(baselineManifest = tamperedManifest)
+            assertTrue(!tamperedManifest.isValid())
+            // The fingerprint binds the manifest digest, while validation independently
+            // recomputes that digest from entries so edited entries cannot be trusted.
+            assertEquals(prepared.fingerprint, AgentChangeContract.fingerprintFor(tamperedContract))
+        } finally {
+            root.toFile().deleteRecursively()
+        }
     }
 
     @Test
