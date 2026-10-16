@@ -228,10 +228,17 @@ class CandidateStateSnapshotterTest {
             Files.createDirectories(root.resolve("src"))
             Files.writeString(root.resolve("src/App.kt"), "class App\n")
             Files.writeString(root.resolve(".gitignore"), "*.secret\n")
+            val gitInit = ProcessBuilder("git", "init", "-q").directory(root.toFile()).redirectErrorStream(true).start()
+            gitInit.inputStream.bufferedReader().readText()
+            assertEquals(0, gitInit.waitFor(), "test fixture must be a Git repository")
             val baseline = CandidateStateSnapshotter.captureManifest(root.toFile())
 
-            // This file is Git-ignored, but it remains a candidate input.
+            // The ignored file is confirmed by Git but must still be represented as a candidate input.
             Files.writeString(root.resolve("credentials.secret"), "placeholder-not-a-real-secret")
+            val checkIgnored = ProcessBuilder("git", "check-ignore", "credentials.secret")
+                .directory(root.toFile()).redirectErrorStream(true).start()
+            checkIgnored.inputStream.bufferedReader().readText()
+            assertEquals(0, checkIgnored.waitFor(), "fixture file should actually be ignored by Git")
             Files.writeString(root.resolve("build-config.properties"), "mode=production\n")
             Files.writeString(root.resolve("src/App.kt"), "class App { fun changed() = Unit }\n")
             Files.createDirectories(root.resolve("output"))
