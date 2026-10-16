@@ -263,7 +263,7 @@ object CandidateStateSnapshotter {
     }
 
     private fun normalizePath(path: String): String =
-        path.replace('\\', '/').trim().removePrefix("./").trimEnd('/')
+        path.replace('\\', '/').trim().removePrefix("./")
 
     private fun String.hexToBytes(): ByteArray {
         require(length % 2 == 0 && matches(Regex("^[a-f0-9]+$"))) { "Invalid hexadecimal digest." }
