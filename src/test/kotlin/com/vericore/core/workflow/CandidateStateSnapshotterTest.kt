@@ -276,6 +276,23 @@ class CandidateStateSnapshotterTest {
         }
     }
 
+    @Test
+    fun `manifest rejects traversal duplicate and non-deterministically ordered paths`() {
+        withRepository { root ->
+            Files.createDirectories(root.resolve("src"))
+            Files.writeString(root.resolve("src/App.kt"), "class App\n")
+            Files.writeString(root.resolve("README.md"), "readme\n")
+            val manifest = CandidateStateSnapshotter.captureManifest(root.toFile())
+            assertTrue(manifest.isValid())
+
+            assertTrue(!manifest.copy(entries = manifest.entries.reversed()).isValid())
+            assertTrue(!manifest.copy(entries = listOf(manifest.entries.first(), manifest.entries.first())).isValid())
+            val traversalEntry = manifest.entries.first().copy(path = "../outside.txt")
+            assertTrue(!manifest.copy(entries = listOf(traversalEntry), fileCount = 1,
+                totalBytes = traversalEntry.size).isValid())
+        }
+    }
+
     private fun withRepository(block: (java.nio.file.Path) -> Unit) {
         val root = Files.createTempDirectory("vericore-candidate-state")
         try {
