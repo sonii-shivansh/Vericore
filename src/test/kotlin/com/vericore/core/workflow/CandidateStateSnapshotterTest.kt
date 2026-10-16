@@ -290,6 +290,9 @@ class CandidateStateSnapshotterTest {
             val traversalEntry = manifest.entries.first().copy(path = "../outside.txt")
             assertTrue(!manifest.copy(entries = listOf(traversalEntry), fileCount = 1,
                 totalBytes = traversalEntry.size).isValid())
+            val driveAbsoluteEntry = manifest.entries.first().copy(path = "C:/outside.txt")
+            assertTrue(!manifest.copy(entries = listOf(driveAbsoluteEntry), fileCount = 1,
+                totalBytes = driveAbsoluteEntry.size).isValid())
         }
     }
 
