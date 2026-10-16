@@ -56,6 +56,9 @@ data class CandidateStateManifest(
         if (entries.any {
                 it.path.isBlank() ||
                     it.path.startsWith("/") ||
+                    it.path.matches(Regex("^[A-Za-z]:/.*")) ||
+                    it.path.matches(Regex("^[A-Za-z]:\\\\.*")) ||
+                    it.path.indexOf(0.toChar()) >= 0 ||
                     it.path.split('/').any { segment -> segment.isBlank() || segment == "." || segment == ".." } ||
                     it.kind !in setOf("F", "L") ||
                     it.size < 0 ||
