@@ -10,11 +10,14 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class VerificationReceipt(
-    val schemaVersion: String = "1.2",
+    val schemaVersion: String = "1.3",
     val repository: String,
     val preparedHead: String,
     val verifiedHead: String,
     val contractFingerprint: String,
+    val preparedBaselineDigest: String? = null,
+    val baselineManifestValid: Boolean = false,
+    val unplannedBaselineDriftPaths: List<String> = emptyList(),
     val status: SafetyStatus,
     val changedPaths: List<String>,
     val plannedPaths: List<String>,
@@ -40,6 +43,9 @@ data class VerificationReceipt(
                 preparedHead = contract?.preparedHead.orEmpty(),
                 verifiedHead = result.provenance.repositoryCommit.orEmpty(),
                 contractFingerprint = contract?.fingerprint.orEmpty(),
+                preparedBaselineDigest = result.preparedBaselineDigest,
+                baselineManifestValid = result.baselineManifestValid,
+                unplannedBaselineDriftPaths = result.unplannedBaselineDriftPaths,
                 status = result.status,
                 changedPaths = result.safety.changedPaths,
                 plannedPaths = result.safety.plannedPaths,
