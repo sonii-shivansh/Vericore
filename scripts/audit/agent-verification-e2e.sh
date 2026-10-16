@@ -24,6 +24,9 @@ class Target {
     fun value(): String = "before"
 }
 EOF
+cat > "$FIXTURE/.gitignore" <<'EOF'
+baseline-drift.secret
+EOF
 
 cd "$FIXTURE"
 git init -q
@@ -115,7 +118,10 @@ cli_verify = subprocess.run(
 )
 assert cli_verify.returncode == 0, cli_verify.stdout + chr(10) + cli_verify.stderr
 receipt = json.loads((root/"output/verification-receipt.json").read_text())
-assert receipt["schemaVersion"] == "1.2", receipt
+assert receipt["schemaVersion"] == "1.3", receipt
+assert receipt["preparedBaselineDigest"] and len(receipt["preparedBaselineDigest"]) == 64, receipt
+assert receipt["baselineManifestValid"] is True, receipt
+assert receipt["unplannedBaselineDriftPaths"] == [], receipt
 assert receipt["status"] == "REVIEW_REQUIRED", receipt
 assert receipt["specificationEvaluation"]["status"] == "NOT_EVALUATED", receipt
 assert receipt["specificationEvaluation"] == evaluation, receipt
@@ -131,6 +137,25 @@ assert contract_only_run.returncode == 0, contract_only_run.stdout + chr(10) + c
 contract_only = json.loads(contract_only_path.read_text())
 assert contract_only["status"] == "REVIEW_REQUIRED", contract_only
 assert contract_only["specificationEvaluation"]["status"] == "NOT_EVALUATED", contract_only
+
+# An ignored untracked file is not reported by Git's standard changed-file listing,
+# but it is still a candidate input and must fail the prepare-time baseline check.
+ignored_drift = root/"baseline-drift.secret"
+ignored_drift.write_text("fixture drift\n")
+ignore_check = subprocess.run(
+    ["git", "check-ignore", "baseline-drift.secret"], cwd=root, text=True, capture_output=True
+)
+assert ignore_check.returncode == 0, ignore_check.stdout + chr(10) + ignore_check.stderr
+drift_path = root/"output/baseline-drift-verification.json"
+drift_run = subprocess.run(
+    [app, "verify", "--path", str(root), "--contract-only", "--output", str(drift_path)],
+    cwd=root, text=True, capture_output=True
+)
+assert drift_run.returncode != 0, drift_run.stdout + chr(10) + drift_run.stderr
+drift_verification = json.loads(drift_path.read_text())
+assert drift_verification["status"] == "FAIL", drift_verification
+assert "baseline-drift.secret" in drift_verification["changedPaths"], drift_verification
+ignored_drift.unlink()
 
 
 # Exercise supported metric criteria through preparation, real candidate analysis,

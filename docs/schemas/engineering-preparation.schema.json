@@ -311,7 +311,10 @@
       ],
       "properties": {
         "schemaVersion": {
-          "const": "2.0"
+          "enum": [
+            "2.0",
+            "3.0"
+          ]
         },
         "changeSummary": {
           "type": "string"
@@ -440,9 +443,184 @@
             }
           },
           "additionalProperties": false
+        },
+        "baselineManifest": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "required": [
+            "schemaVersion",
+            "entries",
+            "digest",
+            "fileCount",
+            "totalBytes",
+            "excludedPaths"
+          ],
+          "properties": {
+            "schemaVersion": {
+              "const": "1.0"
+            },
+            "entries": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "path",
+                  "kind",
+                  "size",
+                  "contentDigest",
+                  "executable"
+                ],
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Normalized repository-relative file path."
+                  },
+                  "kind": {
+                    "enum": [
+                      "F",
+                      "L"
+                    ]
+                  },
+                  "size": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "contentDigest": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "executable": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^[a-f0-9]{64}$"
+            },
+            "fileCount": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "totalBytes": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "excludedPaths": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uniqueItems": true
+            }
+          },
+          "additionalProperties": false,
+          "description": "Prepare-time deterministic per-path repository-input manifest. Required and digest-bound for schema 3.0; absent on legacy schema 2.0 contracts."
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "schemaVersion": {
+                "const": "3.0"
+              }
+            },
+            "required": [
+              "schemaVersion"
+            ]
+          },
+          "then": {
+            "required": [
+              "baselineManifest"
+            ],
+            "properties": {
+              "baselineManifest": {
+                "type": "object",
+                "required": [
+                  "schemaVersion",
+                  "entries",
+                  "digest",
+                  "fileCount",
+                  "totalBytes",
+                  "excludedPaths"
+                ],
+                "properties": {
+                  "schemaVersion": {
+                    "const": "1.0"
+                  },
+                  "entries": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "path",
+                        "kind",
+                        "size",
+                        "contentDigest",
+                        "executable"
+                      ],
+                      "properties": {
+                        "path": {
+                          "type": "string",
+                          "minLength": 1,
+                          "description": "Normalized repository-relative file path."
+                        },
+                        "kind": {
+                          "enum": [
+                            "F",
+                            "L"
+                          ]
+                        },
+                        "size": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "contentDigest": {
+                          "type": "string",
+                          "pattern": "^[a-f0-9]{64}$"
+                        },
+                        "executable": {
+                          "type": "boolean"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  },
+                  "digest": {
+                    "type": "string",
+                    "pattern": "^[a-f0-9]{64}$"
+                  },
+                  "fileCount": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "totalBytes": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "excludedPaths": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "uniqueItems": true
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        }
+      ]
     },
     "provenance": {
       "type": "object",

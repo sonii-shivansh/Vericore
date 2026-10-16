@@ -24,8 +24,9 @@ object ChangeSafetyAnalyzer {
     fun verify(changes: List<ChangedFile>, plannedPaths: Collection<String>): ChangeSafetyResult {
         val actual = changes.map { normalize(it.path) }.filterNot(::isGeneratedPath).distinct().sorted()
         val planned = plannedPaths.map(::normalize).filter { it.isNotBlank() && !isGeneratedPath(it) }.distinct().sorted()
-        val plannedSet = planned.toSet()
-        val unexpected = actual.filterNot(plannedSet::contains)
+        val unexpected = actual.filterNot { path ->
+            planned.any { plannedPath -> path == plannedPath || path.startsWith("$plannedPath/") }
+        }
         val deleted = changes.filter { it.changeType.name == "DELETED" }
             .map { normalize(it.path) }
             .filterNot(::isGeneratedPath)

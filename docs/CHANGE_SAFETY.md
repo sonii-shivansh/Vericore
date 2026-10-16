@@ -49,9 +49,9 @@ vericore verify \
 
 When the change is not already present in the working tree, supply explicit planned paths during preparation. For example, `--planned-path src/main/java/com/example/AuthController.java`. MCP agents can supply the same paths in `plannedPaths`.
 
-The contract binds the planned change to repository identity and the Git `HEAD` observed during preparation when Git metadata is available.
+The contract binds the planned change to repository identity and the Git `HEAD` observed during preparation when Git metadata is available. It also embeds a versioned, deterministic per-path candidate baseline captured before repository analysis. Preparation captures the manifest again before returning and aborts if candidate inputs changed during preparation.
 
-Its SHA-256 fingerprint covers the meaningful persisted contract fields, including the change summary, repository identity, prepared `HEAD`, planned paths, expected components, verification commands, evidence IDs, architecture expectations, and schema information. An optional structured `specification` also binds required behaviors, forbidden behaviors, protected invariants, acceptance criteria, and required evidence. Empty specifications preserve historical fingerprints; non-empty specifications are fingerprint-bound. A fingerprint is an integrity checksum, not a signature or authorization mechanism.
+Its SHA-256 fingerprint covers the meaningful persisted contract fields, including the change summary, repository identity, prepared `HEAD`, planned paths, expected components, verification commands, evidence IDs, architecture expectations, schema information, and the candidate baseline digest. The manifest is embedded in the contract so CLI and MCP consumers verify the same persisted inputs without trusting a separate mutable sidecar. An optional structured `specification` also binds required behaviors, forbidden behaviors, protected invariants, acceptance criteria, and required evidence. Empty specifications preserve historical fingerprints; non-empty specifications are fingerprint-bound. A fingerprint is an integrity checksum, not a signature or authorization mechanism.
 
 The plan and contract are deterministic artifacts. Preparation does not modify source code.
 
@@ -75,18 +75,27 @@ Verification loads the persisted contract and validates:
 1. contract fingerprint integrity;
 2. repository identity;
 3. prepared Git `HEAD` freshness;
-4. binding between the plan and persisted contract;
-5. working-tree scope against planned paths;
-6. deterministic dependency impact;
-7. PR Intelligence signals;
-8. Architecture Intelligence signals;
-9. recommended verification commands;
-10. verification provenance.
+4. integrity of the prepare-time baseline manifest and detection of candidate inputs changed outside planned paths since preparation;
+5. binding between the plan and persisted contract;
+6. working-tree scope against planned paths;
+7. deterministic dependency impact;
+8. PR Intelligence signals;
+9. Architecture Intelligence signals;
+10. recommended verification commands;
+11. verification provenance.
 
-For a fast boundary check, `vericore verify --contract-only` validates the persisted contract, repository identity, prepared `HEAD`, plan binding, and current mutation scope without rebuilding the full dependency analysis graph. It also reports the structured specification evaluation. Because this mode does not rebuild current-candidate evidence, supported metric criteria whose citation is unavailable in this mode remain `NOT_EVALUATED` rather than being incorrectly marked `FAIL`; the result remains `REVIEW_REQUIRED`. Use full `vericore verify` to evaluate metric criteria against current-candidate evidence.
+For a fast boundary check, `vericore verify --contract-only` validates the persisted contract, repository identity, prepared `HEAD`, prepare-time baseline integrity and drift, plan binding, and current mutation scope without rebuilding the full dependency analysis graph. It also reports the structured specification evaluation. Because this mode does not rebuild current-candidate evidence, supported metric criteria whose citation is unavailable in this mode remain `NOT_EVALUATED` rather than being incorrectly marked `FAIL`; the result remains `REVIEW_REQUIRED`. Use full `vericore verify` to evaluate metric criteria against current-candidate evidence.
 
 A missing, tampered, mismatched, cross-repository, or stale contract produces `FAIL`. Verification does not silently reconstruct a replacement contract from a mutable plan.
 
+
+## Prepare-time baseline
+
+A new contract uses schema version `3.0` and embeds `baselineManifest` schema version `1.0`. Its sorted entries record each included repository-relative path, file kind (regular file or supported regular-file symlink), byte size, SHA-256 content digest, and executable state. The manifest digest is recomputed from all entries and metadata before it is trusted, and the contract fingerprint binds that digest. A digest is an identity check for the represented bytes and metadata, not proof that code is correct or that the build environment is fully attested.
+
+Full verification and `vericore verify --contract-only` compare the current manifest to the original preparation baseline. Changes to explicitly planned files are allowed, and a planned directory authorizes descendants under that directory. CLI-selected preparation artifact paths inside the repository are recorded in the digest-bound exclusion list so generated artifacts do not become false drift. Unplanned changes, additions, and removals fail closed. This includes ignored and untracked inputs that may affect a build even when Git's ordinary changed-path list omits them. The current manifest uses the same exclusions described below, including the repository-root `output/` directory.
+
+Legacy schema `2.0` contracts do not contain a prepare-time baseline. Vericore does not invent one at verification time: attempting to verify one now produces `FAIL` and asks the caller to run `prepare` again, which creates a baseline-bound contract. This is intentionally stricter than treating a verification-time snapshot as historical evidence.
 
 ## Candidate-state integrity
 

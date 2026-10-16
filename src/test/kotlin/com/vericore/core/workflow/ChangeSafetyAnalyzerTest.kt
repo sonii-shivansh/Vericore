@@ -24,6 +24,13 @@ class ChangeSafetyAnalyzerTest {
     }
 
     @Test
+    fun `planned directory authorizes descendant changes consistently`() {
+        val result = ChangeSafetyAnalyzer.verify(changeSet("src/main/App.kt", "src/main/nested/Other.kt"), listOf("src/main"))
+        assertEquals(SafetyStatus.PASS, result.status)
+        assertTrue(result.unexpectedPaths.isEmpty())
+    }
+
+    @Test
     fun `requires review for deleted files`() {
         val result = ChangeSafetyAnalyzer.verify(listOf(ChangedFile("src/App.kt", ChangeType.DELETED)), listOf("src/App.kt"))
         assertEquals(SafetyStatus.REVIEW_REQUIRED, result.status)

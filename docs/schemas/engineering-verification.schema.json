@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:vericore:schema:engineering-verification-v1.5",
+  "$id": "urn:vericore:schema:engineering-verification-v1.6",
   "title": "Vericore Engineering Verification Result",
   "type": "object",
   "required": [
@@ -20,11 +20,13 @@
     "postVerificationCandidateDigest",
     "candidateStateStable",
     "candidateStateFileCount",
-    "postVerificationFileCount"
+    "postVerificationFileCount",
+    "baselineManifestValid",
+    "unplannedBaselineDriftPaths"
   ],
   "properties": {
     "schemaVersion": {
-      "const": "1.5"
+      "const": "1.6"
     },
     "repository": {
       "type": "string",
@@ -430,6 +432,22 @@
         }
       },
       "additionalProperties": false
+    },
+    "preparedBaselineDigest": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "baselineManifestValid": {
+      "type": "boolean"
+    },
+    "unplannedBaselineDriftPaths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
     }
   },
   "additionalProperties": false

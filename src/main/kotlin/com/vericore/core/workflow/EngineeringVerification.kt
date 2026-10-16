@@ -29,7 +29,7 @@ data class VerificationExecutionResult(
 
 @Serializable
 data class EngineeringVerificationResult(
-    val schemaVersion: String = "1.5",
+    val schemaVersion: String = "1.6",
     val repository: String,
     val safety: ChangeSafetyResult,
     val prIntelligence: com.vericore.core.intelligence.PRIntelligenceResult,
@@ -40,6 +40,9 @@ data class EngineeringVerificationResult(
     val reasons: List<String> = emptyList(),
     val provenance: DecisionProvenance = DecisionProvenance.create("verify", null, "1.0", emptyList()),
     val contract: AgentChangeContractResult? = null,
+    val preparedBaselineDigest: String? = contract?.contract?.baselineManifest?.digest,
+    val baselineManifestValid: Boolean = contract?.contract?.baselineManifest?.isValid() == true,
+    val unplannedBaselineDriftPaths: List<String> = emptyList(),
     val analysisInputDigest: String,
     val candidateStateDigest: String,
     val postVerificationCandidateDigest: String,
@@ -55,7 +58,10 @@ object EngineeringVerification {
         val root = File(repoPath).canonicalFile
         require(root.isDirectory) { "Repository path is not a directory: $repoPath" }
         val headBeforeAnalysis = RepositoryState.head(root.path).orEmpty()
-        val analysisInput = CandidateStateSnapshotter.capture(root)
+        val validBaseline = contract.baselineManifest?.takeIf { it.isValid() }
+        val excludedPaths = validBaseline?.excludedPaths.orEmpty()
+        val analysisManifest = CandidateStateSnapshotter.captureManifest(root, excludedPaths)
+        val analysisInput = analysisManifest.snapshot()
         val config = ConfigLoader.loadForRepository(root.path)
         val files = RepositoryScanner(config).scan(root.path)
         require(files.size <= config.maxFilesAnalyze) { "Repository exceeds the maximum file limit: ${config.maxFilesAnalyze}" }
@@ -96,17 +102,27 @@ object EngineeringVerification {
 
         // The analysis and the verification commands must refer to the same candidate state.
         // A content digest catches uncommitted and untracked changes that do not move Git HEAD.
-        val candidateAtVerification = CandidateStateSnapshotter.capture(root)
+        val candidateAtVerification = CandidateStateSnapshotter.capture(root, excludedPaths)
         val analysisStateStable = analysisInput.digest == candidateAtVerification.digest
         val currentHead = RepositoryState.head(root.path).orEmpty()
         val expectedContractFingerprint = AgentChangeContract.fingerprintFor(contract)
         val expectedPlanFingerprintResult = runCatching {
-            AgentChangeContract.fromPlan(plan, root.path, contract.preparedHead).fingerprint
+            AgentChangeContract.fromPlan(plan, root.path, contract.preparedHead, contract.baselineManifest).fingerprint
         }
         val expectedPlanFingerprint = expectedPlanFingerprintResult.getOrNull().orEmpty()
         val planSpecificationError = expectedPlanFingerprintResult.exceptionOrNull()?.message
+        val baselineDriftPaths = validBaseline
+            ?.let { CandidateStateSnapshotter.unplannedDrift(it, analysisManifest, contract.plannedPaths) }
+            .orEmpty()
         val contractReasons = buildList {
             if (contract.fingerprint != expectedContractFingerprint) add("The persisted agent change contract fingerprint is invalid or tampered.")
+            if (contract.baselineManifest == null) {
+                add("This contract has no prepare-time repository baseline; run prepare again with a baseline-capable Vericore version.")
+            } else if (!contract.baselineManifest.isValid()) {
+                add("The prepare-time repository baseline manifest is invalid or tampered.")
+            } else if (baselineDriftPaths.isNotEmpty()) {
+                add("Repository candidate inputs changed outside planned paths since prepare: ${baselineDriftPaths.joinToString(", ")}.")
+            }
             if (planSpecificationError != null) add("The supplied plan contains an invalid structured specification: $planSpecificationError")
             if (contract.repository != root.path) add("The contract belongs to a different repository: ${contract.repository}")
             if (plan.contractFingerprint != contract.fingerprint) add("The engineering plan is not bound to the persisted contract fingerprint.")
@@ -126,7 +142,7 @@ object EngineeringVerification {
         } else {
             VerificationExecutionResult()
         }
-        val postVerificationCandidate = CandidateStateSnapshotter.capture(root)
+        val postVerificationCandidate = CandidateStateSnapshotter.capture(root, excludedPaths)
         val headAfterVerification = RepositoryState.head(root.path).orEmpty()
         val candidateStateDriftReasons = buildList {
             if (headBeforeAnalysis != currentHead) {
@@ -187,6 +203,9 @@ object EngineeringVerification {
             reasons = verificationReasons,
             provenance = provenance,
             contract = contractResult,
+            preparedBaselineDigest = contract.baselineManifest?.digest,
+            baselineManifestValid = contract.baselineManifest?.isValid() == true,
+            unplannedBaselineDriftPaths = baselineDriftPaths,
             analysisInputDigest = analysisInput.digest,
             candidateStateDigest = candidateAtVerification.digest,
             postVerificationCandidateDigest = postVerificationCandidate.digest,

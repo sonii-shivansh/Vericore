@@ -26,7 +26,8 @@ This matrix separates implemented interfaces from platforms and behaviors exerci
 
 ## Security and verification boundaries
 
-- Verification checks the persisted contract, repository identity, prepared Git HEAD, plan binding, and current mutation scope.
+- New schema 3.0 contracts embed a deterministic prepare-time per-path baseline. Full and contract-only verification validate the baseline and reject unplanned changes to tracked, untracked, or ignored inputs since prepare; legacy schema 2.0 contracts without a baseline fail closed and require re-preparation.
+- Verification also checks the persisted contract, repository identity, prepared Git HEAD, plan binding, and current mutation scope.
 - Persisted SHA-256 contract fingerprints detect inconsistent/tampered contents; they are not signatures, user authentication, or authorization.
 - Verification-command validation restricts the allowed command grammar. It is not a sandbox for the build tool: a permitted Maven/Gradle build may execute repository build logic with the invoking user's permissions.
 - Local REST rejects remote repository URLs; remote checkout/analysis through the local endpoint is not supported.

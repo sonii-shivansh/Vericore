@@ -201,6 +201,117 @@ class CandidateStateSnapshotterTest {
         }
     }
 
+    @Test
+    fun `baseline manifest is deterministic and validates every entry`() {
+        withRepository { root ->
+            Files.createDirectories(root.resolve("src"))
+            Files.writeString(root.resolve("src/App.kt"), "class App\n")
+            Files.writeString(root.resolve("gradle.properties"), "org.gradle.caching=true\n")
+
+            val first = CandidateStateSnapshotter.captureManifest(root.toFile())
+            val second = CandidateStateSnapshotter.captureManifest(root.toFile())
+
+            assertTrue(first.isValid())
+            assertEquals(first, second)
+            assertEquals(first.digest, first.snapshot().digest)
+            assertEquals(listOf("gradle.properties", "src/App.kt"), first.entries.map { it.path })
+            val tampered = first.copy(entries = first.entries.mapIndexed { index, entry ->
+                if (index == 0) entry.copy(contentDigest = "0".repeat(64)) else entry
+            })
+            assertTrue(!tampered.isValid(), "an entry changed without updating the manifest digest must be rejected")
+        }
+    }
+
+    @Test
+    fun `baseline detects ignored and untracked input drift while allowing planned changes`() {
+        withRepository { root ->
+            Files.createDirectories(root.resolve("src"))
+            Files.writeString(root.resolve("src/App.kt"), "class App\n")
+            Files.writeString(root.resolve(".gitignore"), "*.secret\n")
+            val gitInit = ProcessBuilder("git", "init", "-q").directory(root.toFile()).redirectErrorStream(true).start()
+            gitInit.inputStream.bufferedReader().readText()
+            assertEquals(0, gitInit.waitFor(), "test fixture must be a Git repository")
+            val baseline = CandidateStateSnapshotter.captureManifest(root.toFile())
+
+            // The ignored file is confirmed by Git but must still be represented as a candidate input.
+            Files.writeString(root.resolve("credentials.secret"), "placeholder-not-a-real-secret")
+            val checkIgnored = ProcessBuilder("git", "check-ignore", "credentials.secret")
+                .directory(root.toFile()).redirectErrorStream(true).start()
+            checkIgnored.inputStream.bufferedReader().readText()
+            assertEquals(0, checkIgnored.waitFor(), "fixture file should actually be ignored by Git")
+            Files.writeString(root.resolve("build-config.properties"), "mode=production\n")
+            Files.writeString(root.resolve("src/App.kt"), "class App { fun changed() = Unit }\n")
+            Files.createDirectories(root.resolve("output"))
+            Files.writeString(root.resolve("output/verification-receipt.json"), "{}")
+
+            val current = CandidateStateSnapshotter.captureManifest(root.toFile())
+            val drift = CandidateStateSnapshotter.unplannedDrift(
+                baseline,
+                current,
+                listOf("src/App.kt")
+            )
+
+            assertEquals(listOf("build-config.properties", "credentials.secret"), drift)
+        }
+    }
+
+    @Test
+    fun `baseline detects unplanned deletions and permits only explicitly planned paths`() {
+        withRepository { root ->
+            Files.createDirectories(root.resolve("src/main"))
+            Files.writeString(root.resolve("src/main/App.kt"), "class App\n")
+            Files.createDirectories(root.resolve("src/test"))
+            Files.writeString(root.resolve("src/test/AppTest.kt"), "class AppTest\n")
+            val baseline = CandidateStateSnapshotter.captureManifest(root.toFile())
+
+            Files.delete(root.resolve("src/main/App.kt"))
+            Files.writeString(root.resolve("src/test/AppTest.kt"), "class AppTest { fun newer() = Unit }\n")
+            val current = CandidateStateSnapshotter.captureManifest(root.toFile())
+
+            assertEquals(listOf("src/main/App.kt"), CandidateStateSnapshotter.unplannedDrift(
+                baseline,
+                current,
+                listOf("src/test/AppTest.kt")
+            ))
+        }
+    }
+
+    @Test
+    fun `manifest rejects traversal duplicate and non-deterministically ordered paths`() {
+        withRepository { root ->
+            Files.createDirectories(root.resolve("src"))
+            Files.writeString(root.resolve("src/App.kt"), "class App\n")
+            Files.writeString(root.resolve("README.md"), "readme\n")
+            val manifest = CandidateStateSnapshotter.captureManifest(root.toFile())
+            assertTrue(manifest.isValid())
+
+            assertTrue(!manifest.copy(entries = manifest.entries.reversed()).isValid())
+            assertTrue(!manifest.copy(entries = listOf(manifest.entries.first(), manifest.entries.first())).isValid())
+            val traversalEntry = manifest.entries.first().copy(path = "../outside.txt")
+            assertTrue(!manifest.copy(entries = listOf(traversalEntry), fileCount = 1,
+                totalBytes = traversalEntry.size).isValid())
+            val driveAbsoluteEntry = manifest.entries.first().copy(path = "C:/outside.txt")
+            assertTrue(!manifest.copy(entries = listOf(driveAbsoluteEntry), fileCount = 1,
+                totalBytes = driveAbsoluteEntry.size).isValid())
+        }
+    }
+
+    @Test
+    fun `explicit generated artifact paths are excluded and fingerprint-bound`() {
+        withRepository { root ->
+            Files.createDirectories(root.resolve("artifacts"))
+            Files.createDirectories(root.resolve("src"))
+            Files.writeString(root.resolve("src/App.kt"), "class App\\n")
+            val baseline = CandidateStateSnapshotter.captureManifest(root.toFile(), listOf("artifacts/plan.json"))
+            Files.writeString(root.resolve("artifacts/plan.json"), """{"generated":true}""")
+            val current = CandidateStateSnapshotter.captureManifest(root.toFile(), baseline.excludedPaths)
+            assertTrue(baseline.isValid())
+            assertEquals(listOf("artifacts/plan.json"), baseline.excludedPaths)
+            assertEquals(emptyList(), CandidateStateSnapshotter.unplannedDrift(baseline, current, emptyList()))
+            assertTrue(!baseline.copy(excludedPaths = emptyList()).isValid())
+        }
+    }
+
     private fun withRepository(block: (java.nio.file.Path) -> Unit) {
         val root = Files.createTempDirectory("vericore-candidate-state")
         try {

@@ -37,17 +37,22 @@ class PrepareCommand : CliktCommand(name = "prepare", help = "Prepare an evidenc
             requiredEvidence = requiredEvidence,
             evidenceBindings = parseCriterionEvidenceBindings(criterionEvidence)
         )
-        val result = runBlocking { EngineeringPreparation.prepare(root.path, changeSummary, plannedPaths, specification) }
         val json = Json { prettyPrint = true; encodeDefaults = true }
         val artifactPath = output ?: root.resolve("output/engineering-preparation.json").path
-        val artifact = File(artifactPath).let { if (it.isAbsolute) it else root.resolve(it.path) }.apply { parentFile?.mkdirs() }
-        artifact.writeText(json.encodeToString(result))
+        val artifact = File(artifactPath).let { if (it.isAbsolute) it else root.resolve(it.path) }
         val planPath = planOutput ?: root.resolve("output/engineering-plan.json").path
-        val planFile = File(planPath).let { if (it.isAbsolute) it else root.resolve(it.path) }.apply { parentFile?.mkdirs() }
-        planFile.writeText(json.encodeToString(result.plan))
+        val planFile = File(planPath).let { if (it.isAbsolute) it else root.resolve(it.path) }
         val contractPath = contractOutput ?: root.resolve("output/agent-change-contract.json").path
-        val contractFile = File(contractPath).let { if (it.isAbsolute) it else root.resolve(it.path) }.apply { parentFile?.mkdirs() }
-        contractFile.writeText(json.encodeToString(result.contract))
+        val contractFile = File(contractPath).let { if (it.isAbsolute) it else root.resolve(it.path) }
+        val rootPath = root.toPath()
+        val excludedPaths = listOf(artifact, planFile, contractFile).mapNotNull { file ->
+            val canonical = file.canonicalFile.toPath()
+            if (canonical.startsWith(rootPath)) rootPath.relativize(canonical).toString().replace(File.separatorChar, '/') else null
+        }.distinct().sorted()
+        val result = runBlocking { EngineeringPreparation.prepare(root.path, changeSummary, plannedPaths, specification, excludedPaths) }
+        artifact.apply { parentFile?.mkdirs() }.writeText(json.encodeToString(result))
+        planFile.apply { parentFile?.mkdirs() }.writeText(json.encodeToString(result.plan))
+        contractFile.apply { parentFile?.mkdirs() }.writeText(json.encodeToString(result.contract))
         echo("Engineering context: ${artifact.path}")
         echo("Engineering plan: ${planFile.path}")
         echo("Agent change contract: ${contractFile.path}")
