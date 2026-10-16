@@ -213,6 +213,10 @@ These operations have intentionally different responsibilities:
 
 This distinction prevents an agent from replacing the verification boundary after it has prepared a change.
 
+## Prepare/verify baseline behavior
+
+New preparation contracts use schema `3.0` and embed the deterministic per-path candidate-input baseline. The contract fingerprint binds the baseline digest. MCP verification applies the same prepare-to-verify drift check as the CLI, including ignored and untracked inputs, and fails closed for legacy contracts without baseline data; call `vericore_prepare_change` again to establish a current baseline. Planned paths are exact path identities, not implicit directory-wide permissions.
+
 ## Security boundary
 
 The MCP server is intended for trusted local use.
