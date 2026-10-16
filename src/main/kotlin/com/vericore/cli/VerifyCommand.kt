@@ -10,6 +10,7 @@ import com.vericore.core.workflow.ChangeSpecificationEvaluator
 import com.vericore.core.workflow.CriterionEvaluationStatus
 import com.vericore.core.workflow.EngineeringVerification
 import com.vericore.core.workflow.RepositoryState
+import com.vericore.core.workflow.CandidateStateSnapshotter
 import com.vericore.core.workflow.VerificationReceipt
 import com.vericore.core.workflow.ChangeSpecificationEvaluation
 import com.github.ajalt.clikt.core.CliktCommand
@@ -73,13 +74,25 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
     }
 
     private fun verifyContractOnly(root: File, plan: EngineeringPlan, contract: AgentChangeContract, json: Json) {
+        val currentManifest = CandidateStateSnapshotter.captureManifest(root)
+        val baselineDriftPaths = contract.baselineManifest
+            ?.takeIf { it.isValid() }
+            ?.let { CandidateStateSnapshotter.unplannedDrift(it, currentManifest, contract.plannedPaths) }
+            .orEmpty()
         val reasons = buildList {
             val expectedContractFingerprint = AgentChangeContract.fingerprintFor(contract)
             if (contract.fingerprint != expectedContractFingerprint) add("The persisted agent change contract fingerprint is invalid or tampered.")
+            if (contract.baselineManifest == null) {
+                add("This contract has no prepare-time repository baseline; run prepare again with a baseline-capable Vericore version.")
+            } else if (!contract.baselineManifest.isValid()) {
+                add("The prepare-time repository baseline manifest is invalid or tampered.")
+            } else if (baselineDriftPaths.isNotEmpty()) {
+                add("Repository candidate inputs changed outside planned paths since prepare: ${baselineDriftPaths.joinToString(", ")}.")
+            }
             if (contract.repository != root.path) add("The contract belongs to a different repository: ${contract.repository}")
             if (plan.contractFingerprint != contract.fingerprint) add("The engineering plan is not bound to the persisted contract fingerprint.")
             val expectedPlanFingerprint = try {
-                AgentChangeContract.fromPlan(plan, root.path, contract.preparedHead).fingerprint
+                AgentChangeContract.fromPlan(plan, root.path, contract.preparedHead, contract.baselineManifest).fingerprint
             } catch (error: IllegalArgumentException) {
                 add("The supplied plan contains an invalid structured specification: ${error.message ?: "validation failed"}")
                 ""
@@ -118,7 +131,7 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
             valid = status == com.vericore.core.workflow.SafetyStatus.PASS,
             status = status.name,
             reasons = allReasons,
-            changedPaths = safety.changedPaths,
+            changedPaths = (safety.changedPaths + baselineDriftPaths).distinct().sorted(),
             specificationEvaluation = specificationEvaluation
         )
         writeOutput(json.encodeToString(result))
