@@ -445,8 +445,10 @@
           "additionalProperties": false
         },
         "baselineManifest": {
-          "type": "object",
-          "description": "Prepare-time deterministic per-path repository-input manifest. Required and digest-bound for schema 3.0; absent on legacy schema 2.0 contracts.",
+          "type": [
+            "object",
+            "null"
+          ],
           "required": [
             "schemaVersion",
             "entries",
@@ -509,7 +511,8 @@
               "minimum": 0
             }
           },
-          "additionalProperties": false
+          "additionalProperties": false,
+          "description": "Prepare-time deterministic per-path repository-input manifest. Required and digest-bound for schema 3.0; absent on legacy schema 2.0 contracts."
         }
       },
       "additionalProperties": false,
