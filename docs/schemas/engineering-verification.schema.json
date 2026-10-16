@@ -21,7 +21,6 @@
     "candidateStateStable",
     "candidateStateFileCount",
     "postVerificationFileCount",
-    "preparedBaselineDigest",
     "baselineManifestValid",
     "unplannedBaselineDriftPaths"
   ],
