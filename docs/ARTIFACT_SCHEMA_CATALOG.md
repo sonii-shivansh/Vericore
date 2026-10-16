@@ -11,7 +11,7 @@ This catalog is the source of truth for persisted, versioned core artifacts. Sch
 | Engineering context snapshot | context-snapshot --json -> output/engineering-context.json | 1.0 | schemas/engineering-context-snapshot.schema.json | This path is owned only by context-snapshot |
 | Engineering context diff | context-diff -> output/engineering-context-diff.json | 1.0 | schemas/engineering-context-diff.schema.json | Deterministic list of added/removed/modified paths |
 | Engineering plan | plan / prepare -> output/engineering-plan.json | 1.0 | schemas/engineering-plan.schema.json | Optional structured specification and criterion evidence bindings are preserved and fingerprint-bound |
-| Agent Change Contract | prepare -> output/agent-change-contract.json | 2.0 | schemas/agent-change-contract.schema.json | Structured specification and non-empty evidence bindings are fingerprint-bound; SHA-256 is an integrity checksum, not a signature |
+| Agent Change Contract | prepare -> output/agent-change-contract.json | 3.0 (reads legacy 2.0; verification requires a baseline) | schemas/agent-change-contract.schema.json | Embeds a deterministic prepare-time per-path candidate baseline whose digest is fingerprint-bound; legacy contracts without a baseline cannot establish a fresh verification boundary; SHA-256 is an integrity checksum, not a signature |
 | Preparation result | prepare / MCP vericore_prepare_change -> output/engineering-preparation.json | 1.2 | schemas/engineering-preparation.schema.json | Dedicated path avoids collision with EngineeringContextSnapshot |
 | Semantic evidence graph | evidence-graph --json -> output/semantic-evidence-graph.json | 1.0 | schemas/semantic-evidence-graph.schema.json | Ordered nodes/edges, cardinality and digest |
 | Architecture analysis | architecture <path> --json -> output/architecture.json | 1.1 | schemas/architecture-analysis.schema.json | Sorted findings, cycles, layers and dependency edges |
@@ -19,8 +19,8 @@ This catalog is the source of truth for persisted, versioned core artifacts. Sch
 | PR intelligence | pr-intelligence <path> --json -> output/pr-intelligence.json | 1.0 | schemas/pr-intelligence.schema.json | Deterministic rule findings and aggregate severity |
 | Engineering risks | analyze -> output/engineering-risks.json | core risk model | schemas/engineering-risks.schema.json | Sorted risk list; schema tracks the serialized risk shape |
 | Product inspection | inspect --json -> output/inspection.json | 1.0 | schemas/inspection.schema.json | Snapshot-derived user-facing inspection summary |
-| Verification result | verify -> output/verification.json unless overridden | 1.5 | schemas/engineering-verification.schema.json | Includes explicit per-criterion evaluation state; undevaluated obligations force REVIEW_REQUIRED |
-| Verification receipt | full verify -> output/verification-receipt.json | 1.2 | schemas/verification-receipt.schema.json | Includes specification evaluation states and candidate-state provenance; derived from the same verification result, not a second decision |
+| Verification result | verify -> output/verification.json unless overridden | 1.6 | schemas/engineering-verification.schema.json | Includes explicit per-criterion evaluation state plus prepare-time baseline digest/validity and unplanned-drift paths; undevaluated obligations force REVIEW_REQUIRED |
+| Verification receipt | full verify -> output/verification-receipt.json | 1.3 | schemas/verification-receipt.schema.json | Includes specification evaluation states, prepare-time baseline digest/validity, unplanned-drift paths, and candidate-state provenance; derived from the same verification result, not a second decision |
 | Release-readiness certificate | Release Audit job | 1.0 | docs/release-readiness.schema.json | Existing schema outside docs/schemas |
 
 ## Remaining schema inventory
