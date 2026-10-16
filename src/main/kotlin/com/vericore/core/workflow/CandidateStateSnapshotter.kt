@@ -54,7 +54,7 @@ data class CandidateStateManifest(
         if (schemaVersion != "1.0") return@runCatching false
         if (entries != entries.sortedBy { it.path }) return@runCatching false
         if (entries.map { it.path }.distinct().size != entries.size) return@runCatching false
-        if (excludedPaths != excludedPaths.map(::normalizePath).distinct().sorted()) return@runCatching false
+        if (excludedPaths != excludedPaths.map { CandidateStateSnapshotter.normalizePath(it) }.distinct().sorted()) return@runCatching false
         if (excludedPaths.any { path -> path.isBlank() || path.startsWith("/") || path.matches(Regex("^[A-Za-z]:/.*")) || path.split('/').any { it.isBlank() || it == "." || it == ".." } }) return@runCatching false
         if (entries.any {
                 it.path.isBlank() ||
@@ -280,7 +280,7 @@ object CandidateStateSnapshotter {
         return Entry(relativePath, 'F'.code.toByte(), bytesRead, contentDigest.digest(), initialExecutable)
     }
 
-    private fun normalizePath(path: String): String =
+    internal fun normalizePath(path: String): String =
         path.replace('\\', '/').trim().removePrefix("./")
 
     private fun String.hexToBytes(): ByteArray {
