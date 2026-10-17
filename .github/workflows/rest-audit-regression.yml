@@ -1,0 +1,46 @@
+name: REST Security Audit Regression
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "src/main/kotlin/com/vericore/cli/ServerCommand.kt"
+      - "src/main/kotlin/com/vericore/server/**"
+      - "src/test/kotlin/com/vericore/cli/ServerCommandTest.kt"
+      - "scripts/audit/rest-audit.sh"
+      - "docs/API.md"
+      - "docs/CLI.md"
+      - "README.md"
+      - ".github/workflows/rest-audit-regression.yml"
+      - "build.gradle.kts"
+      - "gradlew"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  rest-security-audit:
+    name: REST bind and rate-limit security regression
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v6
+        with:
+          java-version: "21"
+          distribution: temurin
+          cache: gradle
+
+      - name: Build and run unit tests
+        run: |
+          chmod +x ./gradlew
+          ./gradlew --no-daemon clean test installDist
+
+      - name: Run REST security and API audit
+        run: bash scripts/audit/rest-audit.sh
