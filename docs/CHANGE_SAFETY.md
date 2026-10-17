@@ -183,3 +183,10 @@ AI is optional. The deterministic prepare/verify workflow does not require an ex
 A verification-command timeout is always a failed verification. Each timed-out command records `cleanupConfirmed` and `cleanupDetails` in the command result, and the verifier includes an explicit reason when cleanup cannot be confirmed. The cleanup routine repeatedly enumerates descendants of the command and of every still-live observed process, requests forced termination, and checks whether tracked process handles have stopped. Inspection or termination errors, a remaining live process, or an interrupted cleanup make confirmation fail closed.
 
 **Platform limitation:** this is best-effort Java `ProcessHandle` cleanup, not a process sandbox or an OS-level process-group/session boundary. A detached process or descendant that escapes/reparents before being observed may not be discoverable; the implementation does not claim to provide Windows Job Object containment. Treat `cleanupConfirmed: true` as confirmation about observed handles only, not proof that no arbitrary process can mutate the repository. A timed-out command remains failed regardless of cleanup confirmation.
+
+
+## Verification timeout cleanup platform boundaries
+
+On Linux, when `setsid` is available, Vericore starts each verification command in a dedicated session/process group and requests termination of the entire group on timeout, then verifies the observed handles have stopped. This reduces the race where a wrapper spawns a descendant immediately before timeout. The implementation still does not claim a general security sandbox or protection against a process that deliberately escapes its session.
+
+On macOS and Windows, cleanup currently uses repeated Java `ProcessHandle` enumeration as a best-effort fallback. Detached or reparented descendants that are never observed may escape; Windows Job Object containment is not implemented. Cleanup status describes only what Vericore could observe and confirm. Any timeout remains a failed verification, and unconfirmed cleanup must be visible in the result.

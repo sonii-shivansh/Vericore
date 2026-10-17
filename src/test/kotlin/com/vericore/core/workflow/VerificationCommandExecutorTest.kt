@@ -206,7 +206,9 @@ class VerificationCommandExecutorTest {
 
     @Test
     fun `repeated child spawning around timeout is stopped before delayed mutations`() {
-        if (System.getProperty("os.name").lowercase().contains("win")) return
+        // This adversarial assertion depends on Linux session/process-group containment.
+        // macOS and Windows use the documented best-effort fallback and have separate tests.
+        if (!System.getProperty("os.name").lowercase().contains("linux")) return
         val root = linuxFixture()
         try {
             val marker = File(root, "late-spawned-child-mutation")
@@ -225,7 +227,7 @@ class VerificationCommandExecutorTest {
             ).single()
 
             assertTrue(result.timedOut)
-            assertTrue(result.cleanupConfirmed != null, "Timeout must expose machine-readable cleanup status")
+            assertEquals(true, result.cleanupConfirmed, "Linux process-group cleanup should be confirmed: ${result.cleanupDetails}")
             assertTrue(!result.cleanupDetails.isNullOrBlank(), "Timeout must explain cleanup scope and limitations")
             Thread.sleep(2_500)
             assertFalse(marker.exists(), "Children spawned near the timeout must not mutate the repository afterward")

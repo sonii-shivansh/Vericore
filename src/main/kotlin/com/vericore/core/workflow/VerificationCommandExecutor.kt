@@ -45,10 +45,19 @@ object VerificationCommandExecutor {
         return try {
             // The directory prefix is parsed as metadata and never executed by the shell.
             // ProcessBuilder supplies the already-validated in-repository working directory.
-            val process = ProcessBuilder(shell(), shellArgument(), validatedCommand.invocation)
+            // Linux can provide a stronger process boundary with a dedicated session/group.
+            // Other platforms retain the documented best-effort ProcessHandle fallback.
+            val setsid = linuxSetsidExecutable()
+            val builder = if (setsid != null) {
+                ProcessBuilder(setsid, shell(), shellArgument(), validatedCommand.invocation)
+            } else {
+                ProcessBuilder(shell(), shellArgument(), validatedCommand.invocation)
+            }
+            val process = builder
                 .directory(validatedCommand.workingDirectory)
                 .redirectErrorStream(false)
                 .start()
+            val processGroupId = if (setsid != null) process.pid() else null
             val stdoutThread = Thread { readAndStore(process.inputStream) }
             val stderrThread = Thread { readAndStore(process.errorStream) }
             stdoutThread.start()
@@ -57,7 +66,7 @@ object VerificationCommandExecutor {
             // A build wrapper can spawn nested processes that outlive the command shell.
             // On timeout, terminate repeatedly observed descendants and record whether all
             // tracked process handles were confirmed stopped before returning a result.
-            val cleanup = if (finished) null else terminateProcessTree(process)
+            val cleanup = if (finished) null else terminateProcessTree(process, processGroupId)
             stdoutThread.join(5_000)
             stderrThread.join(5_000)
             VerificationCommandResult(
@@ -97,7 +106,7 @@ object VerificationCommandExecutor {
      * instead of silently swallowing errors. Java ProcessHandle is not an OS process-group
      * boundary: a detached or reparented descendant that was never observed may escape.
      */
-    private fun terminateProcessTree(process: Process): CleanupReport {
+    private fun terminateProcessTree(process: Process, processGroupId: Long?): CleanupReport {
         val root = process.toHandle()
         val observed = linkedMapOf<Long, ProcessHandle>()
         val failures = linkedSetOf<String>()
@@ -135,6 +144,19 @@ object VerificationCommandExecutor {
         }
 
         observeDescendants()
+        processGroupId?.let { groupId ->
+            try {
+                val killer = ProcessBuilder("/bin/kill", "-KILL", "--", "-$groupId").start()
+                if (!killer.waitFor(1, TimeUnit.SECONDS)) {
+                    killer.destroyForcibly()
+                    failures.add("Timed out while requesting termination of process group $groupId.")
+                } else if (killer.exitValue() != 0) {
+                    failures.add("Could not terminate process group $groupId (kill exited " + killer.exitValue() + ").")
+                }
+            } catch (e: Exception) {
+                failures.add("Could not terminate process group $groupId (" + e::class.java.simpleName + ").")
+            }
+        }
         forceTerminate(root)
         try {
             process.waitFor(100, TimeUnit.MILLISECONDS)
@@ -245,6 +267,11 @@ object VerificationCommandExecutor {
             }
         }
         return result.toString()
+    }
+
+    private fun linuxSetsidExecutable(): String? {
+        if (!System.getProperty("os.name").lowercase().contains("linux")) return null
+        return listOf("/usr/bin/setsid", "/bin/setsid").firstOrNull { File(it).canExecute() }
     }
 
     private fun shell(): String = if (isWindows()) "cmd" else "sh"

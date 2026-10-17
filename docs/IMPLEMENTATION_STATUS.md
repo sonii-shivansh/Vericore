@@ -125,3 +125,6 @@ The operational sequence is therefore: validate post-release fixes, certify any 
 - Timed-out commands always fail verification. The result now exposes `cleanupConfirmed` and sanitized `cleanupDetails`, including the distinction between confirmed cleanup of observed process handles and an unconfirmed cleanup.
 - Cleanup repeatedly enumerates live observed process handles and their descendants and fails closed when enumeration/termination errors occur or any tracked process remains alive.
 - **Current limitation:** Java `ProcessHandle` enumeration is best-effort, not OS-level containment. Detached or never-observed descendants may escape; Windows Job Object containment and a general security-sandbox guarantee are not implemented.
+
+
+- On Linux, timeout cleanup uses a dedicated `setsid` process group when available and requests group-wide termination before confirming observed process handles. macOS/Windows remain best-effort Java `ProcessHandle` fallbacks; Windows Job Objects are not implemented. See [Change Safety](CHANGE_SAFETY.md) for the exact trust boundary.
