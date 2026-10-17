@@ -203,7 +203,7 @@ Zero false passes on a defined critical regression suite may be a gate; it is no
 | B1 | Select requirement-to-evidence gap | IMPLEMENTED | Traced `VerifyCommand`: `REVIEW_REQUIRED` reasons and criterion detail were not emitted in the normal console summary; `NOT_EVALUATED` could be less visible than intended | Keep verification result semantics unchanged; improve transparency |
 | B2 | Add regression cases for summary rendering | IMPLEMENTED | `VerificationConsoleSummaryTest.kt` added for missing specification and mixed per-criterion statuses | Run Gradle tests and fix any issues |
 | B3 | Implement focused verification summary | IMPLEMENTED | `VerificationConsoleSummary.kt`; full and contract-only verify now write criterion summary to stderr and expose non-pass reasons | Review compatibility and exact CLI behavior |
-| B4 | Validate, update docs and open PR | IN_PROGRESS | CLI output contract and Unreleased changelog updated; validation has not been run locally | Run CI for exact candidate and respond to failures before merge/release |
+| B4 | Validate, update docs and open PR | IN_PROGRESS | PR #311 candidate SHA `3ca47118adb049749deb3bf5f469d86589e57d5b` had 14/14 reported GitHub Actions runs succeed (Phase 0/1, live output, E2E, VCORE validations, docs parity and PR checks) | The execution-log-only commit needs its own CI run; PR remains open and unmerged pending review |
 
 Update each row only with verified facts. Keep this file current.
 
