@@ -88,7 +88,8 @@ class ActionVerificationSummaryTest(unittest.TestCase):
     def test_cli_missing_report_warns_and_writes_fallback_summary(self) -> None:
         import os
         import tempfile
-        from unittest.mock import patch, redirect_stderr
+        from contextlib import redirect_stderr
+        from unittest.mock import patch
         from io import StringIO
 
         from action_verification_summary import main
