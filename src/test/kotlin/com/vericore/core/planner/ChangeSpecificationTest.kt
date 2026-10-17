@@ -4,6 +4,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
+import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 class ChangeSpecificationTest {
@@ -54,6 +55,47 @@ class ChangeSpecificationTest {
                 evidenceBindings = listOf(CriterionEvidenceBinding("acceptance-criterion-002", listOf("file.1")))
             ).normalized()
         }
+    }
+
+    @Test
+    fun `command-success rule is restricted to required evidence and command IDs`() {
+        val commandRule = CriterionEvidenceRule.ALL_BOUND_COMMANDS_SUCCEEDED
+        val normalized = ChangeSpecification(
+            requiredEvidence = listOf("Unit-test command succeeds"),
+            evidenceBindings = listOf(CriterionEvidenceBinding(
+                "required-evidence-001", listOf(VerificationEvidenceIds.command(1)), commandRule
+            ))
+        ).normalized()
+        assertEquals(commandRule, normalized.evidenceBindings.single().rule)
+
+        assertFailsWith<IllegalArgumentException> {
+            ChangeSpecification(
+                acceptanceCriteria = listOf("Invalid input returns 400"),
+                evidenceBindings = listOf(CriterionEvidenceBinding(
+                    "acceptance-criterion-001", listOf(VerificationEvidenceIds.command(1)), commandRule
+                ))
+            ).normalized()
+        }
+        assertFailsWith<IllegalArgumentException> {
+            ChangeSpecification(
+                requiredEvidence = listOf("Unit-test command succeeds"),
+                evidenceBindings = listOf(CriterionEvidenceBinding(
+                    "required-evidence-001", listOf("file.1"), commandRule
+                ))
+            ).normalized()
+        }
+    }
+
+    @Test
+    fun `non-default evidence rules affect canonical form`() {
+        val manual = ChangeSpecification(
+            requiredEvidence = listOf("Unit-test command succeeds"),
+            evidenceBindings = listOf(CriterionEvidenceBinding("required-evidence-001", listOf(VerificationEvidenceIds.command(1))))
+        )
+        val evaluated = manual.copy(evidenceBindings = listOf(CriterionEvidenceBinding(
+            "required-evidence-001", listOf(VerificationEvidenceIds.command(1)), CriterionEvidenceRule.ALL_BOUND_COMMANDS_SUCCEEDED
+        )))
+        assertNotEquals(manual.canonicalForm(), evaluated.canonicalForm())
     }
 
     @Test

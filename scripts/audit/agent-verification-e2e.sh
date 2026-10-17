@@ -186,8 +186,8 @@ assert metric_prepare_result["isError"] is False, metric_prepare_result
 metric_prepared = json.loads(next(x["text"] for x in metric_prepare_result["content"]))
 metric_plan = metric_prepared["plan"]
 assert metric_prepared["contract"]["specification"]["evidenceBindings"] == [
-    {"criterionId":"acceptance-criterion-001","evidenceIds":["repo.metrics"]},
-    {"criterionId":"acceptance-criterion-002","evidenceIds":["repo.metrics"]}
+    {"criterionId":"acceptance-criterion-001","evidenceIds":["repo.metrics"],"rule":"MANUAL_REVIEW"},
+    {"criterionId":"acceptance-criterion-002","evidenceIds":["repo.metrics"],"rule":"MANUAL_REVIEW"}
 ], metric_prepared["contract"]
 
 metric_verify = mcp([{

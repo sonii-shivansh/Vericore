@@ -1,6 +1,7 @@
 package com.vericore.cli
 
 import com.vericore.core.planner.CriterionEvidenceBinding
+import com.vericore.core.planner.CriterionEvidenceRule
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -23,6 +24,24 @@ class ChangeSpecificationOptionsTest {
             ),
             bindings
         )
+    }
+
+    @Test
+    fun `CLI evidence rule is attached to its criterion and requires a binding`() {
+        val bindings = parseCriterionEvidenceBindings(
+            listOf("required-evidence-001=verification-command-001"),
+            listOf("required-evidence-001=ALL_BOUND_COMMANDS_SUCCEEDED")
+        )
+        assertEquals(CriterionEvidenceRule.ALL_BOUND_COMMANDS_SUCCEEDED, bindings.single().rule)
+        assertFailsWith<IllegalArgumentException> {
+            parseCriterionEvidenceBindings(emptyList(), listOf("required-evidence-001=ALL_BOUND_COMMANDS_SUCCEEDED"))
+        }
+        assertFailsWith<IllegalArgumentException> {
+            parseCriterionEvidenceBindings(
+                listOf("required-evidence-001=verification-command-001"),
+                listOf("required-evidence-001=UNKNOWN_RULE")
+            )
+        }
     }
 
     @Test
