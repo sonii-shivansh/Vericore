@@ -69,7 +69,7 @@ fun Application.module() {
                 val enrichedFiles = OptimizedGitAnalyzer().analyze(path, parsedFiles)
                 val reportId = UUID.randomUUID().toString()
                 val reportDirectory = File("output").apply { mkdirs() }.canonicalFile
-                val reportFile = File(reportDirectory, "$reportId.html")
+                val reportFile = generatedReportFile(reportId, reportDirectory)
                 com.vericore.output.ReportGenerator().generate(graph, reportFile.absolutePath, enrichedFiles, com.vericore.core.generator.LearningPathGenerator().generate(graph))
                 val hotspots = graph.getTopHotspots(5).map { HotspotInfo(File(it.first).name, it.second) }
                 call.respond(AnalysisResponse(parsedFiles.size, hotspots, "/reports/$reportId.html"))
@@ -175,6 +175,11 @@ fun validateRevisionPair(baseRevision: String?, headRevision: String?) {
 
 private val GENERATED_REPORT_ID_PATTERN = Regex("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 
+internal fun generatedReportFile(reportId: String, outputDirectory: File = File("output")): File {
+    require(GENERATED_REPORT_ID_PATTERN.matches(reportId)) { "Invalid report identifier" }
+    return File(outputDirectory.canonicalFile, "$reportId.html")
+}
+
 /**
  * Resolves only generated UUID-named HTML reports under the configured report directory.
  * Canonical containment also rejects a UUID-named symlink that points outside the directory.
@@ -183,7 +188,7 @@ internal fun resolveGeneratedReport(reportId: String?, outputDirectory: File = F
     if (reportId == null || !GENERATED_REPORT_ID_PATTERN.matches(reportId)) return null
     return runCatching {
         val root = outputDirectory.canonicalFile
-        val candidate = File(root, "$reportId.html").canonicalFile
+        val candidate = generatedReportFile(reportId, root).canonicalFile
         if (candidate.parentFile != root || !candidate.isFile) null else candidate
     }.getOrNull()
 }
