@@ -38,7 +38,7 @@ class VerificationCommandExecutorTest {
         if (System.getProperty("os.name").lowercase().contains("win")) return
         val root = linuxFixture()
         try {
-            File(root, "mvnw").writeText("#!/bin/sh\\nprintf '%s\\n' \"\\$@\" > captured-arguments.txt\\nexit 0\\n")
+            File(root, "mvnw").writeText("#!/bin/sh\nprintf '%s\n' \"\$@\" > captured-arguments.txt\nexit 0\n")
             Files.setPosixFilePermissions(
                 File(root, "mvnw").toPath(),
                 setOf(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_EXECUTE)
@@ -49,7 +49,7 @@ class VerificationCommandExecutorTest {
 
             assertTrue(result.executed)
             assertEquals(0, result.exitCode)
-            assertEquals("-B\\ntest\\n", File(root, "captured-arguments.txt").readText())
+            assertEquals("-B\ntest\n", File(root, "captured-arguments.txt").readText())
         } finally {
             root.deleteRecursively()
         }
