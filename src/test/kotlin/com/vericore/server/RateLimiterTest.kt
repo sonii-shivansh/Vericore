@@ -95,6 +95,38 @@ class RateLimiterTest {
     }
 
     @Test
+    fun `should return hourly reset when hourly limit is exhausted before minute limit`() {
+        val clientId = "hourly-reset-client"
+        val limiter = RateLimiter(maxRequestsPerMinute = 100, maxRequestsPerHour = 2)
+
+        repeat(2) { assertTrue(limiter.checkLimit(clientId)) }
+        assertFalse(limiter.checkLimit(clientId))
+
+        val secondsUntilReset = limiter.getSecondsUntilReset(clientId)
+        val expectedHourlyReset = 3_600L - ((System.currentTimeMillis() / 1000L) % 3_600L)
+        assertTrue(
+            kotlin.math.abs(secondsUntilReset - expectedHourlyReset) <= 1L,
+            "Hourly exhaustion should return the hourly reset (within one second of observation), expected $expectedHourlyReset, got: $secondsUntilReset"
+        )
+    }
+
+    @Test
+    fun `should return the longer reset when both windows are exhausted`() {
+        val clientId = "both-windows-reset-client"
+        val limiter = RateLimiter(maxRequestsPerMinute = 2, maxRequestsPerHour = 2)
+
+        repeat(2) { assertTrue(limiter.checkLimit(clientId)) }
+        assertFalse(limiter.checkLimit(clientId))
+
+        val secondsUntilReset = limiter.getSecondsUntilReset(clientId)
+        val expectedHourlyReset = 3_600L - ((System.currentTimeMillis() / 1000L) % 3_600L)
+        assertTrue(
+            kotlin.math.abs(secondsUntilReset - expectedHourlyReset) <= 1L,
+            "When both windows are exhausted, Retry-After should reflect the longer hourly wait; expected $expectedHourlyReset, got: $secondsUntilReset"
+        )
+    }
+
+    @Test
     fun `should be thread-safe with concurrent requests`() {
         val clientId = "concurrent-client"
         val threadCount = 10
