@@ -68,8 +68,13 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
         }
         echo("Verification receipt: ${root.resolve("output/verification-receipt.json").path}")
         echo("Status: ${result.status}")
+        System.err.println(VerificationConsoleSummary.render(result.specificationEvaluation))
+        if (result.status != com.vericore.core.workflow.SafetyStatus.PASS) {
+            result.reasons
+                .filterNot { it.startsWith("Specification criterion '") }
+                .forEach { System.err.println("  - $it") }
+        }
         if (result.status == com.vericore.core.workflow.SafetyStatus.FAIL) {
-            result.reasons.forEach { System.err.println("  - $it") }
             throw ValidationException("Change verification failed: the prepared contract or change scope is invalid")
         }
     }
@@ -138,8 +143,13 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
         )
         writeOutput(json.encodeToString(result))
         echo("Status: ${result.status}")
+        System.err.println(VerificationConsoleSummary.render(specificationEvaluation))
+        if (status != com.vericore.core.workflow.SafetyStatus.PASS) {
+            allReasons
+                .filterNot { it.startsWith("Specification criterion '") }
+                .forEach { System.err.println("  - $it") }
+        }
         if (status == com.vericore.core.workflow.SafetyStatus.FAIL) {
-            allReasons.forEach { System.err.println("  - $it") }
             throw ValidationException("Change verification failed: the prepared contract or change scope is invalid")
         }
     }
