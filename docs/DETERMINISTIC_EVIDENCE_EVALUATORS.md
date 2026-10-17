@@ -2,6 +2,12 @@
 
 Vericore evaluates only criteria whose meaning can be checked deterministically from current-candidate evidence. A citation ID or free-form statement is not proof by itself.
 
+## Command-success criteria
+
+For a `requiredEvidence` criterion only, an evidence binding may set `rule` to `ALL_BOUND_COMMANDS_SUCCEEDED` and reference declared verification commands using stable IDs such as `verification-command-001`. IDs are one-based positions in the canonical verification-command list persisted in the Agent Change Contract. The evaluator returns `PASS` only when every bound command result exists, was executed, did not time out, and exited with code zero. A non-zero exit is `FAIL`; a missing result is `NOT_EVALUATED`; a timeout or inconclusive execution is `INCONCLUSIVE`. Contract-only verification never treats a declared-but-unexecuted command as a pass.
+
+This rule establishes command-execution outcomes only. A passing build or test command does not prove that tests cover the requested behavior, that the test suite ran non-empty tests, or that the implementation is semantically correct. Criterion-level test-quality and regression-proof evaluators remain future work.
+
 ## Numeric and boolean metric criteria
 
 The first supported form is:
