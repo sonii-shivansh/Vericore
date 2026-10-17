@@ -15,7 +15,7 @@
 <p align="center">
   <a href="https://github.com/sonii-shivansh/Vericore/actions/workflows/ci.yml"><img src="https://github.com/sonii-shivansh/Vericore/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
   <a href="https://github.com/sonii-shivansh/Vericore/actions/workflows/release-audit.yml"><img src="https://github.com/sonii-shivansh/Vericore/actions/workflows/release-audit.yml/badge.svg?branch=main" alt="Release Audit"></a>
-  <a href="https://img.shields.io/github/v/release/sonii-shivansh/Vericore"><img src="https://img.shields.io/github/v/release/sonii-shivansh/Vericore" alt="Latest release"></a>
+  <a href="https://github.com/sonii-shivansh/Vericore/releases"><img src="https://img.shields.io/github/v/release/sonii-shivansh/Vericore" alt="Latest release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-yellow.svg" alt="MIT License"></a>
 </p>
 
