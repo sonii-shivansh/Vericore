@@ -41,7 +41,16 @@ object VerificationCommandExecutor {
         return try {
             // The directory prefix is parsed as metadata and never executed by the shell.
             // ProcessBuilder supplies the already-validated in-repository working directory.
-            val process = ProcessBuilder(shell(), shellArgument(), validatedCommand.invocation)
+            // On Unix, invoke the validated executable/arguments directly rather than
+            // starting a login shell. This avoids unrelated shell startup files and keeps
+            // execution aligned with the persisted command. Windows batch wrappers still
+            // require cmd.exe; their command grammar is restricted above.
+            val processBuilder = if (isWindows()) {
+                ProcessBuilder("cmd", "/c", validatedCommand.invocation)
+            } else {
+                ProcessBuilder(*validatedCommand.invocation.split(' ').toTypedArray())
+            }
+            val process = processBuilder
                 .directory(validatedCommand.workingDirectory)
                 .redirectErrorStream(false)
                 .start()
@@ -165,8 +174,6 @@ object VerificationCommandExecutor {
         return result.toString()
     }
 
-    private fun shell(): String = if (isWindows()) "cmd" else "sh"
-    private fun shellArgument(): String = if (isWindows()) "/c" else "-lc"
     private fun isWindows(): Boolean = System.getProperty("os.name").lowercase().contains("win")
     private fun elapsedMillis(started: Long): Long = (System.nanoTime() - started) / 1_000_000
 
