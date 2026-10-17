@@ -14,6 +14,30 @@ curl -fsS "http://127.0.0.1:${PORT}/health/live" >/tmp/vericore-live.json
 curl -fsS "http://127.0.0.1:${PORT}/health/ready" >/tmp/vericore-ready.json
 status=$(curl -sS -o /tmp/vericore-invalid.json -w '%{http_code}' -X POST "http://127.0.0.1:${PORT}/analyze" -H 'Content-Type: application/json' -d '{"repoPath":"https://github.com/example/example.git"}')
 if [[ "$status" =~ ^2|^3 ]]; then echo "REST security audit failed: remote repository URL accepted" >&2; exit 1; fi
+
+# The unauthenticated REST service must refuse non-loopback binding unless the
+# caller uses the explicit unsafe opt-in. Never start a listener for this check.
+if "$APP" server --host 0.0.0.0 --port 18081 >/tmp/vericore-remote-bind-denied.log 2>&1; then
+  echo "REST security audit failed: non-loopback bind was accepted without opt-in" >&2
+  exit 1
+fi
+grep -q "Refusing non-loopback host" /tmp/vericore-remote-bind-denied.log
+
+# X-API-Key is not authentication. Sending a unique value on every request must
+# not create fresh rate-limit buckets and bypass the per-peer request budget.
+saw_throttle=false
+for i in $(seq 1 70); do
+  code=$(curl -sS -o /dev/null -w '%{http_code}' -H "X-API-Key: unverified-$i" "http://127.0.0.1:${PORT}/health")
+  if [[ "$code" == "429" ]]; then
+    saw_throttle=true
+    break
+  fi
+done
+if [[ "$saw_throttle" != "true" ]]; then
+  echo "REST security audit failed: caller-controlled X-API-Key bypassed per-peer rate limiting" >&2
+  exit 1
+fi
+
 python3 - <<'PY'
 import json
 from pathlib import Path
