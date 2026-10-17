@@ -103,9 +103,10 @@ class RateLimiterTest {
         assertFalse(limiter.checkLimit(clientId))
 
         val secondsUntilReset = limiter.getSecondsUntilReset(clientId)
+        val expectedHourlyReset = 3_600L - ((System.currentTimeMillis() / 1000L) % 3_600L)
         assertTrue(
-            secondsUntilReset in 1L..3_600L,
-            "Hourly exhaustion should produce a positive Retry-After no greater than one hour, got: $secondsUntilReset"
+            kotlin.math.abs(secondsUntilReset - expectedHourlyReset) <= 1L,
+            "Hourly exhaustion should return the hourly reset (within one second of observation), expected $expectedHourlyReset, got: $secondsUntilReset"
         )
     }
 
@@ -118,9 +119,10 @@ class RateLimiterTest {
         assertFalse(limiter.checkLimit(clientId))
 
         val secondsUntilReset = limiter.getSecondsUntilReset(clientId)
+        val expectedHourlyReset = 3_600L - ((System.currentTimeMillis() / 1000L) % 3_600L)
         assertTrue(
-            secondsUntilReset in 1L..3_600L,
-            "The exhausted hourly window must not be hidden by the shorter minute reset, got: $secondsUntilReset"
+            kotlin.math.abs(secondsUntilReset - expectedHourlyReset) <= 1L,
+            "When both windows are exhausted, Retry-After should reflect the longer hourly wait; expected $expectedHourlyReset, got: $secondsUntilReset"
         )
     }
 
