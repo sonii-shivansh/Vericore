@@ -153,9 +153,7 @@ fun Application.module() {
 
         post("/analyze-org") {
             try {
-                val paths = call.receive<List<String>>()
-                require(paths.isNotEmpty() && paths.size <= 20) { "At most 20 repositories may be analyzed per request" }
-                paths.forEach { require(sanitizePath(it) != null) { "Invalid or unsafe repository path" } }
+                val paths = sanitizeRepositoryPaths(call.receive<List<String>>())
                 call.respond(com.vericore.enterprise.OrganizationAnalyzer().analyzeRepositories(paths))
             } catch (e: IllegalArgumentException) {
                 call.respond(io.ktor.http.HttpStatusCode.BadRequest, ApiError(e.message ?: "Invalid request"))
@@ -181,6 +179,20 @@ object AnalysisLogic {
         graph.build(parsedFiles)
         graph.analyze()
         return Triple(graph, parsedFiles, cacheManager)
+    }
+}
+
+/**
+ * Validate and canonicalize every repository path before handing it to downstream
+ * analysis. Validation alone is insufficient if the original, possibly symlinked
+ * spelling is passed onward instead of the resolved path.
+ */
+internal fun sanitizeRepositoryPaths(inputPaths: List<String>): List<String> {
+    require(inputPaths.isNotEmpty() && inputPaths.size <= 20) {
+        "Between 1 and 20 repository paths are required"
+    }
+    return inputPaths.map { inputPath ->
+        sanitizePath(inputPath) ?: throw IllegalArgumentException("Invalid or unsafe repository path")
     }
 }
 
