@@ -183,7 +183,7 @@ class VerificationCommandExecutorTest {
         try {
             val marker = File(root, "late-child-mutation")
             File(root, "mvnw").writeText(
-                "#!/bin/sh\n(sleep 2; printf 'late' > '" + marker.absolutePath + "') &\nwait\n"
+                "#!/bin/sh\n( (sleep 2; printf 'late' > '" + marker.absolutePath + "') & wait ) &\nwait\n"
             )
             Files.setPosixFilePermissions(
                 File(root, "mvnw").toPath(),
@@ -195,8 +195,40 @@ class VerificationCommandExecutorTest {
 
             assertTrue(result.executed)
             assertTrue(result.timedOut)
+            assertEquals(true, result.cleanupConfirmed, "Tracked process-tree cleanup should be confirmed: ${result.cleanupDetails}")
+            assertTrue(!result.cleanupDetails.isNullOrBlank())
             Thread.sleep(2_500)
-            assertFalse(marker.exists(), "A timed-out verification command must not leave child processes mutating the repository")
+            assertFalse(marker.exists(), "A timed-out verification command must not leave nested child processes mutating the repository")
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `repeated child spawning around timeout is stopped before delayed mutations`() {
+        if (System.getProperty("os.name").lowercase().contains("win")) return
+        val root = linuxFixture()
+        try {
+            val marker = File(root, "late-spawned-child-mutation")
+            File(root, "mvnw").writeText(
+                "#!/bin/sh\nwhile :; do (sleep 2; printf x >> '" + marker.absolutePath + "') & sleep 0.03; done\n"
+            )
+            Files.setPosixFilePermissions(
+                File(root, "mvnw").toPath(),
+                setOf(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_EXECUTE)
+            )
+
+            val result = VerificationCommandExecutor.execute(
+                root,
+                listOf("cd '" + root.canonicalPath + "' && ./mvnw test"),
+                timeoutSeconds = 1
+            ).single()
+
+            assertTrue(result.timedOut)
+            assertTrue(result.cleanupConfirmed != null, "Timeout must expose machine-readable cleanup status")
+            assertTrue(!result.cleanupDetails.isNullOrBlank(), "Timeout must explain cleanup scope and limitations")
+            Thread.sleep(2_500)
+            assertFalse(marker.exists(), "Children spawned near the timeout must not mutate the repository afterward")
         } finally {
             root.deleteRecursively()
         }
@@ -218,5 +250,7 @@ class VerificationCommandExecutorTest {
         assertTrue(result.executed)
         assertTrue(result.timedOut)
         assertEquals(null, result.exitCode)
+        assertTrue(result.cleanupConfirmed != null, "Timeout must report whether process cleanup was confirmed")
+        assertTrue(!result.cleanupDetails.isNullOrBlank())
     }
 }
