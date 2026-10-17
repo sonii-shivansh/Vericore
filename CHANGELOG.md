@@ -8,6 +8,10 @@ This file records user-visible changes by release. It follows [Keep a Changelog]
 
 ### Added
 
+- Expand evaluator benchmark vectors to cover declared command success, non-zero exits, timeouts, missing command results, and contract-only stale-evidence handling.
+
+### Added
+
 - Emit a candidate-bound evaluator benchmark JSON report with per-vector expected/observed statuses, elapsed time, fixture digest, and aggregate counts; validate and upload the report in Phase 0 and release-audit workflows.
 
 ### Changed
