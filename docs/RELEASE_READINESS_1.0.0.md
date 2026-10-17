@@ -116,4 +116,4 @@ Only after every required gate is green should the project:
 5. publish the GitHub Marketplace Action against the stable release;
 6. run the final post-publication verification.
 
-As of 2026-10-11, `v0.9.0` is the latest published release. Commits after its tag are unreleased development work until a new exact-SHA release certification and publication completes.
+As of 2026-10-17, `v0.9.0` remains the latest published release. This branch prepares a `1.0.0` release candidate; it is not certified or published. Commits after the published `v0.9.0` tag remain unreleased until the exact candidate SHA passes every required gate, its release-readiness certificate reports `overallReady: true`, and the tagged release artifacts are published.
