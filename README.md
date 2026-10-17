@@ -145,7 +145,7 @@ Vericore currently focuses on **Java and Kotlin repositories**. Kotlin parsing i
 - Vericore analyzes source; it does not autonomously modify source code.
 - The planner is read-only, and an Agent Change Contract is a verification boundary—not an authorization system.
 - A PASS result does not replace unit/integration tests, semantic review, or human judgment.
-- Local REST and MCP are intended for trusted local/internal use. The application does not currently provide production-grade authentication, authorization, tenant isolation, or deployment-level TLS.
+- Local REST and MCP are intended for trusted local/internal use. The REST server refuses non-loopback binding unless `--allow-remote-host` is explicitly supplied; that opt-in only acknowledges the risk and does not add authentication, authorization, tenant isolation, or deployment-level TLS.
 - Optional provider-backed AI can receive bounded repository-derived context when configured and invoked. Review [Data & Privacy](docs/DATA_PRIVACY.md) before enabling it.
 
 See the [Support Matrix](docs/SUPPORT_MATRIX.md) and [Implementation Status](docs/IMPLEMENTATION_STATUS.md) for specific capabilities and limitations.
