@@ -6,11 +6,17 @@ import com.vericore.core.planner.CriterionEvidenceBinding
 import com.vericore.core.planner.CriterionEvidenceRule
 import com.vericore.core.planner.VerificationEvidenceIds
 import java.io.File
+import java.security.MessageDigest
+import java.time.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -383,13 +389,30 @@ class ChangeSpecificationEvaluatorTest {
 
     @Test
     fun `benchmark evaluator vectors guard false acceptance and false rejection`() {
+        data class Outcome(
+            val id: String,
+            val classification: String,
+            val expectedStatus: String,
+            val observedStatus: String,
+            val passed: Boolean,
+            val elapsedMs: Double,
+            val reason: String
+        )
+
         val fixture = File("benchmark/agent-change-v0.2/evaluator-cases.json")
-        val root = Json.parseToJsonElement(fixture.readText()).jsonObject
+        val fixtureBytes = fixture.readBytes()
+        val fixtureDigest = MessageDigest.getInstance("SHA-256")
+            .digest(fixtureBytes)
+            .joinToString("") { "%02x".format(it.toInt() and 0xff) }
+        val root = Json.parseToJsonElement(fixtureBytes.toString(Charsets.UTF_8)).jsonObject
         val cases = root.getValue("cases").jsonArray
+        val outcomes = mutableListOf<Outcome>()
 
         for (element in cases) {
+            val started = System.nanoTime()
             val case = element.jsonObject
             val caseId = case.getValue("id").jsonPrimitive.content
+            val classification = case.getValue("classification").jsonPrimitive.content
             val criterion = case.getValue("criterion").jsonPrimitive.content
             val bindingId = case.getValue("bindingCriterionId").jsonPrimitive.content
             val boundIds = case.getValue("boundEvidenceIds").jsonArray.map { it.jsonPrimitive.content }
@@ -414,12 +437,72 @@ class ChangeSpecificationEvaluatorTest {
                 availableEvidenceIds = availableIds.toSet(),
                 evidenceCitations = citations
             )!!
-
-            assertEquals(
-                CriterionEvaluationStatus.valueOf(case.getValue("expectedStatus").jsonPrimitive.content),
-                evaluation.criteria.single().status,
-                "Benchmark vector $caseId: ${evaluation.criteria.single().reason}"
+            val expectedStatus = case.getValue("expectedStatus").jsonPrimitive.content
+            val observedStatus = evaluation.criteria.single().status.name
+            outcomes += Outcome(
+                id = caseId,
+                classification = classification,
+                expectedStatus = expectedStatus,
+                observedStatus = observedStatus,
+                passed = expectedStatus == observedStatus,
+                elapsedMs = (System.nanoTime() - started) / 1_000_000.0,
+                reason = evaluation.criteria.single().reason
             )
         }
+
+        val candidateSha = System.getenv("GITHUB_SHA")
+            ?.takeIf { it.matches(Regex("^[a-f0-9]{40}$")) }
+            ?: "unknown"
+        val report = buildJsonObject {
+            put("schemaVersion", "1.0")
+            put("benchmarkId", root.getValue("benchmarkId").jsonPrimitive.content)
+            put("benchmarkVersion", root.getValue("benchmarkVersion").jsonPrimitive.content)
+            put("candidateSha", candidateSha)
+            put("fixtureSha256", fixtureDigest)
+            put("generatedAtUtc", Instant.now().toString())
+            put("environment", buildJsonObject {
+                put("javaVersion", System.getProperty("java.version").orEmpty())
+                put("osName", System.getProperty("os.name").orEmpty())
+                put("osArch", System.getProperty("os.arch").orEmpty())
+            })
+            put("cases", buildJsonArray {
+                outcomes.forEach { outcome ->
+                    add(buildJsonObject {
+                        put("id", outcome.id)
+                        put("classification", outcome.classification)
+                        put("expectedStatus", outcome.expectedStatus)
+                        put("observedStatus", outcome.observedStatus)
+                        put("passed", outcome.passed)
+                        put("elapsedMs", outcome.elapsedMs)
+                        put("reason", outcome.reason)
+                    })
+                }
+            })
+            put("summary", buildJsonObject {
+                put("executed", outcomes.size)
+                put("passed", outcomes.count { it.passed })
+                put("failed", outcomes.count { !it.passed })
+                put("overallPass", outcomes.isNotEmpty() && outcomes.all { it.passed })
+            })
+            put("limitations", "Deterministic evaluator vectors only; not a comparative leaderboard or proof of arbitrary semantic correctness.")
+        }
+        val reportFile = File("build/reports/vericore-evaluator-benchmark.json")
+        check(reportFile.parentFile.mkdirs() || reportFile.parentFile.isDirectory) {
+            "Could not create evaluator benchmark report directory: ${reportFile.parentFile}"
+        }
+        reportFile.writeText(
+            Json { prettyPrint = true }.encodeToString(JsonElement.serializer(), report) + "\n",
+            Charsets.UTF_8
+        )
+
+        outcomes.forEach { outcome ->
+            assertEquals(
+                outcome.expectedStatus,
+                outcome.observedStatus,
+                "Benchmark vector ${outcome.id}: ${outcome.reason}"
+            )
+        }
+        assertTrue(outcomes.isNotEmpty(), "Evaluator benchmark must execute at least one vector.")
+        assertTrue(reportFile.isFile, "Evaluator benchmark report must be written before assertions complete.")
     }
 }
