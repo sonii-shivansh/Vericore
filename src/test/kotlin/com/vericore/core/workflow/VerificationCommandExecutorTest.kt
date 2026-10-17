@@ -34,6 +34,28 @@ class VerificationCommandExecutorTest {
     }
 
     @Test
+    fun `validated arguments reach the repository wrapper as separate arguments`() {
+        if (System.getProperty("os.name").lowercase().contains("win")) return
+        val root = linuxFixture()
+        try {
+            File(root, "mvnw").writeText("#!/bin/sh\nprintf '%s\n' \"\$@\" > captured-arguments.txt\nexit 0\n")
+            Files.setPosixFilePermissions(
+                File(root, "mvnw").toPath(),
+                setOf(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE, PosixFilePermission.OWNER_EXECUTE)
+            )
+            val command = "cd '" + root.canonicalPath + "' && ./mvnw -B test"
+
+            val result = VerificationCommandExecutor.execute(root, listOf(command), timeoutSeconds = 5).single()
+
+            assertTrue(result.executed)
+            assertEquals(0, result.exitCode)
+            assertEquals("-B\ntest\n", File(root, "captured-arguments.txt").readText())
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
     fun `non zero verification command produces failure evidence`() {
         if (System.getProperty("os.name").lowercase().contains("win")) return
         val root = linuxFixture()
