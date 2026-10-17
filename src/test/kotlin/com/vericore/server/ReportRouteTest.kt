@@ -5,8 +5,8 @@ import java.nio.file.Files
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNull
-import kotlin.test.assertNotNull
 
 class ReportRouteTest {
     @Test
@@ -28,14 +28,19 @@ class ReportRouteTest {
     }
 
     @Test
-    fun `report urls use the api output directory rather than the analyzed repository`() {
-        val processOutput = File("output").canonicalFile
-        val repoOutput = File(Files.createTempDirectory("vericore-analyzed-repo-").toFile(), "output").canonicalFile
-        val reportId = UUID.randomUUID().toString()
-        val servedFile = File(processOutput, "$reportId.html")
-        val repositoryFile = File(repoOutput, "$reportId.html")
+    fun `generated report destination uses the configured output directory`() {
+        val processOutput = Files.createTempDirectory("vericore-server-output-").toFile()
+        val repository = Files.createTempDirectory("vericore-analyzed-repo-").toFile()
+        try {
+            val reportId = UUID.randomUUID().toString()
+            val servedFile = generatedReportFile(reportId, processOutput)
+            val repositoryFile = File(repository, "output/$reportId.html").canonicalFile
 
-        assertEquals(File(processOutput, "$reportId.html"), servedFile)
-        kotlin.test.assertNotEquals(repositoryFile, servedFile)
+            assertEquals(File(processOutput.canonicalFile, "$reportId.html"), servedFile)
+            assertNotEquals(repositoryFile, servedFile)
+        } finally {
+            processOutput.deleteRecursively()
+            repository.deleteRecursively()
+        }
     }
 }
