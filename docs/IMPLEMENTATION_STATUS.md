@@ -118,3 +118,10 @@ Phase 0 closure does not mean these controls should be removed. Keep them covere
 - document supported boundaries and keep benchmark results tied to their exact inputs and candidate SHA.
 
 The operational sequence is therefore: validate post-release fixes, certify any intended next release on its exact candidate SHA, publish without rewriting prior tags, then continue product-journey work. Later phases follow the ordering and acceptance discipline in [Product Direction](PRODUCT_DIRECTION.md).
+
+
+### Verification command timeout cleanup
+
+- Timed-out commands always fail verification. The result now exposes `cleanupConfirmed` and sanitized `cleanupDetails`, including the distinction between confirmed cleanup of observed process handles and an unconfirmed cleanup.
+- Cleanup repeatedly enumerates live observed process handles and their descendants and fails closed when enumeration/termination errors occur or any tracked process remains alive.
+- **Current limitation:** Java `ProcessHandle` enumeration is best-effort, not OS-level containment. Detached or never-observed descendants may escape; Windows Job Object containment and a general security-sandbox guarantee are not implemented.
