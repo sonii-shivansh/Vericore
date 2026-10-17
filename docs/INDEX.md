@@ -1,111 +1,97 @@
-# Documentation Hub
+# Vericore documentation
 
-> The shortest route from first use to implementation detail. This index separates end-user guides, contracts, engineering references, roadmap material, and historical release evidence.
+This hub is organized by **what you are trying to do**. Most users only need the first two sections; the remaining pages are reference material for integrators, contributors, and release maintainers.
 
 ## Start here
 
-| Your goal | Read this first |
+| If you want to… | Start with |
 |---|---|
-| Understand the product | [Why Vericore?](WHY_VERICORE.md) |
-| Install Vericore and run the main workflow | [Getting Started](GETTING_STARTED.md) |
-| Find exact command syntax and behavior | [CLI Reference](CLI.md) |
-| Understand the system design | [Architecture](ARCHITECTURE.md) |
-| Find code ownership and folder purpose | [Repository Map](REPOSITORY_MAP.md) |
-| Browse the complete documentation set | This page |
+| Understand what Vericore does and why it exists | [Why Vericore?](WHY_VERICORE.md) |
+| Install it and run your first analysis | [Getting Started](GETTING_STARTED.md) |
+| Verify a change made by an AI coding agent | [Change Safety](CHANGE_SAFETY.md) |
+| Find a command's exact syntax | [CLI Reference](CLI.md) |
 
-## User guides and integration contracts
+**Recommended first session:** [README](../README.md) → [Getting Started](GETTING_STARTED.md) → [CLI Reference](CLI.md).
 
-| Document | Scope |
+## Integrate Vericore
+
+| Guide | Use it for |
 |---|---|
-| [Getting Started](GETTING_STARTED.md) | Installation, first-run checks, analysis and prepare → change → verify |
-| [CLI Reference](CLI.md) | Canonical user-facing command syntax, options, defaults, outputs and failure behavior |
-| [MCP](MCP.md) | Local Model Context Protocol integration and trust boundary |
-| [API](API.md) | Local REST routes, request/response shapes and path-safety rules |
-| [GitHub Action](GITHUB_ACTION.md) | Action inputs, installation behavior, examples and limitations |
-| [Support Matrix](SUPPORT_MATRIX.md) | Implemented language, platform and interface support plus known limitations |
+| [MCP / AI-agent integration](MCP.md) | Connect a local coding agent to Vericore |
+| [REST API](API.md) | Request and response contracts, routes, and trust boundaries |
+| [GitHub Action](GITHUB_ACTION.md) | Run Vericore in GitHub Actions |
+| [Data & Privacy](DATA_PRIVACY.md) | Understand local behavior and optional provider-backed data flow |
+| [Support Matrix](SUPPORT_MATRIX.md) | Check supported languages, platforms, interfaces, and known limitations |
 
-## Architecture, safety and evidence
+## Technical reference
 
-| Document | Scope |
+Use these pages when you need implementation detail rather than a first-run tutorial.
+
+| Reference | Scope |
 |---|---|
-| [Architecture](ARCHITECTURE.md) | System data flow, component responsibilities, trust boundaries and determinism rules |
-| [Repository Map](REPOSITORY_MAP.md) | Top-level folders, Kotlin packages, test fixtures, automation and documentation ownership |
-| [Engineering Reality](ENGINEERING_REALITY.md) | State identity and compatibility across analysis/context artifacts |
-| [Change Safety](CHANGE_SAFETY.md) | Persisted Agent Change Contract and prepare/verify semantics |
-| [Data & Privacy](DATA_PRIVACY.md) | Local behavior, optional provider-bound data flow and privacy boundary |
-| [Artifact Schema Catalog](ARTIFACT_SCHEMA_CATALOG.md) | Artifact contracts, schema versions, compatibility and source locations |
-| [Semantic Evidence Graph](PHASE_6_SEMANTIC_EVIDENCE_GRAPH.md) | Evidence graph design and implementation scope |
+| [Architecture](ARCHITECTURE.md) | Components, data flow, and trust boundaries |
+| [Repository Map](REPOSITORY_MAP.md) | Source folders, packages, tests, and automation |
+| [Engineering Reality](ENGINEERING_REALITY.md) | Repository-state identity and compatibility across artifacts |
+| [Artifact Schema Catalog](ARTIFACT_SCHEMA_CATALOG.md) | Versioned artifact contracts and schema ownership |
+| [Semantic Evidence Graph](PHASE_6_SEMANTIC_EVIDENCE_GRAPH.md) | Evidence provenance, stable graph identity, and relationship constraints |
+| [CLI Output Contracts](CLI_OUTPUT_CONTRACTS.md) | Machine-readable and human-readable output behavior |
+| [Deterministic Evidence Evaluators](DETERMINISTIC_EVIDENCE_EVALUATORS.md) | Supported criterion syntax and evaluation limits |
 | [PR Intelligence](PR_INTELLIGENCE.md) | Deterministic pull-request analysis |
-| [Deterministic Evidence Evaluators](DETERMINISTIC_EVIDENCE_EVALUATORS.md) | Supported machine-readable criterion syntax and evaluation limits |
+| [Verification Benchmark](VERIFICATION_BENCHMARK.md) | Benchmark methodology and interpretation limits |
+| [JSON schemas](schemas/) | Machine-readable interface contracts |
 
-Machine-readable schemas live in [`docs/schemas/`](schemas/). They are interface contracts; update the relevant schema, tests, and catalog together when an artifact contract changes.
+## Contribute and maintain the project
 
-## Development and project policy
-
-| Document | Scope |
+| Page | Audience |
 |---|---|
-| [Development Guide](DEVELOPMENT.md) | Build/test workflow, extension points, review and release discipline |
-| [Implementation Status](IMPLEMENTATION_STATUS.md) | Implemented capabilities, limitations and current release/phase state |
-| [Product Direction](PRODUCT_DIRECTION.md) | Long-term Phase 0–9 product roadmap; roadmap items are not proof of implementation |
-| [Repository Governance](REPOSITORY_GOVERNANCE.md) | Intended repository settings, CI/release model and governance caveats |
-| [Verification Benchmark](VERIFICATION_BENCHMARK.md) | Public benchmark design, methodology and interpretation boundaries |
-| [Phase 0 Foundation Checklist](PHASE0_FOUNDATION_CHECKLIST.md) | Foundation acceptance criteria and closeout record |
-| [Phase 1 Acceptance Checklist](PHASE1_ACCEPTANCE_CHECKLIST.md) | Measurable exit gate for the 60-Second Vericore product journey |
-| [Phase 0 Benchmark Baseline](PHASE0_BENCHMARK_BASELINE.md) | Recorded run metadata, methodology, artifact digest and limitations |
+| [Development Guide](DEVELOPMENT.md) | Contributors building, testing, and extending Vericore |
+| [Implementation Status](IMPLEMENTATION_STATUS.md) | What is implemented, what is limited, and what remains |
+| [Product Direction](PRODUCT_DIRECTION.md) | Longer-term roadmap; roadmap items are not proof of shipped behavior |
+| [Repository Governance](REPOSITORY_GOVERNANCE.md) | Repository policy, CI, and release process |
 
-## Release documentation
+## Engineering records and release history
 
-Release-readiness files have different purposes. Published-release records are historical evidence for the exact tag and commit; later commits require their own certification.
+These files are intentionally more detailed than user guides. They exist to preserve test baselines, acceptance criteria, and release-specific evidence; most new users do not need to read them.
 
-| Document | How to interpret it |
-|---|---|
-| [v0.9.0 Release Readiness](RELEASE_READINESS_0.9.0.md) | Historical certification record for the published v0.9.0 tag; does not certify later commits |
-| [v0.8.2 Release Readiness](RELEASE_READINESS_0.8.2.md) | Historical record for the v0.8.2 release |
-| [v0.8.1 Release Readiness](RELEASE_READINESS_0.8.1.md) | Historical release record |
-| [v0.8.0 Release Readiness](RELEASE_READINESS_0.8.0.md) | Historical release record |
-| [v1.0.0 Release Readiness](RELEASE_READINESS_1.0.0.md) | Longer-term pre-1.0 planning checklist; not a published-release claim |
-| [Changelog](../CHANGELOG.md) | User-visible changes grouped by version |
+<details>
+<summary>Foundation and acceptance records</summary>
 
-## Contribution and community policies
+- [Phase 0 Foundation Checklist](PHASE0_FOUNDATION_CHECKLIST.md)
+- [Phase 0 Benchmark Baseline](PHASE0_BENCHMARK_BASELINE.md)
+- [Phase 1 Acceptance Checklist](PHASE1_ACCEPTANCE_CHECKLIST.md)
+- [Images documentation](images/README.md)
 
-These canonical GitHub/community policy files stay at the repository root so GitHub, contributors, and common repository tooling can discover them:
+</details>
 
-- [README](../README.md) — project introduction and first-run entry point
-- [Contributing](../CONTRIBUTING.md) — contribution workflow
-- [Security Policy](../SECURITY.md) — private vulnerability reporting
-- [Code of Conduct](../CODE_OF_CONDUCT.md) — community behavior expectations
-- [DCO](../DCO.md) — contribution sign-off requirements
-- [Trademarks](../TRADEMARKS.md) — permitted brand use
-- [License](../LICENSE) — MIT license text
+<details>
+<summary>Release-readiness records (historical or candidate-specific)</summary>
 
-## Recommended reading paths
+Release evidence applies only to the version and exact commit it names. It does not certify later commits. The current published release is shown on [GitHub Releases](https://github.com/sonii-shivansh/Vericore/releases).
 
-```mermaid
-flowchart LR
-    README["README"] --> START["Getting Started"]
-    START --> CLI["CLI Reference"]
-    CLI --> SAFE["Change Safety"]
-    SAFE --> ARCH["Architecture"]
-    ARCH --> DEV["Development"]
-```
+- [v1.0.0 release gate](RELEASE_READINESS_1.0.0.md) — candidate checklist, not a claim that v1.0.0 is published
+- [v0.9.0 release readiness](RELEASE_READINESS_0.9.0.md)
+- [v0.8.2 release readiness](RELEASE_READINESS_0.8.2.md)
+- [v0.8.1 release readiness](RELEASE_READINESS_0.8.1.md)
+- [v0.8.0 release readiness](RELEASE_READINESS_0.8.0.md)
+- [Changelog](../CHANGELOG.md) — user-visible changes by version
 
-| Reader | Suggested path |
-|---|---|
-| New user | README → Why Vericore? → Getting Started → CLI Reference |
-| Coding-agent integrator | README → MCP → Change Safety → Data & Privacy |
-| Contributor | Repository Map → Architecture → Development → relevant tests |
-| Release reviewer | Implementation Status → Release Readiness → exact-SHA GitHub Actions evidence |
+</details>
 
-## Documentation rules
+## Community and repository policies
 
-1. **Implemented behavior wins.** When documents disagree, check the code, executable tests, and public CLI/API/MCP contracts first. Roadmaps and historical plans do not prove that a capability shipped.
-2. **One canonical contract per interface.** CLI details belong in [CLI Reference](CLI.md), REST details in [API](API.md), MCP details in [MCP](MCP.md), and artifact compatibility in [Artifact Schema Catalog](ARTIFACT_SCHEMA_CATALOG.md). Other pages should link rather than copy the full contract.
-3. **Keep the README scannable.** Use it for the problem, main workflow, install path, boundaries and links—not as a second command reference.
-4. **Keep guides task-oriented.** Getting Started should help a user succeed; Development should help a contributor change the code safely.
-5. **Preserve historical evidence.** Do not rewrite a release-readiness record or benchmark baseline to match a later release. Add a new versioned record instead.
-6. **Use diagrams when they explain structure or sequence.** Prefer Mermaid for flows and architecture so GitHub can render the diagrams directly from Markdown. Every diagram must match implemented behavior and have nearby explanatory text.
-7. **State limitations plainly.** Mark planned, optional, unsupported, trusted-local, or not-yet-certified capabilities explicitly. Avoid claims that cannot be traced to implementation and evidence.
+These files stay at the repository root so GitHub and contributors can discover them:
 
-## Automated documentation parity
+- [Contributing](../CONTRIBUTING.md)
+- [Security Policy](../SECURITY.md)
+- [Code of Conduct](../CODE_OF_CONDUCT.md)
+- [DCO](../DCO.md)
+- [Trademarks](../TRADEMARKS.md)
+- [MIT License](../LICENSE)
 
-The [documentation parity workflow](../.github/workflows/docs-parity.yml) builds the CLI and compares the runtime `--help` command surface with [CLI Reference](CLI.md). Changes to user-facing commands therefore require an update to the canonical command reference in the same change. Link correctness and factual accuracy still require review; command parity does not validate every statement in every document.
+## Keep documentation useful
+
+1. **One canonical contract per interface.** CLI behavior belongs in [CLI Reference](CLI.md), REST in [API](API.md), MCP in [MCP](MCP.md), and artifact compatibility in [Artifact Schema Catalog](ARTIFACT_SCHEMA_CATALOG.md). Other pages should link instead of duplicating the full contract.
+2. **Describe shipped behavior honestly.** Code, executable tests, and public contracts take precedence over roadmaps and plans.
+3. **Keep user journeys short.** The README introduces the product; Getting Started helps a user succeed; reference pages answer specific questions.
+4. **Preserve release evidence.** Do not rewrite a historical readiness record or benchmark to match later code. Add a new record for a new candidate.
+5. **Prefer focused documents.** Merge duplicate explanations when possible, but retain records that provide unique compatibility, safety, test, or release evidence.
