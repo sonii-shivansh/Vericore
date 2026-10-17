@@ -39,7 +39,7 @@ class OrganizationAnalyzer(private val maxConcurrentRepositories: Int = 2) {
     private suspend fun analyzeSingleRepo(path: String, sharedConfig: VericoreConfig?): RepoResult {
         return try {
             val file = File(path).canonicalFile
-            if (!file.isDirectory || !file.canRead()) return RepoResult(path, 0, emptyList(), "Path not found or unreadable")
+            if (!file.isDirectory || !file.canRead()) return RepoResult(file.name, 0, emptyList(), "Path not found or unreadable")
             val config = sharedConfig ?: ConfigLoader.loadForRepository(file.path)
             val files = RepositoryScanner(config).scan(file.path)
             if (files.isEmpty()) return RepoResult(file.name, 0, emptyList(), "No source files")
@@ -54,9 +54,23 @@ class OrganizationAnalyzer(private val maxConcurrentRepositories: Int = 2) {
                 graph.getTopHotspots(5).map { (filePath, score) -> RepoHotspot(File(filePath).name, score) }
             )
         } catch (e: Exception) {
-            RepoResult(File(path).name, 0, emptyList(), e.message ?: "Analysis failed")
+            System.err.println("Repository analysis failed for ${File(path).name}: ${e::class.simpleName}")
+            RepoResult(File(path).name, 0, emptyList(), safeRepositoryAnalysisError(e))
         }
     }
 
     private fun echo(msg: String) = println(msg)
+}
+
+/** Keep internal exception messages and absolute paths out of REST response payloads. */
+internal fun safeRepositoryAnalysisError(error: Exception): String {
+    val message = error.message.orEmpty()
+    return if (
+        error is IllegalArgumentException &&
+        Regex("^Repository exceeds the maximum file limit: \\d+$").matches(message)
+    ) {
+        "Repository exceeds the configured maximum file limit"
+    } else {
+        "Repository analysis failed"
+    }
 }
