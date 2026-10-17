@@ -47,16 +47,20 @@ runs:
           verify)
             report_path="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/vericore-verification-${GITHUB_RUN_ID:-local}.json"
             has_output=false
-            for ((index=0; index<${#extra_args[@]}; index++)); do
-              case "${extra_args[$index]}" in
+            expect_output_value=false
+            for arg in "${extra_args[@]}"; do
+              if [[ "$expect_output_value" == true ]]; then
+                report_path="$arg"
+                expect_output_value=false
+                continue
+              fi
+              case "$arg" in
                 --output)
-                  if (( index + 1 < ${#extra_args[@]} )); then
-                    report_path="${extra_args[$((index + 1))]}"
-                    has_output=true
-                  fi
+                  has_output=true
+                  expect_output_value=true
                   ;;
                 --output=*)
-                  report_path="${extra_args[$index]#--output=}"
+                  report_path="${arg#--output=}"
                   has_output=true
                   ;;
               esac
