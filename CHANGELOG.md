@@ -6,6 +6,10 @@ This file records user-visible changes by release. It follows [Keep a Changelog]
 
 ## [Unreleased]
 
+### Changed
+
+- Verification console output now surfaces criterion-level requirement-evidence statuses and explanations in both full and contract-only modes; missing structured specifications are explicitly reported as not evaluated, and review-required reasons are no longer hidden from the console.
+
 ### Added
 
 - Structured change specifications for required behaviors, forbidden behaviors, protected invariants, acceptance criteria, and required evidence, persisted in the Agent Change Contract and bound to its fingerprint.
