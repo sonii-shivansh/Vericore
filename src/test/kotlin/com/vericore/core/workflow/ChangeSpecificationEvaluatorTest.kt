@@ -414,9 +414,24 @@ class ChangeSpecificationEvaluatorTest {
             val caseId = case.getValue("id").jsonPrimitive.content
             val classification = case.getValue("classification").jsonPrimitive.content
             val criterion = case.getValue("criterion").jsonPrimitive.content
+            val criterionKind = case["criterionKind"]?.jsonPrimitive?.content ?: "ACCEPTANCE_CRITERION"
             val bindingId = case.getValue("bindingCriterionId").jsonPrimitive.content
             val boundIds = case.getValue("boundEvidenceIds").jsonArray.map { it.jsonPrimitive.content }
             val availableIds = case.getValue("availableEvidenceIds").jsonArray.map { it.jsonPrimitive.content }
+            val bindingRule = case["bindingRule"]?.jsonPrimitive?.content
+                ?.let(CriterionEvidenceRule::valueOf)
+                ?: CriterionEvidenceRule.MANUAL_REVIEW
+            val currentCandidateEvidenceAvailable =
+                case["currentCandidateEvidenceAvailable"]?.jsonPrimitive?.content?.toBoolean() ?: true
+            val commandResults = case["commandResults"]?.jsonArray?.map { resultElement ->
+                val result = resultElement.jsonObject
+                VerificationCommandResult(
+                    command = result.getValue("command").jsonPrimitive.content,
+                    executed = result.getValue("executed").jsonPrimitive.content.toBoolean(),
+                    exitCode = result["exitCode"]?.jsonPrimitive?.content?.toIntOrNull(),
+                    timedOut = result["timedOut"]?.jsonPrimitive?.content?.toBoolean() ?: false
+                )
+            }.orEmpty()
             val citations = case.getValue("citations").jsonArray.map { citationElement ->
                 val citation = citationElement.jsonObject
                 EvidenceCitation(
@@ -429,13 +444,16 @@ class ChangeSpecificationEvaluatorTest {
                 )
             }
             val specification = ChangeSpecification(
-                acceptanceCriteria = listOf(criterion),
-                evidenceBindings = listOf(CriterionEvidenceBinding(bindingId, boundIds))
+                acceptanceCriteria = if (criterionKind == "ACCEPTANCE_CRITERION") listOf(criterion) else emptyList(),
+                requiredEvidence = if (criterionKind == "REQUIRED_EVIDENCE") listOf(criterion) else emptyList(),
+                evidenceBindings = listOf(CriterionEvidenceBinding(bindingId, boundIds, bindingRule))
             )
             val evaluation = ChangeSpecificationEvaluator.evaluate(
                 specification,
                 availableEvidenceIds = availableIds.toSet(),
-                evidenceCitations = citations
+                evidenceCitations = citations,
+                currentCandidateEvidenceAvailable = currentCandidateEvidenceAvailable,
+                commandResults = commandResults
             )!!
             val expectedStatus = case.getValue("expectedStatus").jsonPrimitive.content
             val observedStatus = evaluation.criteria.single().status.name
