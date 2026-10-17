@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:vericore:schema:evaluator-benchmark-report-v1.0",
+  "title": "Vericore deterministic evaluator benchmark report",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "benchmarkId",
+    "benchmarkVersion",
+    "candidateSha",
+    "fixtureSha256",
+    "generatedAtUtc",
+    "environment",
+    "cases",
+    "summary",
+    "limitations"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "benchmarkId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "benchmarkVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "candidateSha": {
+      "type": "string",
+      "pattern": "^(?:[a-f0-9]{40}|unknown)$"
+    },
+    "fixtureSha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "generatedAtUtc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "environment": {
+      "type": "object",
+      "required": [
+        "javaVersion",
+        "osName",
+        "osArch"
+      ],
+      "properties": {
+        "javaVersion": {
+          "type": "string",
+          "minLength": 1
+        },
+        "osName": {
+          "type": "string",
+          "minLength": 1
+        },
+        "osArch": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "classification",
+          "expectedStatus",
+          "observedStatus",
+          "passed",
+          "elapsedMs",
+          "reason"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "classification": {
+            "type": "string",
+            "minLength": 1
+          },
+          "expectedStatus": {
+            "enum": [
+              "PASS",
+              "FAIL",
+              "INCONCLUSIVE",
+              "NOT_EVALUATED"
+            ]
+          },
+          "observedStatus": {
+            "enum": [
+              "PASS",
+              "FAIL",
+              "INCONCLUSIVE",
+              "NOT_EVALUATED"
+            ]
+          },
+          "passed": {
+            "type": "boolean"
+          },
+          "elapsedMs": {
+            "type": "number",
+            "minimum": 0
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "executed",
+        "passed",
+        "failed",
+        "overallPass"
+      ],
+      "properties": {
+        "executed": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "passed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "failed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "overallPass": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "limitations": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "additionalProperties": false
+}
