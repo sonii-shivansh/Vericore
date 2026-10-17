@@ -57,6 +57,51 @@ class ActionVerificationSummaryTest(unittest.TestCase):
         self.assertIn("No structured change specification was declared", summary)
         self.assertIn("semantic requirement coverage was not evaluated", summary)
 
+    def test_malformed_criterion_entries_are_excluded_from_total(self) -> None:
+        summary = render_summary({
+            "status": "REVIEW_REQUIRED",
+            "specificationEvaluation": {
+                "status": "NOT_EVALUATED",
+                "criteria": [{"id": "criterion-1", "status": "PASS"}, "malformed"],
+            },
+        })
+        self.assertIn("**Total criteria:** 1", summary)
+        self.assertIn("**PASS:** 1", summary)
+
+    def test_cli_writes_summary_to_github_step_summary(self) -> None:
+        import json
+        import os
+        import tempfile
+        from unittest.mock import patch
+
+        from action_verification_summary import main
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            report = root / "report.json"
+            output = root / "step-summary.md"
+            report.write_text(json.dumps({"status": "PASS"}), encoding="utf-8")
+            with patch.dict(os.environ, {"GITHUB_STEP_SUMMARY": str(output)}):
+                self.assertEqual(main(["action_verification_summary.py", str(report), str(root)]), 0)
+            self.assertIn("Outcome:** `PASS`", output.read_text(encoding="utf-8"))
+
+    def test_cli_missing_report_warns_and_writes_fallback_summary(self) -> None:
+        import os
+        import tempfile
+        from unittest.mock import patch, redirect_stderr
+        from io import StringIO
+
+        from action_verification_summary import main
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            output = root / "step-summary.md"
+            errors = StringIO()
+            with patch.dict(os.environ, {"GITHUB_STEP_SUMMARY": str(output)}), redirect_stderr(errors):
+                self.assertEqual(main(["action_verification_summary.py", str(root / "missing.json"), str(root)]), 0)
+            self.assertIn("::warning::", errors.getvalue())
+            self.assertIn("was not available to render", output.read_text(encoding="utf-8"))
+
     def test_malicious_criterion_id_cannot_inject_markdown(self) -> None:
         summary = render_summary({
             "status": "REVIEW_REQUIRED",
