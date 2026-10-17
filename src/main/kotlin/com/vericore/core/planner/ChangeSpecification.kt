@@ -18,7 +18,6 @@ enum class CriterionEvidenceRule {
     ALL_BOUND_COMMANDS_SUCCEEDED
 }
 
-import kotlinx.serialization.Serializable
 
 /**
  * Explicit, user/agent-authored constraints for one proposed change.

@@ -103,7 +103,7 @@ class EngineeringPlanner {
             )
             BuildSystem.UNKNOWN -> emptyList()
         }
-        val availableEvidenceIds = evidenceIds.toSet() + verificationCommands.indices.map { VerificationEvidenceIds.command(it + 1) }
+        val availableEvidenceIds = evidenceIds.toSet() + verificationCommands.distinct().sorted().indices.map { VerificationEvidenceIds.command(it + 1) }
         val missingEvidenceBindings = specification.evidenceBindings.flatMap { binding ->
             binding.evidenceIds.filterNot(availableEvidenceIds::contains)
                 .map { evidenceId -> "${binding.criterionId} -> $evidenceId" }

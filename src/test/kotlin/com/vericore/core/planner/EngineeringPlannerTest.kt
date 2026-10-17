@@ -36,6 +36,41 @@ class EngineeringPlannerTest {
     }
 
     @Test
+    fun `required evidence can bind a canonical verification command ID`() {
+        val repo = Files.createTempDirectory("vericore-command-evidence").toFile()
+        try {
+            File(repo, "pom.xml").writeText("<project/>\\n")
+            val specification = ChangeSpecification(
+                requiredEvidence = listOf("Declared verification commands succeed"),
+                evidenceBindings = listOf(
+                    CriterionEvidenceBinding(
+                        "required-evidence-001",
+                        listOf(VerificationEvidenceIds.command(1)),
+                        CriterionEvidenceRule.ALL_BOUND_COMMANDS_SUCCEEDED
+                    )
+                )
+            )
+            val plan = planner.plan(
+                EngineeringPlanRequest(
+                    changeSummary = "Verify declared command evidence",
+                    changedPaths = listOf("src/App.kt"),
+                    evidence = GroundedEvidence(citations = listOf(EvidenceCitation("repo.metrics", "repository-metrics", null, "metrics"))),
+                    repositoryPath = repo.path,
+                    specification = specification
+                )
+            )
+            assertEquals(specification, plan.specification)
+            assertTrue(plan.verificationCommands.isNotEmpty())
+            assertEquals(
+                listOf(VerificationEvidenceIds.command(1)),
+                plan.specification.evidenceBindings.single().evidenceIds
+            )
+        } finally {
+            repo.deleteRecursively()
+        }
+    }
+
+    @Test
     fun `Maven repository gets Maven commands and never Gradle commands`() {
         val repo = Files.createTempDirectory("vericore-maven-test").toFile()
         try {
