@@ -123,7 +123,7 @@ object CandidateStateSnapshotter {
                 val relativePath = rootPath.relativize(file).toString().replace(File.separatorChar, '/')
                 if (relativePath in normalizedExclusions) return FileVisitResult.CONTINUE
                 val entry = if (attrs.isSymbolicLink) {
-                    hashSymbolicLink(file, relativePath)
+                    hashSymbolicLink(file, relativePath, rootPath, mutableSetOf())
                 } else {
                     hashRegularFile(file, relativePath, attrs)
                 }
@@ -206,7 +206,12 @@ object CandidateStateSnapshotter {
         return digest.digest().toHex()
     }
 
-    private fun hashSymbolicLink(link: Path, relativePath: String): Entry {
+    private fun hashSymbolicLink(
+        link: Path,
+        relativePath: String,
+        repositoryRoot: Path,
+        directoryStack: MutableSet<Path>
+    ): Entry {
         val target = Files.readSymbolicLink(link)
         val resolved = try {
             link.toRealPath()
@@ -214,26 +219,103 @@ object CandidateStateSnapshotter {
             throw IOException("Unable to snapshot dangling or inaccessible symbolic link '${relativePath}'.", error)
         }
         val targetAttributes = Files.readAttributes(resolved, BasicFileAttributes::class.java, LinkOption.NOFOLLOW_LINKS)
-        if (!targetAttributes.isRegularFile) {
-            throw IOException("Unable to snapshot symbolic link '${relativePath}': only links to regular files are supported.")
+
+        val targetSize: Long
+        val targetDigest: ByteArray
+        val targetExecutable: Boolean
+        when {
+            targetAttributes.isRegularFile -> {
+                val targetEntry = hashRegularFile(resolved, relativePath, targetAttributes)
+                targetSize = targetEntry.size
+                targetDigest = targetEntry.contentDigest
+                targetExecutable = targetEntry.executable
+            }
+            targetAttributes.isDirectory -> {
+                // A directory link is safe to represent only when its complete target tree is
+                // inside this repository. External directory links can expose an unbounded,
+                // unrelated filesystem tree, so fail closed rather than silently omitting it.
+                if (!resolved.startsWith(repositoryRoot)) {
+                    throw IOException(
+                        "Unable to snapshot directory symbolic link '${relativePath}': target is outside the repository."
+                    )
+                }
+                val directorySnapshot = hashDirectoryTarget(resolved, relativePath, repositoryRoot, directoryStack)
+                targetSize = directorySnapshot.first
+                targetDigest = directorySnapshot.second
+                targetExecutable = Files.isExecutable(resolved)
+            }
+            else -> throw IOException(
+                "Unable to snapshot symbolic link '${relativePath}': only links to regular files or repository directories are supported."
+            )
         }
 
-        // Hash the referent as well as the link text: the link's unchanged target string does
-        // not prove that the bytes consumed through that link are unchanged.
-        val targetEntry = hashRegularFile(resolved, relativePath, targetAttributes)
+        // Hash the referent as well as the link text: the unchanged link string alone does
+        // not prove that the bytes consumed through this link are unchanged.
         if (Files.readSymbolicLink(link) != target || link.toRealPath() != resolved) {
             throw IOException("Repository candidate symbolic link changed while being snapshotted: ${relativePath}")
         }
         val combined = MessageDigest.getInstance("SHA-256")
         combined.update(target.toString().toByteArray(Charsets.UTF_8))
-        combined.update(targetEntry.contentDigest)
+        combined.update(targetDigest)
         return Entry(
             path = relativePath,
             kind = 'L'.code.toByte(),
-            size = targetEntry.size,
+            size = targetSize,
             contentDigest = combined.digest(),
-            executable = targetEntry.executable
+            executable = targetExecutable
         )
+    }
+
+    /**
+     * Hashes every regular-file input reachable through an in-repository directory link.
+     * Nested links are represented recursively; a directory cycle or external directory link
+     * fails closed. The sorted entry digest makes the result independent of filesystem order.
+     */
+    private fun hashDirectoryTarget(
+        directory: Path,
+        linkRelativePath: String,
+        repositoryRoot: Path,
+        directoryStack: MutableSet<Path>
+    ): Pair<Long, ByteArray> {
+        if (!directoryStack.add(directory)) {
+            throw IOException("Directory symbolic-link cycle detected while snapshotting '${linkRelativePath}'.")
+        }
+        try {
+            val entries = mutableListOf<Entry>()
+            Files.walkFileTree(directory, object : SimpleFileVisitor<Path>() {
+                override fun visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult {
+                    val suffix = directory.relativize(file).toString().replace(File.separatorChar, '/')
+                    val entryPath = "${linkRelativePath}/${suffix}"
+                    when {
+                        attrs.isSymbolicLink -> entries += hashSymbolicLink(file, entryPath, repositoryRoot, directoryStack)
+                        attrs.isRegularFile -> entries += hashRegularFile(file, entryPath, attrs)
+                    }
+                    return FileVisitResult.CONTINUE
+                }
+
+                override fun visitFileFailed(file: Path, exc: IOException): FileVisitResult {
+                    throw IOException(
+                        "Unable to snapshot directory-link input '${linkRelativePath}/${directory.relativize(file)}': ${exc.message}",
+                        exc
+                    )
+                }
+            })
+            val sorted = entries.sortedBy { it.path }
+            val manifestEntries = sorted.map { entry ->
+                CandidateStateManifestEntry(
+                    path = entry.path,
+                    kind = if (entry.kind == 'L'.code.toByte()) "L" else "F",
+                    size = entry.size,
+                    contentDigest = entry.contentDigest.toHex(),
+                    executable = entry.executable
+                )
+            }
+            val totalBytes = sorted.fold(0L) { total, entry -> Math.addExact(total, entry.size) }
+            val digest = digestManifestEntries(manifestEntries).hexToBytes()
+            return totalBytes to digest
+        } finally {
+            directoryStack.remove(directory)
+        }
     }
 
     private fun shouldExcludeDirectory(directory: Path, rootPath: Path): Boolean {
