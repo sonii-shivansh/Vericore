@@ -33,7 +33,7 @@ Use these pages when you need implementation detail rather than a first-run tuto
 | [Repository Map](REPOSITORY_MAP.md) | Source folders, packages, tests, and automation |
 | [Engineering Reality](ENGINEERING_REALITY.md) | Repository-state identity and compatibility across artifacts |
 | [Artifact Schema Catalog](ARTIFACT_SCHEMA_CATALOG.md) | Versioned artifact contracts and schema ownership |
-| [Semantic Evidence Graph](SEMANTIC_EVIDENCE_GRAPH.md) | Evidence provenance, stable graph identity, and relationship constraints |
+| [Semantic Evidence Graph](PHASE_6_SEMANTIC_EVIDENCE_GRAPH.md) | Evidence provenance, stable graph identity, and relationship constraints |
 | [CLI Output Contracts](CLI_OUTPUT_CONTRACTS.md) | Machine-readable and human-readable output behavior |
 | [Deterministic Evidence Evaluators](DETERMINISTIC_EVIDENCE_EVALUATORS.md) | Supported criterion syntax and evaluation limits |
 | [PR Intelligence](PR_INTELLIGENCE.md) | Deterministic pull-request analysis |
