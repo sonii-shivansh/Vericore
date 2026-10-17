@@ -3,6 +3,8 @@ package com.vericore.core.workflow
 import com.vericore.core.ai.EvidenceCitation
 import com.vericore.core.planner.ChangeSpecification
 import com.vericore.core.planner.CriterionEvidenceBinding
+import com.vericore.core.planner.CriterionEvidenceRule
+import com.vericore.core.planner.VerificationEvidenceIds
 import java.math.BigDecimal
 import kotlinx.serialization.Serializable
 
@@ -52,8 +54,9 @@ data class ChangeSpecificationEvaluation(
  * Example: metric:repo.metrics.files>=10
  *
  * A metric criterion must bind the named citation, and the citation must be present in the
- * evidence generated for the candidate currently under verification. Free-form statements
- * remain unevaluated/inconclusive; citation presence alone never proves them.
+ * evidence generated for the candidate currently under verification. A required-evidence criterion
+ * may alternatively use ALL_BOUND_COMMANDS_SUCCEEDED, which proves only that its bound, declared
+ * verification commands ran and exited zero. Neither rule proves arbitrary semantic correctness.
  */
 object ChangeSpecificationEvaluator {
     private const val NOT_EVALUATED_REASON =
@@ -65,7 +68,8 @@ object ChangeSpecificationEvaluator {
         specification: ChangeSpecification,
         availableEvidenceIds: Set<String> = emptySet(),
         evidenceCitations: List<EvidenceCitation> = emptyList(),
-        currentCandidateEvidenceAvailable: Boolean = true
+        currentCandidateEvidenceAvailable: Boolean = true,
+        commandResults: List<VerificationCommandResult> = emptyList()
     ): ChangeSpecificationEvaluation? {
         val normalized = try {
             specification.normalized()
@@ -89,8 +93,11 @@ object ChangeSpecificationEvaluator {
         val bindings = normalized.evidenceBindings.associateBy { it.criterionId }
         val availableIds = availableEvidenceIds.toSet()
         val citationsById = evidenceCitations.associateBy { it.id }
+        val commandResultsById = commandResults.mapIndexed { index, result ->
+            VerificationEvidenceIds.command(index + 1) to result
+        }.toMap()
         val criteria = buildList {
-            addAll(normalized.requiredBehaviors.withIds("required-behavior", SpecificationCriterionKind.REQUIRED_BEHAVIOR, bindings, availableIds, citationsById, currentCandidateEvidenceAvailable))
+            addAll(normalized.requiredBehaviors.withIds("required-behavior", SpecificationCriterionKind.REQUIRED_BEHAVIOR, bindings, availableIds, citationsById, currentCandidateEvidenceAvailable, commandResultsById))
             addAll(normalized.forbiddenBehaviors.withIds("forbidden-behavior", SpecificationCriterionKind.FORBIDDEN_BEHAVIOR, bindings, availableIds, citationsById, currentCandidateEvidenceAvailable))
             addAll(normalized.protectedInvariants.withIds("protected-invariant", SpecificationCriterionKind.PROTECTED_INVARIANT, bindings, availableIds, citationsById, currentCandidateEvidenceAvailable))
             addAll(normalized.acceptanceCriteria.withIds("acceptance-criterion", SpecificationCriterionKind.ACCEPTANCE_CRITERION, bindings, availableIds, citationsById, currentCandidateEvidenceAvailable))
@@ -117,7 +124,8 @@ object ChangeSpecificationEvaluator {
         bindings: Map<String, CriterionEvidenceBinding>,
         availableEvidenceIds: Set<String>,
         citationsById: Map<String, EvidenceCitation>,
-        currentCandidateEvidenceAvailable: Boolean
+        currentCandidateEvidenceAvailable: Boolean,
+        commandResultsById: Map<String, VerificationCommandResult>
     ): List<SpecificationCriterionEvaluation> = mapIndexed { index, statement ->
         val id = "$prefix-${(index + 1).toString().padStart(3, '0')}"
         val binding = bindings[id]
@@ -127,9 +135,17 @@ object ChangeSpecificationEvaluator {
         } else {
             null
         }
+        val commandEvaluation = if (binding != null && missingEvidence.isEmpty() &&
+            binding.rule == CriterionEvidenceRule.ALL_BOUND_COMMANDS_SUCCEEDED
+        ) {
+            evaluateBoundCommands(kind, binding, commandResultsById)
+        } else {
+            null
+        }
         val status = when {
             binding == null -> CriterionEvaluationStatus.NOT_EVALUATED
             missingEvidence.isNotEmpty() -> CriterionEvaluationStatus.FAIL
+            commandEvaluation != null -> commandEvaluation.first
             metricEvaluation != null -> metricEvaluation.first
             else -> CriterionEvaluationStatus.INCONCLUSIVE
         }
@@ -139,6 +155,7 @@ object ChangeSpecificationEvaluator {
             binding == null -> NOT_EVALUATED_REASON
             missingEvidence.isNotEmpty() ->
                 "Evidence binding references IDs absent from the prepared contract: ${missingEvidence.sorted().joinToString(", ")}."
+            commandEvaluation != null -> commandEvaluation.second
             metricEvaluation != null -> metricEvaluation.second
             else ->
                 "Evidence IDs are bound to this criterion, but their content has not been semantically evaluated."
@@ -151,6 +168,30 @@ object ChangeSpecificationEvaluator {
             reason = reason,
             evidenceIds = binding?.evidenceIds.orEmpty()
         )
+    }
+
+    private fun evaluateBoundCommands(
+        kind: SpecificationCriterionKind,
+        binding: CriterionEvidenceBinding,
+        commandResultsById: Map<String, VerificationCommandResult>
+    ): Pair<CriterionEvaluationStatus, String> {
+        if (kind != SpecificationCriterionKind.REQUIRED_EVIDENCE) {
+            return CriterionEvaluationStatus.FAIL to
+                "ALL_BOUND_COMMANDS_SUCCEEDED is only supported for required-evidence criteria."
+        }
+        val results = binding.evidenceIds.mapNotNull(commandResultsById::get)
+        if (results.size != binding.evidenceIds.size) {
+            return CriterionEvaluationStatus.NOT_EVALUATED to
+                "Bound verification command evidence was declared but was not generated in this verification run."
+        }
+        if (results.any { it.executed && !it.timedOut && it.exitCode != null && it.exitCode != 0 }) {
+            return CriterionEvaluationStatus.FAIL to "At least one bound verification command exited non-zero."
+        }
+        if (results.any { !it.executed || it.timedOut || it.exitCode == null }) {
+            return CriterionEvaluationStatus.INCONCLUSIVE to "At least one bound verification command did not produce a conclusive result."
+        }
+        return CriterionEvaluationStatus.PASS to
+            "All bound verification commands executed and exited 0; this evaluates command success only, not arbitrary behavior semantics."
     }
 
     private fun evaluateMetric(
