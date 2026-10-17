@@ -41,7 +41,9 @@ Returns the readiness state.
 
 ### `GET /reports/{id}.html`
 
-Serves a generated report from the local `output/` directory. Treat generated reports as potentially sensitive because they can contain repository-derived information.
+Serves an existing generated HTML report from the Vericore server process's `output/` directory. The identifier must be a generated UUID and the report must exist; unknown, malformed, traversal-like, and out-of-directory symlink targets return `404`. Only generated HTML reports are routable through this endpoint; other files under `output/` are not served by the report route.
+
+`POST /analyze` writes its report into that same server output directory and returns the matching URL. Treat generated reports as potentially sensitive because they can contain repository-derived information.
 
 ### `POST /analyze`
 
