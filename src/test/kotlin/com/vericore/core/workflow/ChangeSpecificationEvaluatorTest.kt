@@ -3,6 +3,8 @@ package com.vericore.core.workflow
 import com.vericore.core.ai.EvidenceCitation
 import com.vericore.core.planner.ChangeSpecification
 import com.vericore.core.planner.CriterionEvidenceBinding
+import com.vericore.core.planner.CriterionEvidenceRule
+import com.vericore.core.planner.VerificationEvidenceIds
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -57,6 +59,63 @@ class ChangeSpecificationEvaluatorTest {
         assertEquals(CriterionEvaluationStatus.INCONCLUSIVE, evaluation.status)
         assertEquals(CriterionEvaluationStatus.INCONCLUSIVE, evaluation.criteria.single().status)
         assertEquals(listOf("file.1"), evaluation.criteria.single().evidenceIds)
+    }
+
+    private fun commandEvidenceSpecification() = ChangeSpecification(
+        requiredEvidence = listOf("Unit-test command succeeds"),
+        evidenceBindings = listOf(CriterionEvidenceBinding(
+            "required-evidence-001", listOf(VerificationEvidenceIds.command(1)), CriterionEvidenceRule.ALL_BOUND_COMMANDS_SUCCEEDED
+        ))
+    )
+
+    @Test
+    fun `required evidence passes when its bound command exits zero`() {
+        val id = VerificationEvidenceIds.command(1)
+        val evaluation = ChangeSpecificationEvaluator.evaluate(
+            commandEvidenceSpecification(),
+            availableEvidenceIds = setOf(id),
+            commandResults = listOf(VerificationCommandResult(command = "./gradlew test", executed = true, exitCode = 0))
+        )!!
+        assertEquals(CriterionEvaluationStatus.PASS, evaluation.status)
+        assertEquals(CriterionEvaluationStatus.PASS, evaluation.criteria.single().status)
+        assertTrue(evaluation.criteria.single().reason.contains("command success only"))
+    }
+
+    @Test
+    fun `required evidence fails when a bound command exits nonzero`() {
+        val id = VerificationEvidenceIds.command(1)
+        val evaluation = ChangeSpecificationEvaluator.evaluate(
+            commandEvidenceSpecification(),
+            availableEvidenceIds = setOf(id),
+            commandResults = listOf(VerificationCommandResult(command = "./gradlew test", executed = true, exitCode = 1))
+        )!!
+        assertEquals(CriterionEvaluationStatus.FAIL, evaluation.status)
+        assertEquals(CriterionEvaluationStatus.FAIL, evaluation.criteria.single().status)
+    }
+
+    @Test
+    fun `required evidence is inconclusive when a bound command times out`() {
+        val id = VerificationEvidenceIds.command(1)
+        val evaluation = ChangeSpecificationEvaluator.evaluate(
+            commandEvidenceSpecification(),
+            availableEvidenceIds = setOf(id),
+            commandResults = listOf(VerificationCommandResult(command = "./gradlew test", executed = true, timedOut = true))
+        )!!
+        assertEquals(CriterionEvaluationStatus.INCONCLUSIVE, evaluation.status)
+        assertEquals(CriterionEvaluationStatus.INCONCLUSIVE, evaluation.criteria.single().status)
+    }
+
+    @Test
+    fun `required evidence remains unevaluated when no command result exists`() {
+        val id = VerificationEvidenceIds.command(1)
+        val evaluation = ChangeSpecificationEvaluator.evaluate(
+            commandEvidenceSpecification(),
+            availableEvidenceIds = setOf(id),
+            currentCandidateEvidenceAvailable = false,
+            commandResults = emptyList()
+        )!!
+        assertEquals(CriterionEvaluationStatus.NOT_EVALUATED, evaluation.status)
+        assertEquals(CriterionEvaluationStatus.NOT_EVALUATED, evaluation.criteria.single().status)
     }
 
     @Test

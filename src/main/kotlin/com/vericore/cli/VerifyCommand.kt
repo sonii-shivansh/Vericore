@@ -4,6 +4,7 @@ import com.vericore.core.intelligence.ChangeType
 import com.vericore.core.intelligence.ChangedFile
 import com.vericore.core.exceptions.ValidationException
 import com.vericore.core.planner.EngineeringPlan
+import com.vericore.core.planner.VerificationEvidenceIds
 import com.vericore.core.workflow.AgentChangeContract
 import com.vericore.core.workflow.ChangeSafetyAnalyzer
 import com.vericore.core.workflow.ChangeSpecificationEvaluator
@@ -108,8 +109,9 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
         val safety = ChangeSafetyAnalyzer.verify(changes, plan.plannedPaths)
         val specificationEvaluation = ChangeSpecificationEvaluator.evaluate(
             contract.specification,
-            contract.evidenceIds.toSet(),
-            currentCandidateEvidenceAvailable = false
+            availableEvidenceIds = contract.evidenceIds.toSet() + contract.verificationCommands.indices.map { VerificationEvidenceIds.command(it + 1) },
+            currentCandidateEvidenceAvailable = false,
+            commandResults = emptyList()
         )
         val specificationReasons = specificationEvaluation?.criteria
             ?.filter { it.status != CriterionEvaluationStatus.PASS }

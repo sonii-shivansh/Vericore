@@ -80,14 +80,6 @@ class EngineeringPlanner {
             else -> RiskLevel.UNKNOWN
         }
         val evidenceIds = citations.map { it.id }.distinct().sorted()
-        val availableEvidenceIds = evidenceIds.toSet()
-        val missingEvidenceBindings = specification.evidenceBindings.flatMap { binding ->
-            binding.evidenceIds.filterNot(availableEvidenceIds::contains)
-                .map { evidenceId -> "${binding.criterionId} -> $evidenceId" }
-        }
-        require(missingEvidenceBindings.isEmpty()) {
-            "Criterion evidence bindings reference IDs not present in grounded evidence: ${missingEvidenceBindings.sorted().joinToString(", ")}"
-        }
         val steps = buildList {
             add(EngineeringPlanStep("step-1", "Review the proposed change against the affected components.", "Establish the concrete repository scope before implementation.", evidenceIds.take(8), "Confirm every changed path belongs to the intended change scope."))
             if (architecture.isNotEmpty()) add(EngineeringPlanStep("step-${size + 1}", "Review architecture boundaries and dependency direction around the change.", "Architecture evidence indicates structural constraints that may affect the implementation.", architecture.map { it.id }.sorted(), "Run architecture analysis and confirm no new forbidden dependency is introduced."))
@@ -110,6 +102,14 @@ class EngineeringPlanner {
                 buildCommand(verificationRoot, build.executable!!, "--no-daemon build", windowsPlatform)
             )
             BuildSystem.UNKNOWN -> emptyList()
+        }
+        val availableEvidenceIds = evidenceIds.toSet() + verificationCommands.distinct().sorted().indices.map { VerificationEvidenceIds.command(it + 1) }
+        val missingEvidenceBindings = specification.evidenceBindings.flatMap { binding ->
+            binding.evidenceIds.filterNot(availableEvidenceIds::contains)
+                .map { evidenceId -> "${binding.criterionId} -> $evidenceId" }
+        }
+        require(missingEvidenceBindings.isEmpty()) {
+            "Criterion evidence bindings reference IDs not present in grounded evidence or planned verification commands: ${missingEvidenceBindings.sorted().joinToString(", ")}"
         }
         val provisional = EngineeringPlan(
             changeSummary = request.changeSummary.trim(),

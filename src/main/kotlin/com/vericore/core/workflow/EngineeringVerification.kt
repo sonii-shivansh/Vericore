@@ -14,6 +14,7 @@ import com.vericore.cli.CodeParallelParser
 import com.vericore.core.cache.CacheManager
 import com.vericore.core.ai.GroundedEvidenceBuilder
 import com.vericore.core.planner.EngineeringPlan
+import com.vericore.core.planner.VerificationEvidenceIds
 import java.io.File
 import kotlinx.serialization.Serializable
 
@@ -132,11 +133,6 @@ object EngineeringVerification {
         val contractValid = contractReasons.isEmpty()
         val contractResult = AgentChangeContractResult(contract, contractValid, contractReasons)
         val currentCandidateEvidence = GroundedEvidenceBuilder.fromSnapshot(snapshot)
-        val specificationEvaluation = ChangeSpecificationEvaluator.evaluate(
-            contract.specification,
-            contract.evidenceIds.toSet(),
-            currentCandidateEvidence.citations
-        )
         val execution = if (contractValid && safety.status != SafetyStatus.FAIL && analysisStateStable) {
             VerificationExecutionResult(commands = VerificationCommandExecutor.execute(root, contract.verificationCommands))
         } else {
@@ -158,6 +154,17 @@ object EngineeringVerification {
                 add("Git HEAD changed during verification; command results cannot be attributed to one stable repository revision.")
             }
         }
+        val candidateEvidenceIsCurrent = contractValid &&
+            safety.status != SafetyStatus.FAIL &&
+            analysisStateStable &&
+            candidateStateDriftReasons.isEmpty()
+        val specificationEvaluation = ChangeSpecificationEvaluator.evaluate(
+            contract.specification,
+            availableEvidenceIds = contract.evidenceIds.toSet() + contract.verificationCommands.indices.map { VerificationEvidenceIds.command(it + 1) },
+            evidenceCitations = currentCandidateEvidence.citations,
+            currentCandidateEvidenceAvailable = candidateEvidenceIsCurrent,
+            commandResults = if (candidateEvidenceIsCurrent) execution.commands else emptyList()
+        )
         val status = when {
             !contractValid -> SafetyStatus.FAIL
             safety.status == SafetyStatus.FAIL -> SafetyStatus.FAIL

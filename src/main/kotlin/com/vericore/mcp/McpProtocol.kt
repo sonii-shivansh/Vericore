@@ -151,7 +151,7 @@ ${diff.take(12000)}${if (diff.length > 12000) "\n...[diff truncated]" else ""}
             put("requiredEvidence", stringArrayProperty("Evidence that must be supplied or reviewed for acceptance"))
             put("evidenceBindings", buildJsonObject {
                 put("type", JsonPrimitive("array"))
-                put("description", JsonPrimitive("Bind stable criterion IDs to evidence citation IDs already present in the prepared contract. A binding does not itself prove the criterion."))
+                put("description", JsonPrimitive("Bind stable criterion IDs to evidence citation IDs or declared verification-command-NNN IDs. A binding does not itself prove the criterion."))
                 put("maxItems", JsonPrimitive(200))
                 put("items", buildJsonObject {
                     put("type", JsonPrimitive("object"))
@@ -175,6 +175,14 @@ ${diff.take(12000)}${if (diff.length > 12000) "\n...[diff truncated]" else ""}
                                 put("minLength", JsonPrimitive(1))
                                 put("maxLength", JsonPrimitive(200))
                             })
+                        })
+                        put("rule", buildJsonObject {
+                            put("type", JsonPrimitive("string"))
+                            put("enum", buildJsonArray {
+                                add(JsonPrimitive("MANUAL_REVIEW"))
+                                add(JsonPrimitive("ALL_BOUND_COMMANDS_SUCCEEDED"))
+                            })
+                            put("description", JsonPrimitive("MANUAL_REVIEW is the safe default. ALL_BOUND_COMMANDS_SUCCEEDED is supported only for required-evidence criteria bound to declared verification-command-NNN IDs; it proves command exit status only."))
                         })
                     })
                 })
