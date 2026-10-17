@@ -6,6 +6,10 @@ This file records user-visible changes by release. It follows [Keep a Changelog]
 
 ## [Unreleased]
 
+### Added
+
+- Emit a candidate-bound evaluator benchmark JSON report with per-vector expected/observed statuses, elapsed time, fixture digest, and aggregate counts; validate and upload the report in Phase 0 and release-audit workflows.
+
 ### Changed
 
 - Verification console output now surfaces criterion-level requirement-evidence statuses and explanations in both full and contract-only modes; missing structured specifications are explicitly reported as not evaluated, and review-required reasons are no longer hidden from the console.

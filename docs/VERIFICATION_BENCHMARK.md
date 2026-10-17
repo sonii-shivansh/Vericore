@@ -19,7 +19,7 @@ The current task catalog lives in [benchmark/agent-change-v0.2/cases.json](../be
 
 ## Deterministic evaluator regression vectors
 
-`benchmark/agent-change-v0.2/evaluator-cases.json` contains candidate-independent vectors for supported numeric/boolean comparisons, failed thresholds, unbound or missing metrics, and free-form criteria. `ChangeSpecificationEvaluatorTest` reads and executes these vectors in the full Gradle unit suite. They are deliberately not counted as executed CLI audit cases in the Phase 0 audit JSON; CI's unit-test result is the evidence that these vectors ran. The vectors guard against false acceptance and false rejection, but do not measure semantic correctness for arbitrary natural-language requirements.
+`benchmark/agent-change-v0.2/evaluator-cases.json` contains candidate-independent vectors for supported numeric/boolean comparisons, failed thresholds, unbound or missing metrics, and free-form criteria. `ChangeSpecificationEvaluatorTest` executes each vector and writes `build/reports/vericore-evaluator-benchmark.json` before asserting the expected outcomes. The report records candidate SHA (when supplied by CI), fixture SHA-256, environment, generated timestamp, per-vector expected/observed statuses, pass/fail, elapsed time, and aggregate counts. The Phase 0 audit validates the report schema, summary consistency, and candidate-SHA binding; CI uploads it alongside the CLI audit artifact. Evaluator vectors remain separate from CLI audit case counts. These vectors guard against false acceptance and false rejection, but do not measure semantic correctness for arbitrary natural-language requirements.
 
 ## Metrics
 

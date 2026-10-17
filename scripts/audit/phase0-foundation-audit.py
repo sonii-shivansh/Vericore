@@ -106,6 +106,41 @@ class Audit:
             self.record(case_id, schema_file, f"invalid: {exc}", started, False, str(exc))
             raise AuditFailure(case_id)
 
+    def validate_evaluator_benchmark_report(self) -> None:
+        report_path = ROOT / "build" / "reports" / "vericore-evaluator-benchmark.json"
+        report = self.validate_artifact(
+            "evaluator-benchmark-report-schema",
+            report_path,
+            "evaluator-benchmark-report.schema.json",
+        )
+        cases = report["cases"]
+        summary = report["summary"]
+        expected_sha = os.environ.get("GITHUB_SHA")
+        case_results_consistent = all(
+            case["passed"] is (case["expectedStatus"] == case["observedStatus"])
+            for case in cases
+        )
+        valid = (
+            summary["executed"] == len(cases)
+            and summary["passed"] == sum(1 for case in cases if case["passed"])
+            and summary["failed"] == sum(1 for case in cases if not case["passed"])
+            and summary["overallPass"] is (summary["executed"] > 0 and summary["failed"] == 0)
+            and case_results_consistent
+            and (not expected_sha or report["candidateSha"] == expected_sha)
+        )
+        started = time.perf_counter()
+        self.record(
+            "evaluator-benchmark-results-consistent",
+            "candidate-bound report counts match the executed per-vector outcomes",
+            (
+                f"candidateSha={report['candidateSha']}, executed={summary['executed']}, "
+                f"passed={summary['passed']}, failed={summary['failed']}"
+            ),
+            started,
+            valid,
+            "Report counts, per-vector statuses, and candidate SHA must agree.",
+        )
+
     def git(self, fixture: Path, *args: str) -> str:
         result = subprocess.run(
             ["git", *args], cwd=fixture, text=True, stdout=subprocess.PIPE,
@@ -117,6 +152,7 @@ class Audit:
 
     def run(self) -> None:
         self.validate_schema_documents()
+        self.validate_evaluator_benchmark_report()
         manifest = self.load_json(MANIFEST_PATH)
         with tempfile.TemporaryDirectory(prefix="vericore-phase0-") as temp_dir:
             temp = Path(temp_dir)
