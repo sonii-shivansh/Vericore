@@ -195,6 +195,15 @@
                   "minLength": 1,
                   "maxLength": 200
                 }
+              },
+              "rule": {
+                "type": "string",
+                "enum": [
+                  "MANUAL_REVIEW",
+                  "ALL_BOUND_COMMANDS_SUCCEEDED"
+                ],
+                "default": "MANUAL_REVIEW",
+                "description": "MANUAL_REVIEW is the safe default. ALL_BOUND_COMMANDS_SUCCEEDED is supported only for required-evidence criteria bound to declared verification-command-NNN IDs; it proves command exit status only."
               }
             },
             "additionalProperties": false
