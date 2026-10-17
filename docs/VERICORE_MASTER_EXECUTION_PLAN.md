@@ -199,12 +199,13 @@ Zero false passes on a defined critical regression suite may be a gate; it is no
 
 | ID | Work | Status | Evidence | Next action |
 |---|---|---|---|---|
-| B0 | Source/docs/tree reconnaissance + master plan | IMPLEMENTED | Master plan merged with PR #311; repository source/docs inspected 2026-10-17 | Full Gradle clean test/installDist passed in GitHub Actions for PR candidate `e7f4115468994beffa9f080d16cb786febae9d8c`; no local Gradle run |
+| B0 | Source/docs/tree reconnaissance + master plan | IMPLEMENTED | Master plan merged with PR #311; repository source/docs inspected 2026-10-17 | Full Gradle clean test/installDist passed in GitHub Actions for PR candidate `e7f4115468994beffa9f080d16cb786febae9d8d`; no local Gradle run |
 | B1 | Select requirement-to-evidence gap | IMPLEMENTED | Traced `VerifyCommand`: `REVIEW_REQUIRED` reasons and criterion detail were not emitted in the normal console summary; `NOT_EVALUATED` could be less visible than intended | Verification verdict and exit semantics preserved |
-| B2 | Add regression cases for summary | IMPLEMENTED | `VerificationConsoleSummaryTest.kt` covers missing specifications and mixed per-criterion statuses | Phase 0 Foundation and Phase 1 Regression workflows passed on PR candidate `e7f4115468994beffa9f080d16cb786febae9d8c` |
+| B2 | Add regression cases for summary | IMPLEMENTED | `VerificationConsoleSummaryTest.kt` covers missing specifications and mixed per-criterion statuses | Phase 0 Foundation and Phase 1 Regression workflows passed on PR candidate `e7f4115468994beffa9f080d16cb786febae9d8d` |
 | B3 | Implement criterion-level console summary | MERGED | `VerificationConsoleSummary.kt`; full and contract-only verify print criterion summaries and non-pass reasons; merged to main at `d0f7900378f2169936796f40a542ec584e35d92b` | All 14 reported PR workflows passed for the reviewed head before merge |
-| B4 | Verify merge and baseline CI | IMPLEMENTED | PR #311 merged to `main` as `d0f7900378f2169936796f40a542ec584e35d92b` | PR head had 14/14 GitHub Actions runs successful; post-merge release readiness not claimed |
-| B5 | Emit evaluator benchmark execution report | IN_PROGRESS | Branch `feature/evaluator-benchmark-report`; test emits per-vector outcomes and candidate/fixture metadata; schema + audit/workflow artifact wiring added | Await exact-head Phase 0 and release-audit validation; no local Gradle run |
+| B4 | Verify first merge and baseline CI | IMPLEMENTED | PR #311 merged to `main` as `d0f7900378f2169936796f40a542ec584e35d92b` | PR head had 14/14 GitHub Actions runs successful; post-merge release readiness not claimed |
+| B5 | Emit evaluator benchmark execution report | MERGED | PR #312 merged to `main` as `b84cc8d4574df6d3861bca2067d1d00e23d0f6ed`; report includes per-vector outcomes, candidate/fixture metadata, and schema validation | All 15 reported GitHub Actions workflows passed on PR candidate `f37952d74df39a93fde987afd06a0ee710f21154`, including Phase 0 Foundation |
+| B6 | Expand evaluator benchmark to command outcomes and freshness | IN_PROGRESS | Branch `feature/evaluator-command-vectors`; five vectors added for zero/non-zero exits, timeout, missing command result, and contract-only stale metric evidence | Await exact-head Gradle/Phase 0 CI; no local Gradle run |
 
 Update each row only with verified facts. Keep this file current.
 
