@@ -23,7 +23,9 @@ data class VerificationExecutionResult(
     val commandsDeclared: Int = commands.size,
     val commandsExecuted: Int = commands.count { it.executed },
     val allCommandsExecuted: Boolean = commands.isNotEmpty() && commands.all { it.executed },
-    val allCommandsPassed: Boolean = commands.isNotEmpty() && commands.all { it.executed && !it.timedOut && it.exitCode == 0 },
+    val allCommandsPassed: Boolean = commands.isNotEmpty() && commands.all {
+        it.executed && !it.timedOut && it.cleanupConfirmed != false && it.exitCode == 0
+    },
     val executionComplete: Boolean = commands.isNotEmpty() && commands.all { it.executed }
 )
 
@@ -181,10 +183,15 @@ object EngineeringVerification {
             if (execution.commands.isEmpty()) {
                 add("No verification commands were executed; verification cannot pass without a successful verification command.")
             } else {
-                execution.commands.filter { !it.executed || it.timedOut || it.exitCode != 0 }.forEach { command ->
+                execution.commands.filter { !it.executed || it.timedOut || it.cleanupConfirmed == false || it.exitCode != 0 }.forEach { command ->
                     val outcome = when {
                         !command.executed -> "was not executed"
-                        command.timedOut -> "timed out"
+                        command.timedOut && command.cleanupConfirmed == false ->
+                            "timed out and process cleanup could not be confirmed: ${command.cleanupDetails ?: "no cleanup diagnostics were provided"}"
+                        command.timedOut ->
+                            "timed out; process cleanup confirmation=${command.cleanupConfirmed ?: "unknown"}: ${command.cleanupDetails ?: "no cleanup diagnostics were provided"}"
+                        command.cleanupConfirmed == false ->
+                            "completed but process cleanup could not be confirmed: ${command.cleanupDetails ?: "no cleanup diagnostics were provided"}"
                         else -> "exited with code ${command.exitCode}"
                     }
                     add("Verification command '${command.command}' $outcome.")
