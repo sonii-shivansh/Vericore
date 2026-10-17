@@ -13,7 +13,11 @@ data class VerificationCommandResult(
     val durationMillis: Long = 0,
     val stdout: String = "",
     val stderr: String = "",
-    val error: String? = null
+    val error: String? = null,
+    /** True only when every process handle observed during cleanup was confirmed stopped. */
+    val cleanupConfirmed: Boolean? = null,
+    /** Sanitized cleanup diagnostics; never includes file contents or environment values. */
+    val cleanupDetails: String? = null
 )
 
 object VerificationCommandExecutor {
@@ -50,12 +54,10 @@ object VerificationCommandExecutor {
             stdoutThread.start()
             stderrThread.start()
             val finished = process.waitFor(timeoutSeconds, TimeUnit.SECONDS)
-            if (!finished) {
-                // A build wrapper can spawn Maven/Gradle and other child processes. Killing
-                // only this shell lets those descendants continue mutating the repository
-                // after verification has returned and its candidate digest was captured.
-                terminateProcessTree(process)
-            }
+            // A build wrapper can spawn nested processes that outlive the command shell.
+            // On timeout, terminate repeatedly observed descendants and record whether all
+            // tracked process handles were confirmed stopped before returning a result.
+            val cleanup = if (finished) null else terminateProcessTree(process)
             stdoutThread.join(5_000)
             stderrThread.join(5_000)
             VerificationCommandResult(
@@ -66,7 +68,16 @@ object VerificationCommandExecutor {
                 durationMillis = elapsedMillis(started),
                 stdout = captured(stdoutThread),
                 stderr = captured(stderrThread),
-                error = if (finished) null else "Verification command timed out after ${timeoutSeconds}s."
+                error = if (finished) null else buildString {
+                    append("Verification command timed out after ${timeoutSeconds}s.")
+                    cleanup?.let {
+                        append(if (it.confirmed) " Process cleanup was confirmed for observed process handles." else " Process cleanup could not be confirmed.")
+                        append(" ")
+                        append(it.details)
+                    }
+                },
+                cleanupConfirmed = cleanup?.confirmed,
+                cleanupDetails = cleanup?.details
             )
         } catch (e: Exception) {
             VerificationCommandResult(
@@ -78,24 +89,95 @@ object VerificationCommandExecutor {
         }
     }
 
-    /** Best-effort termination of the command shell and every descendant it spawned. */
-    private fun terminateProcessTree(process: Process) {
-        val descendants = runCatching {
-            process.toHandle().descendants().use { stream -> stream.toList() }
-        }.getOrDefault(emptyList())
+    private data class CleanupReport(val confirmed: Boolean, val details: String)
 
-        // Stop the shell first: while it remains alive, it can spawn new descendants
-        // after the initial snapshot and escape the captured process list.
-        runCatching { if (process.isAlive) process.destroyForcibly() }
-        runCatching { process.waitFor(5, TimeUnit.SECONDS) }
+    /**
+     * Repeatedly discovers descendants of every still-live observed handle and forcibly
+     * terminates them. This narrows process-spawning races and reports unconfirmed cleanup
+     * instead of silently swallowing errors. Java ProcessHandle is not an OS process-group
+     * boundary: a detached or reparented descendant that was never observed may escape.
+     */
+    private fun terminateProcessTree(process: Process): CleanupReport {
+        val root = process.toHandle()
+        val observed = linkedMapOf<Long, ProcessHandle>()
+        val failures = linkedSetOf<String>()
+        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5)
 
-        // Then terminate the captured descendants, deepest first, and recheck survivors.
-        descendants.asReversed().forEach { descendant ->
-            runCatching { if (descendant.isAlive) descendant.destroyForcibly() }
+        fun observeDescendants() {
+            val pending = java.util.ArrayDeque<ProcessHandle>()
+            pending.addLast(root)
+            observed.values.filter { runCatching { it.isAlive }.getOrDefault(false) }.forEach(pending::addLast)
+            val expanded = mutableSetOf<Long>()
+            while (pending.isNotEmpty()) {
+                val parent = pending.removeFirst()
+                if (!expanded.add(parent.pid())) continue
+                val descendants = try {
+                    parent.descendants().use { stream -> stream.toList() }
+                } catch (e: Exception) {
+                    failures.add("Could not inspect descendants of PID ${parent.pid()} (${e::class.java.simpleName}).")
+                    emptyList()
+                }
+                descendants.forEach { child ->
+                    observed.putIfAbsent(child.pid(), child)
+                    if (runCatching { child.isAlive }.getOrDefault(false) && child.pid() !in expanded) {
+                        pending.addLast(child)
+                    }
+                }
+            }
         }
-        descendants.forEach { descendant ->
-            runCatching { if (descendant.isAlive) descendant.destroyForcibly() }
+
+        fun forceTerminate(handle: ProcessHandle) {
+            try {
+                if (handle.isAlive) handle.destroyForcibly()
+            } catch (e: Exception) {
+                failures.add("Could not request termination of PID ${handle.pid()} (${e::class.java.simpleName}).")
+            }
         }
+
+        observeDescendants()
+        forceTerminate(root)
+        try {
+            process.waitFor(100, TimeUnit.MILLISECONDS)
+        } catch (e: InterruptedException) {
+            Thread.currentThread().interrupt()
+            failures.add("Interrupted while waiting for the command process to stop.")
+        }
+
+        while (System.nanoTime() < deadline) {
+            observeDescendants()
+            // The root is stopped first so it cannot keep replenishing the tree. Every
+            // subsequent pass discovers children of still-live observed descendants too.
+            observed.values.toList().asReversed().forEach(::forceTerminate)
+            forceTerminate(root)
+            val survivors = observed.values.any { runCatching { it.isAlive }.getOrDefault(true) }
+            if (!runCatching { root.isAlive }.getOrDefault(true) && !survivors) break
+            try {
+                Thread.sleep(50)
+            } catch (e: InterruptedException) {
+                Thread.currentThread().interrupt()
+                failures.add("Interrupted while confirming process cleanup.")
+                break
+            }
+        }
+
+        observeDescendants()
+        val livePids = (observed.values.filter { runCatching { it.isAlive }.getOrDefault(true) }.map { it.pid() } +
+            listOfNotNull(if (runCatching { root.isAlive }.getOrDefault(true)) root.pid() else null))
+            .distinct()
+            .sorted()
+        val confirmed = livePids.isEmpty() && failures.isEmpty() && !runCatching { root.isAlive }.getOrDefault(true)
+        val limitation = "Java ProcessHandle enumeration is best-effort and does not contain detached or never-observed descendants."
+        val details = if (confirmed) {
+            "Termination was confirmed for the command process and every process handle observed during repeated enumeration. $limitation"
+        } else {
+            buildString {
+                append("Termination could not be confirmed within the cleanup window. ")
+                if (livePids.isNotEmpty()) append("Process IDs still observed alive: ${livePids.joinToString(", ")}. ")
+                if (failures.isNotEmpty()) append("Cleanup diagnostics: ${failures.joinToString(" ")} ")
+                append(limitation)
+            }
+        }
+        return CleanupReport(confirmed, details)
     }
 
     private data class ValidatedRepositoryBuildCommand(
