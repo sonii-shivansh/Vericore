@@ -199,11 +199,12 @@ Zero false passes on a defined critical regression suite may be a gate; it is no
 
 | ID | Work | Status | Evidence | Next action |
 |---|---|---|---|---|
-| B0 | Source/docs/tree reconnaissance + master plan | IMPLEMENTED | Plan committed on this branch; public source/docs inspected 2026-10-17 | Clean build/test still needs execution in a build-capable environment |
-| B1 | Select requirement-to-evidence gap | IMPLEMENTED | Traced `VerifyCommand`: `REVIEW_REQUIRED` reasons and criterion detail were not emitted in the normal console summary; `NOT_EVALUATED` could be less visible than intended | Keep verification result semantics unchanged; improve transparency |
-| B2 | Add regression cases for summary rendering | IMPLEMENTED | `VerificationConsoleSummaryTest.kt` added for missing specification and mixed per-criterion statuses | Run Gradle tests and fix any issues |
-| B3 | Implement focused verification summary | IMPLEMENTED | `VerificationConsoleSummary.kt`; full and contract-only verify now write criterion summary to stderr and expose non-pass reasons | Review compatibility and exact CLI behavior |
-| B4 | Validate, update docs and open PR | IN_PROGRESS | Candidate SHA `52f0f6e632b8e8a61f3ca86c2cc3a725b9381640` has 14/14 reported GitHub Actions runs succeed (Phase 0/1, live output, E2E, VCORE validations, docs parity and PR checks) | PR remains open and unmerged pending review; rerun/inspect CI for the exact HEAD after any new commit before merge or release |
+| B0 | Source/docs/tree reconnaissance + master plan | IMPLEMENTED | Master plan merged with PR #311; repository source/docs inspected 2026-10-17 | Full Gradle clean test/installDist passed in GitHub Actions for PR candidate `e7f4115468994beffa9f080d16cb786febae9d8c`; no local Gradle run |
+| B1 | Select requirement-to-evidence gap | IMPLEMENTED | Traced `VerifyCommand`: `REVIEW_REQUIRED` reasons and criterion detail were not emitted in the normal console summary; `NOT_EVALUATED` could be less visible than intended | Verification verdict and exit semantics preserved |
+| B2 | Add regression cases for summary | IMPLEMENTED | `VerificationConsoleSummaryTest.kt` covers missing specifications and mixed per-criterion statuses | Phase 0 Foundation and Phase 1 Regression workflows passed on PR candidate `e7f4115468994beffa9f080d16cb786febae9d8c` |
+| B3 | Implement criterion-level console summary | MERGED | `VerificationConsoleSummary.kt`; full and contract-only verify print criterion summaries and non-pass reasons; merged to main at `d0f7900378f2169936796f40a542ec584e35d92b` | All 14 reported PR workflows passed for the reviewed head before merge |
+| B4 | Verify merge and baseline CI | IMPLEMENTED | PR #311 merged to `main` as `d0f7900378f2169936796f40a542ec584e35d92b` | PR head had 14/14 GitHub Actions runs successful; post-merge release readiness not claimed |
+| B5 | Emit evaluator benchmark execution report | IN_PROGRESS | Branch `feature/evaluator-benchmark-report`; test emits per-vector outcomes and candidate/fixture metadata; schema + audit/workflow artifact wiring added | Await exact-head Phase 0 and release-audit validation; no local Gradle run |
 
 Update each row only with verified facts. Keep this file current.
 
