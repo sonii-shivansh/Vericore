@@ -199,11 +199,11 @@ Zero false passes on a defined critical regression suite may be a gate; it is no
 
 | ID | Work | Status | Evidence | Next action |
 |---|---|---|---|---|
-| B0 | Source/docs/tree reconnaissance + master plan | IN_PROGRESS | Public source/docs inspected 2026-10-17; full clean build not run at plan authoring | Commit plan, run baseline when environment permits |
-| B1 | Select requirement-to-evidence gap | PLANNED | Pending exact HEAD + tests | Trace one criterion end-to-end |
-| B2 | Add regression cases | PLANNED | Pending | Execute tests; separate catalogue from runs |
-| B3 | Implement focused fix | PLANNED | Pending | Preserve fail-closed semantics |
-| B4 | Validate, update docs and open PR | PLANNED | Pending | Do not claim release until exact gates pass |
+| B0 | Source/docs/tree reconnaissance + master plan | IMPLEMENTED | Plan committed on this branch; public source/docs inspected 2026-10-17 | Clean build/test still needs execution in a build-capable environment |
+| B1 | Select requirement-to-evidence gap | IMPLEMENTED | Traced `VerifyCommand`: `REVIEW_REQUIRED` reasons and criterion detail were not emitted in the normal console summary; `NOT_EVALUATED` could be less visible than intended | Keep verification result semantics unchanged; improve transparency |
+| B2 | Add regression cases for summary rendering | IMPLEMENTED | `VerificationConsoleSummaryTest.kt` added for missing specification and mixed per-criterion statuses | Run Gradle tests and fix any issues |
+| B3 | Implement focused verification summary | IMPLEMENTED | `VerificationConsoleSummary.kt`; full and contract-only verify now write criterion summary to stderr and expose non-pass reasons | Review compatibility and exact CLI behavior |
+| B4 | Validate, update docs and open PR | IN_PROGRESS | CLI output contract and Unreleased changelog updated; validation has not been run locally | Run CI for exact candidate and respond to failures before merge/release |
 
 Update each row only with verified facts. Keep this file current.
 
