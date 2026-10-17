@@ -212,7 +212,10 @@ fun Application.configureRateLimiting() {
     if (!config.rateLimit.enabled) return
     val limiter = com.vericore.server.RateLimiter(config.rateLimit.requestsPerMinute, config.rateLimit.requestsPerHour)
     intercept(ApplicationCallPipeline.Call) {
-        val clientId = call.request.header("x-api-key")?.let { "key:${it.hashCode()}" } ?: "ip:${call.request.local.remoteHost}"
+        // X-API-Key is caller-controlled and is not authenticated by this server. Do not let
+        // arbitrary header values create fresh rate-limit buckets; key the limiter to the
+        // direct connection peer instead. Forwarded headers are intentionally not trusted.
+        val clientId = "ip:${call.request.local.remoteHost}"
         if (!limiter.checkLimit(clientId)) {
             val retryAfter = limiter.getSecondsUntilReset(clientId)
             call.response.headers.append("Retry-After", retryAfter.toString())
