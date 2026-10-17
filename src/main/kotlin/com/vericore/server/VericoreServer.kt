@@ -48,8 +48,9 @@ fun Application.module() {
     configureRateLimiting()
 
     routing {
-        get("/reports/{reportId}.html") {
-            val reportFile = resolveGeneratedReport(call.parameters["reportId"])
+        get("/reports/{filename}") {
+            val reportId = call.parameters["filename"]?.takeIf { it.endsWith(".html") }?.removeSuffix(".html")
+            val reportFile = resolveGeneratedReport(reportId)
                 ?: return@get call.respond(io.ktor.http.HttpStatusCode.NotFound, ApiError("Report not found"))
             call.respondFile(reportFile)
         }
@@ -263,3 +264,4 @@ fun Application.configureRateLimiting() {
         proceed()
     }
 }
+
