@@ -291,6 +291,120 @@
       ],
       "citations": [],
       "expectedStatus": "FAIL"
+    },
+    {
+      "id": "bound-command-zero-exit-passes",
+      "classification": "command-success-guard",
+      "criterionKind": "REQUIRED_EVIDENCE",
+      "criterion": "Declared unit-test command succeeds",
+      "bindingCriterionId": "required-evidence-001",
+      "boundEvidenceIds": [
+        "verification-command-001"
+      ],
+      "availableEvidenceIds": [
+        "verification-command-001"
+      ],
+      "citations": [],
+      "bindingRule": "ALL_BOUND_COMMANDS_SUCCEEDED",
+      "commandResults": [
+        {
+          "command": "./gradlew test",
+          "executed": true,
+          "exitCode": 0,
+          "timedOut": false
+        }
+      ],
+      "expectedStatus": "PASS"
+    },
+    {
+      "id": "bound-command-nonzero-exit-fails",
+      "classification": "false-acceptance-guard",
+      "criterionKind": "REQUIRED_EVIDENCE",
+      "criterion": "Declared unit-test command succeeds",
+      "bindingCriterionId": "required-evidence-001",
+      "boundEvidenceIds": [
+        "verification-command-001"
+      ],
+      "availableEvidenceIds": [
+        "verification-command-001"
+      ],
+      "citations": [],
+      "bindingRule": "ALL_BOUND_COMMANDS_SUCCEEDED",
+      "commandResults": [
+        {
+          "command": "./gradlew test",
+          "executed": true,
+          "exitCode": 1,
+          "timedOut": false
+        }
+      ],
+      "expectedStatus": "FAIL"
+    },
+    {
+      "id": "bound-command-timeout-is-inconclusive",
+      "classification": "fail-closed-guard",
+      "criterionKind": "REQUIRED_EVIDENCE",
+      "criterion": "Declared unit-test command succeeds",
+      "bindingCriterionId": "required-evidence-001",
+      "boundEvidenceIds": [
+        "verification-command-001"
+      ],
+      "availableEvidenceIds": [
+        "verification-command-001"
+      ],
+      "citations": [],
+      "bindingRule": "ALL_BOUND_COMMANDS_SUCCEEDED",
+      "commandResults": [
+        {
+          "command": "./gradlew test",
+          "executed": true,
+          "timedOut": true
+        }
+      ],
+      "expectedStatus": "INCONCLUSIVE"
+    },
+    {
+      "id": "bound-command-without-result-is-not-evaluated",
+      "classification": "fail-closed-guard",
+      "criterionKind": "REQUIRED_EVIDENCE",
+      "criterion": "Declared unit-test command succeeds",
+      "bindingCriterionId": "required-evidence-001",
+      "boundEvidenceIds": [
+        "verification-command-001"
+      ],
+      "availableEvidenceIds": [
+        "verification-command-001"
+      ],
+      "citations": [],
+      "bindingRule": "ALL_BOUND_COMMANDS_SUCCEEDED",
+      "currentCandidateEvidenceAvailable": false,
+      "commandResults": [],
+      "expectedStatus": "NOT_EVALUATED"
+    },
+    {
+      "id": "contract-only-metric-does-not-reuse-stale-citation",
+      "classification": "false-acceptance-guard",
+      "criterionKind": "ACCEPTANCE_CRITERION",
+      "criterion": "metric:repo.metrics.files>=3",
+      "bindingCriterionId": "acceptance-criterion-001",
+      "boundEvidenceIds": [
+        "repo.metrics"
+      ],
+      "availableEvidenceIds": [
+        "repo.metrics"
+      ],
+      "citations": [
+        {
+          "id": "repo.metrics",
+          "type": "repository-metrics",
+          "detail": "stale prepared metric",
+          "metrics": {
+            "files": "500"
+          }
+        }
+      ],
+      "currentCandidateEvidenceAvailable": false,
+      "expectedStatus": "NOT_EVALUATED"
     }
   ]
 }
