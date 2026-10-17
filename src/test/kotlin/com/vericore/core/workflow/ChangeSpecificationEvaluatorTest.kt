@@ -69,6 +69,32 @@ class ChangeSpecificationEvaluatorTest {
     )
 
     @Test
+    fun `command evidence IDs follow the same order as execution results`() {
+        val firstId = VerificationEvidenceIds.command(1)
+        val secondId = VerificationEvidenceIds.command(2)
+        val specification = ChangeSpecification(
+            requiredEvidence = listOf("Maven test command succeeds", "Maven package command succeeds"),
+            evidenceBindings = listOf(
+                CriterionEvidenceBinding("required-evidence-001", listOf(firstId), CriterionEvidenceRule.ALL_BOUND_COMMANDS_SUCCEEDED),
+                CriterionEvidenceBinding("required-evidence-002", listOf(secondId), CriterionEvidenceRule.ALL_BOUND_COMMANDS_SUCCEEDED)
+            )
+        )
+        val evaluation = ChangeSpecificationEvaluator.evaluate(
+            specification,
+            availableEvidenceIds = setOf(firstId, secondId),
+            commandResults = listOf(
+                VerificationCommandResult(command = "./mvn -B test", executed = true, exitCode = 0),
+                VerificationCommandResult(command = "./mvn -B package -DskipTests", executed = true, exitCode = 1)
+            )
+        )!!
+
+        assertEquals(
+            listOf(CriterionEvaluationStatus.PASS, CriterionEvaluationStatus.FAIL),
+            evaluation.criteria.map { it.status }
+        )
+    }
+
+    @Test
     fun `required evidence passes when its bound command exits zero`() {
         val id = VerificationEvidenceIds.command(1)
         val evaluation = ChangeSpecificationEvaluator.evaluate(

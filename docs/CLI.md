@@ -462,7 +462,7 @@ vericore plan "add payment validation" --evidence output/grounded-evidence.json 
 | `--protect-invariant <text>` | none | Declare an invariant that must remain true. Repeatable. |
 | `--acceptance-criterion <text>` | none | Declare an observable acceptance criterion. Repeatable. |
 | `--required-evidence <text>` | none | Declare evidence that must be supplied or reviewed. Repeatable. |
-| `--criterion-evidence <criterion-id>=<evidence-id>` | none | Bind a stable criterion ID to a prepared evidence citation ID or a declared `verification-command-NNN` ID derived from the canonical sorted verification-command list. Repeatable. |
+| `--criterion-evidence <criterion-id>=<evidence-id>` | none | Bind a stable criterion ID to a prepared evidence citation ID or a declared `verification-command-NNN` ID based on the 1-based position in the persisted verification-command list, in the exact order commands execute. Repeatable. |
 | `--criterion-evidence-rule <criterion-id>=<rule>` | none | Set a rule for a bound criterion. `ALL_BOUND_COMMANDS_SUCCEEDED` is supported only for `required-evidence` criteria bound to `verification-command-NNN` IDs; it proves command exit status only. |
 
 The plan preserves these declarations in its structured `specification` object. They are bound to the contract fingerprint when prepared. Recording a criterion does not mean Vericore has automatically proven it.

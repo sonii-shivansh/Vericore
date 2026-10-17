@@ -60,7 +60,10 @@ class EngineeringPlannerTest {
                 )
             )
             assertEquals(specification, plan.specification)
-            assertTrue(plan.verificationCommands.isNotEmpty())
+            assertEquals(2, plan.verificationCommands.size)
+            // Evidence IDs are positional in the persisted execution list, not a separately sorted list.
+            assertTrue(plan.verificationCommands[0].contains("-B test"))
+            assertTrue(plan.verificationCommands[1].contains("-B package"))
             assertEquals(
                 listOf(VerificationEvidenceIds.command(1)),
                 plan.specification.evidenceBindings.single().evidenceIds
