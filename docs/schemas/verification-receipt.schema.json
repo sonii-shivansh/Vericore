@@ -151,6 +151,20 @@
                   "string",
                   "null"
                 ]
+              },
+              "cleanupConfirmed": {
+                "type": [
+                  "boolean",
+                  "null"
+                ],
+                "description": "Whether all process handles observed during repeated Java ProcessHandle cleanup were confirmed stopped. Not an OS-level containment guarantee."
+              },
+              "cleanupDetails": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Sanitized cleanup status and limitations; never contains file contents."
               }
             },
             "additionalProperties": false
