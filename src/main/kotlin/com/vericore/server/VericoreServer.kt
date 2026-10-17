@@ -19,7 +19,6 @@ import com.vericore.core.scanner.OptimizedGitAnalyzer
 import com.vericore.core.scanner.RepositoryScanner
 import io.ktor.serialization.kotlinx.json.*
 import io.ktor.server.application.*
-import io.ktor.server.http.content.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
@@ -49,7 +48,12 @@ fun Application.module() {
     configureRateLimiting()
 
     routing {
-        staticFiles("/reports", File("output"))
+        get("/reports/{filename}") {
+            val reportId = call.parameters["filename"]?.takeIf { it.endsWith(".html") }?.removeSuffix(".html")
+            val reportFile = resolveGeneratedReport(reportId)
+                ?: return@get call.respond(io.ktor.http.HttpStatusCode.NotFound, ApiError("Report not found"))
+            call.respondFile(reportFile)
+        }
         get("/") { call.respondText("Vericore API is running. 🚀") }
         get("/health") { call.respond(mapOf("status" to "healthy", "version" to Version.current)) }
         get("/health/live") { call.respond(mapOf("status" to "live")) }
@@ -65,7 +69,8 @@ fun Application.module() {
                 val (graph, parsedFiles, _) = AnalysisLogic.analyze(path, config)
                 val enrichedFiles = OptimizedGitAnalyzer().analyze(path, parsedFiles)
                 val reportId = UUID.randomUUID().toString()
-                val reportFile = File(path, "output/$reportId.html").apply { parentFile.mkdirs() }
+                val reportDirectory = File("output").apply { mkdirs() }.canonicalFile
+                val reportFile = generatedReportFile(reportId, reportDirectory)
                 com.vericore.output.ReportGenerator().generate(graph, reportFile.absolutePath, enrichedFiles, com.vericore.core.generator.LearningPathGenerator().generate(graph))
                 val hotspots = graph.getTopHotspots(5).map { HotspotInfo(File(it.first).name, it.second) }
                 call.respond(AnalysisResponse(parsedFiles.size, hotspots, "/reports/$reportId.html"))
@@ -169,6 +174,27 @@ fun validateRevisionPair(baseRevision: String?, headRevision: String?) {
     listOfNotNull(baseRevision, headRevision).forEach { revision -> require(revision.isNotBlank() && revision.length <= MAX_REVISION_LENGTH) { "Git revision is invalid" } }
 }
 
+private val GENERATED_REPORT_ID_PATTERN = Regex("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
+
+internal fun generatedReportFile(reportId: String, outputDirectory: File = File("output")): File {
+    require(GENERATED_REPORT_ID_PATTERN.matches(reportId)) { "Invalid report identifier" }
+    return File(outputDirectory.canonicalFile, "$reportId.html")
+}
+
+/**
+ * Resolves only generated UUID-named HTML reports under the configured report directory.
+ * Resolve filesystem links explicitly before checking containment; canonicalFile alone is
+ * not sufficient for consistent symlink handling on every supported platform.
+ */
+internal fun resolveGeneratedReport(reportId: String?, outputDirectory: File = File("output")): File? {
+    if (reportId == null || !GENERATED_REPORT_ID_PATTERN.matches(reportId)) return null
+    return runCatching {
+        val root = outputDirectory.toPath().toRealPath()
+        val candidate = generatedReportFile(reportId, root.toFile()).toPath().toRealPath()
+        if (candidate.parent != root || !java.nio.file.Files.isRegularFile(candidate)) null else candidate.toFile()
+    }.getOrNull()
+}
+
 object AnalysisLogic {
     suspend fun analyze(repoPath: String, config: VericoreConfig = ConfigLoader.loadForRepository(repoPath)): Triple<RobustDependencyGraph, List<com.vericore.core.parser.ParsedFile>, CacheManager> {
         val files = RepositoryScanner(config).scan(repoPath)
@@ -239,3 +265,4 @@ fun Application.configureRateLimiting() {
         proceed()
     }
 }
+
