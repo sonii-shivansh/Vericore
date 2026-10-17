@@ -4,55 +4,9 @@
 
 Use this page to find the right place to make a change before editing. Package names and directory descriptions below are based on the current repository tree; the code and tests remain authoritative when behavior is unclear.
 
-## System at a glance
+## Navigate the code
 
-```mermaid
-flowchart TB
-    subgraph Inputs["Inputs and state"]
-        SRC["Java / Kotlin source"]
-        GIT["Git history and working tree"]
-        CFG["Repository configuration"]
-    end
-
-    subgraph Core["Deterministic core"]
-        SCAN["Scanner and parsers"]
-        GRAPH["Dependency graph"]
-        SNAP["Analysis snapshot"]
-        REALITY["Engineering Reality"]
-        INTEL["Impact, architecture, PR and temporal intelligence"]
-        EVIDENCE["Grounded evidence"]
-        PLAN["Read-only planner"]
-        CONTRACT["Persisted Agent Change Contract"]
-        VERIFY["Prepare / verify checks"]
-    end
-
-    subgraph Interfaces["Interfaces and automation"]
-        CLI["CLI"]
-        MCP["Local MCP"]
-        REST["Local REST API"]
-        CI["GitHub Actions"]
-    end
-
-    SRC --> SCAN
-    GIT --> SCAN
-    CFG --> SCAN
-    SCAN --> GRAPH --> SNAP
-    SNAP --> REALITY
-    GIT --> REALITY
-    REALITY --> INTEL --> EVIDENCE
-    EVIDENCE --> PLAN
-    PLAN --> CONTRACT
-    CONTRACT --> VERIFY
-    CLI --> SCAN
-    MCP --> INTEL
-    REST --> INTEL
-    CLI --> VERIFY
-    MCP --> VERIFY
-    CI --> CLI
-    CI --> VERIFY
-```
-
-The diagram is a conceptual guide, not a class-level call graph. It shows the architectural boundary: deterministic repository facts are produced before optional provider-backed reasoning, and the planner does not modify application source.
+For the conceptual data flow and trust boundaries, read [Architecture](ARCHITECTURE.md). This map focuses on repository layout, package ownership, tests, automation, and where to make a change.
 
 ## Top-level directory map
 
@@ -143,20 +97,6 @@ For exact trigger semantics and release policy, consult [Repository Governance](
 - [Implementation Status](IMPLEMENTATION_STATUS.md) — capabilities, limitations and current release/roadmap state.
 - [Release readiness](RELEASE_READINESS_0.9.0.md) — current pre-1.0 candidate tracker.
 - [Artifact Schema Catalog](ARTIFACT_SCHEMA_CATALOG.md) — machine-readable contracts and compatibility notes.
-
-## Why root Markdown files stay at the root
-
-The seven root-level Markdown files have different, standard repository roles:
-
-- `README.md` — public entry point.
-- `CHANGELOG.md` — user-visible version history.
-- `CONTRIBUTING.md` — contribution instructions.
-- `CODE_OF_CONDUCT.md` — community conduct.
-- `SECURITY.md` — vulnerability reporting.
-- `DCO.md` — contribution sign-off policy.
-- `TRADEMARKS.md` — brand-use policy.
-
-These are not duplicate technical manuals. GitHub and common repository tooling expect several of them at the root, so they should remain there. Detailed product, architecture, integration, and engineering documentation belongs under `docs/`, navigated from [Documentation Hub](INDEX.md).
 
 ## Where to make a change
 
