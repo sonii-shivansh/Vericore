@@ -1,6 +1,6 @@
 # Semantic Evidence Graph
 
- > **Status:** Implemented. This is a historical design-and-delivery record for the semantic evidence graph capability, included in the published `v0.8.2` release. The current product roadmap uses different Phase 6 terminology; this document describes a delivered technical capability, not that roadmap phase.
+> **Status:** Implemented. This is a historical design-and-delivery record for the semantic evidence graph capability, included in the published `v0.8.2` release. The current product roadmap uses different Phase 6 terminology; this document describes a delivered technical capability, not that roadmap phase.
 
 ## Goal
 
