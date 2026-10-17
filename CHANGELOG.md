@@ -6,6 +6,26 @@ This file records user-visible changes by release. It follows [Keep a Changelog]
 
 ## [Unreleased]
 
+### Added
+
+- Structured change specifications for required behaviors, forbidden behaviors, protected invariants, acceptance criteria, and required evidence, persisted in the Agent Change Contract and bound to its fingerprint.
+- Criterion-level verification outcomes that distinguish passed, failed, inconclusive, and not-evaluated obligations; deterministic numeric/Boolean metric comparisons use current-candidate evidence.
+- A narrowly scoped `ALL_BOUND_COMMANDS_SUCCEEDED` rule for `requiredEvidence` criteria linked to declared verification commands. This records command execution results only; it does not prove semantic correctness or test coverage.
+
+### Changed
+
+- Verification binds to the candidate repository input state captured at preparation, including relevant tracked, untracked, ignored, and symlink inputs; detected drift fails closed rather than silently replacing the original boundary.
+- CLI output and its documented JSON/human-readable contracts are more consistent across analysis, impact, architecture, planning, and verification workflows.
+- Release certification is based on machine-readable required gates tied to a full candidate commit SHA; a green test subset is not treated as full release certification.
+
+### Fixed
+
+- Terminate verification command descendants when the command times out, reducing the risk of child build processes mutating a repository after verification returns.
+- Align criterion command-evidence IDs with the exact persisted command execution order so evidence is not attributed to the wrong command.
+- Skip stale PR-review comment runs when the source pull request is missing or closed, and retain the stale-head SHA guard.
+- Make REST binding loopback-only by default, require explicit opt-in for non-loopback binding, and prevent unauthenticated `X-API-Key` values from selecting separate rate-limit buckets.
+
+
 ### Fixed
 
 - Ignore the generated root `.vericore.json` settings file during change-scope verification so first-run initialization does not count as an unexpected source edit.
