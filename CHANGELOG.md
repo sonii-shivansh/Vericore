@@ -8,40 +8,31 @@ This file records user-visible changes by release. It follows [Keep a Changelog]
 
 ### Added
 
+- Add a GitHub Actions step summary for `verify` with the overall outcome, changed/unexpected path counts, criterion status counts, and criterion IDs/statuses.
+- Emit a candidate-bound evaluator benchmark JSON report with per-vector expected/observed statuses, elapsed time, fixture digest, and aggregate counts; validate and upload reports in Phase 0 and release-audit workflows.
 - Expand evaluator benchmark vectors to cover declared command success, non-zero exits, timeouts, missing command results, and contract-only stale-evidence handling.
-
-### Added
-
-- Emit a candidate-bound evaluator benchmark JSON report with per-vector expected/observed statuses, elapsed time, fixture digest, and aggregate counts; validate and upload the report in Phase 0 and release-audit workflows.
-
-### Changed
-
-- Verification console output now surfaces criterion-level requirement-evidence statuses and explanations in both full and contract-only modes; missing structured specifications are explicitly reported as not evaluated, and review-required reasons are no longer hidden from the console.
-
-### Added
-
-- Structured change specifications for required behaviors, forbidden behaviors, protected invariants, acceptance criteria, and required evidence, persisted in the Agent Change Contract and bound to its fingerprint.
-- Criterion-level verification outcomes that distinguish passed, failed, inconclusive, and not-evaluated obligations; deterministic numeric/Boolean metric comparisons use current-candidate evidence.
-- A narrowly scoped `ALL_BOUND_COMMANDS_SUCCEEDED` rule for `requiredEvidence` criteria linked to declared verification commands. This records command execution results only; it does not prove semantic correctness or test coverage.
+- Persist structured change specifications for required behaviors, forbidden behaviors, protected invariants, acceptance criteria, and required evidence in the Agent Change Contract, bound to its fingerprint.
+- Report criterion-level outcomes as passed, failed, inconclusive, or not evaluated; deterministic numeric/Boolean metric comparisons use current-candidate evidence.
+- Support a narrowly scoped `ALL_BOUND_COMMANDS_SUCCEEDED` rule for required-evidence criteria linked to declared verification commands. This records command execution outcomes only; it does not prove semantic correctness or test coverage.
 
 ### Changed
 
-- Verification binds to the candidate repository input state captured at preparation, including relevant tracked, untracked, ignored, and symlink inputs; detected drift fails closed rather than silently replacing the original boundary.
-- CLI output and its documented JSON/human-readable contracts are more consistent across analysis, impact, architecture, planning, and verification workflows.
-- Release certification is based on machine-readable required gates tied to a full candidate commit SHA; a green test subset is not treated as full release certification.
+- Verification console output surfaces criterion-level evidence statuses and explanations in full and contract-only modes; missing structured specifications are explicitly not evaluated, and review-required reasons are visible.
+- Verification binds to the candidate repository input state captured at preparation, including relevant tracked, untracked, ignored, and symlink inputs; detected drift fails closed.
+- CLI output and documented JSON/human-readable contracts are more consistent across analysis, impact, architecture, planning, and verification.
+- Release certification uses machine-readable required gates tied to a full candidate commit SHA; a green test subset is not full release certification.
 
 ### Fixed
 
-- Terminate verification command descendants when the command times out, reducing the risk of child build processes mutating a repository after verification returns.
-- Align criterion command-evidence IDs with the exact persisted command execution order so evidence is not attributed to the wrong command.
-- Skip stale PR-review comment runs when the source pull request is missing or closed, and retain the stale-head SHA guard.
+- Terminate verification command descendants on timeout, reducing the risk of child build processes mutating the repository after verification returns.
+- Align criterion command-evidence IDs with persisted command execution order so evidence is not attributed to the wrong command.
+- Skip stale PR-review comment runs when the source PR is missing or closed, and retain the stale-head SHA guard.
 - Make REST binding loopback-only by default, require explicit opt-in for non-loopback binding, and prevent unauthenticated `X-API-Key` values from selecting separate rate-limit buckets.
-- Ignore the generated root `.vericore.json` settings file during change-scope verification so first-run initialization does not count as an unexpected source edit.
-- Reject filesystem roots as REST API allowed roots, even when the server is launched from `/` or a Windows drive root.
-- Report controlled verification and MCP configuration failures as actionable validation errors instead of generic stack traces.
-
-- MCP change-safety and verification tools return an invalid-parameters error when the required plan argument is missing, rather than a generic internal error.
-- Verification results include explicit reasons when no verification command runs or a verification command fails.
+- Ignore the generated root `.vericore.json` settings file during change-scope verification so first-run initialization is not counted as an unexpected source edit.
+- Reject filesystem roots as REST API allowed roots, including when launched from `/` or a Windows drive root.
+- Report controlled verification and MCP configuration failures as actionable validation errors rather than generic stack traces.
+- Return invalid-parameters errors from MCP change-safety and verification tools when required plan arguments are missing.
+- Include explicit reasons when no verification command runs or a verification command fails.
 
 ## [0.9.0] — 2026-10-10
 

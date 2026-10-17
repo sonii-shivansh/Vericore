@@ -7,6 +7,8 @@ on:
       - action.yml
       - docs/GITHUB_ACTION.md
       - scripts/audit/github-action-audit.sh
+      - scripts/action_verification_summary.py
+      - scripts/audit/test_action_verification_summary.py
       - .github/workflows/github-action-audit.yml
   push:
     branches: [main]
@@ -14,6 +16,8 @@ on:
       - action.yml
       - docs/GITHUB_ACTION.md
       - scripts/audit/github-action-audit.sh
+      - scripts/action_verification_summary.py
+      - scripts/audit/test_action_verification_summary.py
       - .github/workflows/github-action-audit.yml
 
 permissions:

@@ -11,6 +11,9 @@ grep -q 'GITHUB_ACTION_PATH' "$action_file"
 grep -q 'Unsupported Vericore command' "$action_file"
 grep -q 'vericore verify --path' "$action_file"
 grep -q 'vericore "$VERICORE_COMMAND" "$VERICORE_PATH"' "$action_file"
+grep -q 'action_verification_summary.py' "$action_file"
+grep -q 'GITHUB_STEP_SUMMARY' scripts/action_verification_summary.py
+python3 scripts/audit/test_action_verification_summary.py
 bash -n "$installer"
 grep -q 'SHA256SUMS' "$installer"
 grep -q 'api.github.com/repos/sonii-shivansh/Vericore/releases/latest' "$installer"

@@ -90,6 +90,14 @@ Additional command arguments can be supplied with args:
     args: --contract-only
 ~~~
 
+## Verification step summary
+
+When `command: verify` runs, the action writes a concise GitHub Actions step summary with the overall outcome, changed/unexpected path counts, criterion status counts, and criterion IDs/statuses. It deliberately omits arbitrary criterion statements and free-form reasons from the summary to reduce Markdown-injection and sensitive-output risks; use the verification logs and JSON report for detailed reasons.
+
+If the JSON report or Python 3 is unavailable, the action emits a warning and preserves the original Vericore exit status. A caller-supplied `--output` path is respected.
+
+This behavior is present on the current source branch; consumers pinned to the published `v0.9.0` action do not receive it until a new action release is published.
+
 ## Inputs
 
 | Input | Default | Purpose |

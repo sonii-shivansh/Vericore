@@ -45,7 +45,40 @@ runs:
         read -r -a extra_args <<< "$VERICORE_ARGS"
         case "$VERICORE_COMMAND" in
           verify)
+            report_path="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/vericore-verification-${GITHUB_RUN_ID:-local}.json"
+            has_output=false
+            expect_output_value=false
+            for arg in "${extra_args[@]}"; do
+              if [[ "$expect_output_value" == true ]]; then
+                report_path="$arg"
+                expect_output_value=false
+                continue
+              fi
+              case "$arg" in
+                --output)
+                  has_output=true
+                  expect_output_value=true
+                  ;;
+                --output=*)
+                  report_path="${arg#--output=}"
+                  has_output=true
+                  ;;
+              esac
+            done
+            if [[ "$has_output" != true ]]; then
+              extra_args+=(--output "$report_path")
+            fi
+            set +e
             vericore verify --path "$VERICORE_PATH" "${extra_args[@]}"
+            verify_status=$?
+            set -e
+            if command -v python3 >/dev/null 2>&1; then
+              python3 "$GITHUB_ACTION_PATH/scripts/action_verification_summary.py" "$report_path" "$VERICORE_PATH" ||
+                echo "::warning::Could not write Vericore verification step summary."
+            else
+              echo "::warning::Python 3 is unavailable; Vericore verification ran without a step summary."
+            fi
+            exit "$verify_status"
             ;;
           analyze|pr-intelligence|architecture-contract)
             vericore "$VERICORE_COMMAND" "$VERICORE_PATH" "${extra_args[@]}"
