@@ -53,9 +53,8 @@ def render_summary(report: dict[str, Any]) -> str:
         criteria = evaluation.get("criteria", [])
         if not isinstance(criteria, list):
             criteria = []
-        counts = Counter(
-            _status(item.get("status")) for item in criteria if isinstance(item, dict)
-        )
+        criteria = [item for item in criteria if isinstance(item, dict)]
+        counts = Counter(_status(item.get("status")) for item in criteria)
         lines.extend([
             "",
             "### Requirement evidence",
@@ -68,8 +67,6 @@ def render_summary(report: dict[str, Any]) -> str:
         if criteria:
             lines.extend(["", "#### Criterion statuses", ""])
             for item in criteria:
-                if not isinstance(item, dict):
-                    continue
                 lines.append(f"- `{_criterion_id(item.get('id'))}` — `{_status(item.get('status'))}`")
 
     lines.extend([
