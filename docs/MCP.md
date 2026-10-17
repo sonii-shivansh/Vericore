@@ -167,7 +167,7 @@ Use `vericore_recommendations` when an agent needs actionable engineering priori
 }
 ```
 
-The `specification` object is optional. Its lists are caller-authored, validated, preserved in the plan and contract, and included in the contract fingerprint when non-empty. `evidenceBindings` maps stable criterion IDs to evidence IDs already included in the contract. Unknown criterion IDs or evidence IDs fail closed. Bindings default to `MANUAL_REVIEW`; the narrowly scoped `ALL_BOUND_COMMANDS_SUCCEEDED` rule is supported only for `requiredEvidence` criteria and declared `verification-command-NNN` IDs. It proves only that the bound command results executed and exited zero, not that a test covers the requested behavior. The presence of a criterion or evidence link is not proof that Vericore has passed it.
+The `specification` object is optional. Its lists are caller-authored, validated, preserved in the plan and contract, and included in the contract fingerprint when non-empty. `evidenceBindings` maps stable criterion IDs to either prepared evidence-citation IDs or declared `verification-command-NNN` IDs derived from the canonical sorted command list. Unknown criterion IDs or evidence IDs fail closed. Bindings default to `MANUAL_REVIEW`; the narrowly scoped `ALL_BOUND_COMMANDS_SUCCEEDED` rule is supported only for `requiredEvidence` criteria and command IDs. It proves only that the bound command results executed and exited zero, not that a test covers the requested behavior. The presence of a criterion or evidence link is not proof that Vericore has passed it.
 
 Preparation persists repository-scoped artifacts, including:
 

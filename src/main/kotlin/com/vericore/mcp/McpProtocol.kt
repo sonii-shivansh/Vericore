@@ -151,7 +151,7 @@ ${diff.take(12000)}${if (diff.length > 12000) "\n...[diff truncated]" else ""}
             put("requiredEvidence", stringArrayProperty("Evidence that must be supplied or reviewed for acceptance"))
             put("evidenceBindings", buildJsonObject {
                 put("type", JsonPrimitive("array"))
-                put("description", JsonPrimitive("Bind stable criterion IDs to evidence citation IDs already present in the prepared contract. A binding does not itself prove the criterion."))
+                put("description", JsonPrimitive("Bind stable criterion IDs to evidence citation IDs or declared verification-command-NNN IDs. A binding does not itself prove the criterion."))
                 put("maxItems", JsonPrimitive(200))
                 put("items", buildJsonObject {
                     put("type", JsonPrimitive("object"))
