@@ -8,24 +8,16 @@ This file records user-visible changes by release. It follows [Keep a Changelog]
 
 ### Added
 
-- Expand evaluator benchmark vectors to cover declared command success, non-zero exits, timeouts, missing command results, and contract-only stale-evidence handling.
-
-### Added
-
+- Add a GitHub Actions step summary for `verify` with the overall outcome, changed/unexpected path counts, criterion status counts, and criterion IDs/statuses.
 - Emit a candidate-bound evaluator benchmark JSON report with per-vector expected/observed statuses, elapsed time, fixture digest, and aggregate counts; validate and upload the report in Phase 0 and release-audit workflows.
-
-### Changed
-
-- Verification console output now surfaces criterion-level requirement-evidence statuses and explanations in both full and contract-only modes; missing structured specifications are explicitly reported as not evaluated, and review-required reasons are no longer hidden from the console.
-
-### Added
-
+- Expand evaluator benchmark vectors to cover declared command success, non-zero exits, timeouts, missing command results, and contract-only stale-evidence handling.
 - Structured change specifications for required behaviors, forbidden behaviors, protected invariants, acceptance criteria, and required evidence, persisted in the Agent Change Contract and bound to its fingerprint.
 - Criterion-level verification outcomes that distinguish passed, failed, inconclusive, and not-evaluated obligations; deterministic numeric/Boolean metric comparisons use current-candidate evidence.
 - A narrowly scoped `ALL_BOUND_COMMANDS_SUCCEEDED` rule for `requiredEvidence` criteria linked to declared verification commands. This records command execution results only; it does not prove semantic correctness or test coverage.
 
 ### Changed
 
+- Verification console output now surfaces criterion-level requirement-evidence statuses and explanations in both full and contract-only modes; missing structured specifications are explicitly reported as not evaluated, and review-required reasons are no longer hidden from the console.
 - Verification binds to the candidate repository input state captured at preparation, including relevant tracked, untracked, ignored, and symlink inputs; detected drift fails closed rather than silently replacing the original boundary.
 - CLI output and its documented JSON/human-readable contracts are more consistent across analysis, impact, architecture, planning, and verification workflows.
 - Release certification is based on machine-readable required gates tied to a full candidate commit SHA; a green test subset is not treated as full release certification.
@@ -39,9 +31,8 @@ This file records user-visible changes by release. It follows [Keep a Changelog]
 - Ignore the generated root `.vericore.json` settings file during change-scope verification so first-run initialization does not count as an unexpected source edit.
 - Reject filesystem roots as REST API allowed roots, even when the server is launched from `/` or a Windows drive root.
 - Report controlled verification and MCP configuration failures as actionable validation errors instead of generic stack traces.
-
-- MCP change-safety and verification tools return an invalid-parameters error when the required plan argument is missing, rather than a generic internal error.
-- Verification results include explicit reasons when no verification command runs or a verification command fails.
+- Return an invalid-parameters error from MCP change-safety and verification tools when the required plan argument is missing, rather than a generic internal error.
+- Include explicit reasons when no verification command runs or a verification command fails.
 
 ## [0.9.0] — 2026-10-10
 
