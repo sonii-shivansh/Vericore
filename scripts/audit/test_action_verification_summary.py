@@ -66,7 +66,7 @@ class ActionVerificationSummaryTest(unittest.TestCase):
             },
         })
         self.assertNotIn("## injected", summary)
-        self.assertIn("criterion??##?injected", summary)
+        self.assertRegex(summary, r"`criterion\?+injected`")
 
 
 if __name__ == "__main__":
