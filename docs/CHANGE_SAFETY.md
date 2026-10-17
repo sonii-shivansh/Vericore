@@ -176,3 +176,10 @@ AI is optional. The deterministic prepare/verify workflow does not require an ex
 - [Engineering Reality](ENGINEERING_REALITY.md) — repository-state identity
 - [MCP](MCP.md) — agent integration contract
 - [Development](DEVELOPMENT.md) — contribution and validation workflow
+
+
+## Verification timeout cleanup
+
+A verification-command timeout is always a failed verification. Each timed-out command records `cleanupConfirmed` and `cleanupDetails` in the command result, and the verifier includes an explicit reason when cleanup cannot be confirmed. The cleanup routine repeatedly enumerates descendants of the command and of every still-live observed process, requests forced termination, and checks whether tracked process handles have stopped. Inspection or termination errors, a remaining live process, or an interrupted cleanup make confirmation fail closed.
+
+**Platform limitation:** this is best-effort Java `ProcessHandle` cleanup, not a process sandbox or an OS-level process-group/session boundary. A detached process or descendant that escapes/reparents before being observed may not be discoverable; the implementation does not claim to provide Windows Job Object containment. Treat `cleanupConfirmed: true` as confirmation about observed handles only, not proof that no arbitrary process can mutate the repository. A timed-out command remains failed regardless of cleanup confirmation.
