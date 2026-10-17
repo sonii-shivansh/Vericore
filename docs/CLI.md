@@ -618,7 +618,7 @@ Start the local Vericore REST API server.
 ### Syntax
 
 ```bash
-vericore server [--host <host>] [--port <port>]
+vericore server [--host <host>] [--port <port>] [--allow-remote-host]
 ```
 
 ### Example
@@ -631,10 +631,11 @@ vericore server --host 127.0.0.1 --port 8080
 
 | Option | Default | Purpose |
 |---|---|---|
-| `--host`, `-h` | `127.0.0.1` | Bind address. |
+| `--host`, `-h` | `127.0.0.1` | Bind address. Only literal loopback hosts (127.0.0.0/8, `localhost`, `::1`) are allowed without the remote opt-in. |
 | `--port`, `-p` | `8080` | Listening port, 1–65535. |
+| `--allow-remote-host` | off | Explicitly permit non-loopback binding. Prints a security warning; use only behind a trusted authenticated TLS boundary. It does not add authentication or TLS. |
 
-For local use, keep the server on loopback. The application does not provide deployment-grade authentication, authorization, tenant isolation, or TLS.
+For local use, keep the server on loopback. The application does not provide deployment-grade authentication, authorization, tenant isolation, or TLS. Rate limiting uses the direct peer address; it ignores caller-supplied `X-API-Key` headers because those are not authenticated identity.
 
 See [API](API.md) for endpoints.
 
