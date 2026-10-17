@@ -46,11 +46,29 @@ jobs:
               throw new Error('Invalid Git SHA in review artifact');
             }
 
-            const { data: pr } = await github.rest.pulls.get({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              pull_number: prNumber
-            });
+            let pr;
+            try {
+              const response = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber
+              });
+              pr = response.data;
+            } catch (error) {
+              // A workflow_run may finish after the pull request was deleted or became
+              // temporarily unavailable. A missing PR is a stale-result condition, not a
+              // reason to mark the repository's review workflow as failed.
+              if (error.status === 404) {
+                core.info(`Skipping stale Vericore result because pull request #${prNumber} is no longer available.`);
+                return;
+              }
+              throw error;
+            }
+
+            if (pr.state !== 'open') {
+              core.info(`Skipping stale Vericore result because pull request #${prNumber} is closed.`);
+              return;
+            }
 
             if (pr.head.sha !== headSha) {
               core.info('Skipping stale Vericore result because the PR head has changed.');
