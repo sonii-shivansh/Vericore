@@ -1,8 +1,8 @@
 # Vericore v1.0.0 Release Readiness
 
-> **Status: Stabilization baseline — not yet certified for release.**
+> **Status: Certification gate — results are specific to an exact candidate SHA.**
 >
-> This document defines the exit gate for the first stable Vericore 1.0.0 release. A checked item means the capability or validation exists; it does **not** by itself certify the final release candidate. Final certification must be performed on the exact release candidate SHA.
+> This document defines the exit gate for the first stable Vericore 1.0.0 release. A checked item means the capability or validation exists; it does **not** by itself certify a candidate. Use the machine-readable release-readiness certificate attached to the relevant Release Audit run to determine whether that exact SHA passed. This Markdown document defines the required gates; it is not a live CI status dashboard.
 
 ## Release strategy
 
@@ -116,4 +116,4 @@ Only after every required gate is green should the project:
 5. publish the GitHub Marketplace Action against the stable release;
 6. run the final post-publication verification.
 
-As of 2026-10-11, `v0.9.0` is the latest published release. Commits after its tag are unreleased development work until a new exact-SHA release certification and publication completes.
+As of 2026-10-17, `v0.9.0` remains the latest published release. The `1.0.0` release process must use the machine-readable certificate generated for the exact candidate SHA: publication is allowed only when every required gate is successful, `overallReady: true`, and the official tag-triggered release workflow also passes its version, packaging, checksum, and publication checks. Later commits are new candidates and require their own certification.

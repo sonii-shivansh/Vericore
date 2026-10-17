@@ -39,7 +39,7 @@ class ReleaseReadinessTests(unittest.TestCase):
             "--output",
             str(output),
             "--version",
-            "0.9.0",
+            "1.0.0",
             "--sha",
             sha,
             "--ref",
