@@ -95,6 +95,7 @@ def main(argv: list[str]) -> int:
             raise ValueError("report root must be a JSON object")
         markdown = render_summary(report)
     except (OSError, json.JSONDecodeError, ValueError):
+        print("::warning::Vericore verification JSON report was not available to render.", file=sys.stderr)
         markdown = (
             "## Vericore verification\n\n"
             "The verification JSON report was not available to render. "
