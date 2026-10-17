@@ -260,7 +260,7 @@
             },
             "evidenceBindings": {
               "type": "array",
-              "description": "Optional references from stable criterion IDs to evidence citation IDs already included in the prepared contract. A binding does not prove the criterion.",
+              "description": "Optional references from stable criterion IDs to prepared evidence citation IDs or declared verification-command-NNN IDs. A binding does not prove the criterion.",
               "maxItems": 200,
               "items": {
                 "type": "object",
