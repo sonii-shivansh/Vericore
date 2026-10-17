@@ -168,7 +168,7 @@ Keep the allowed-root set as narrow as practical.
 
 ## Rate limiting
 
-Rate limiting is enabled by default and is applied at the HTTP application boundary. The response includes `Retry-After`, `X-RateLimit-Limit`, and `X-RateLimit-Remaining` headers when the limiter is active. Buckets are keyed by the direct connection peer address; a caller-supplied `X-API-Key` header is not authentication and cannot select a different bucket. Behind a reverse proxy, callers may share the proxy's address because forwarded headers are not trusted by this server.
+Rate limiting is enabled by default and is applied at the HTTP application boundary. The response includes `Retry-After`, `X-RateLimit-Limit`, and `X-RateLimit-Remaining` headers when the limiter is active. `Retry-After` accounts for both the minute and hour windows; when both are exhausted, it reports the longer remaining wait. Buckets are keyed by the direct connection peer address; a caller-supplied `X-API-Key` header is not authentication and cannot select a different bucket. Behind a reverse proxy, callers may share the proxy's address because forwarded headers are not trusted by this server.
 
 Example configuration:
 
