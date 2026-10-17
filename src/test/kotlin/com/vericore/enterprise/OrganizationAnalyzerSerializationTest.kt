@@ -22,4 +22,15 @@ class OrganizationAnalyzerSerializationTest {
         assertTrue(encoded.contains("\"file\":\"PaymentService.kt\""))
         assertEquals(result, Json.decodeFromString<RepoResult>(encoded))
     }
+
+    @Test
+    fun `organization error messages do not expose internal exception details`() {
+        val internalPathError = IllegalStateException("Failed to read /home/private/repository/.vericore.json")
+        val invalidConfigError = IllegalArgumentException("Invalid value in /tmp/private/config.json")
+        val fileLimitError = IllegalArgumentException("Repository exceeds the maximum file limit: 5000")
+
+        assertEquals("Repository analysis failed", safeRepositoryAnalysisError(internalPathError))
+        assertEquals("Repository analysis failed", safeRepositoryAnalysisError(invalidConfigError))
+        assertEquals("Repository exceeds the configured maximum file limit", safeRepositoryAnalysisError(fileLimitError))
+    }
 }
