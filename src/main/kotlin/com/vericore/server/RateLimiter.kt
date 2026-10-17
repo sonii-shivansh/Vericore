@@ -59,16 +59,31 @@ class RateLimiter(
         return if (counter != null) maxOf(0, maxRequestsPerHour - counter.counter.get()) else maxRequestsPerHour
     }
 
+    /**
+     * Returns the time until every exhausted rate-limit window has reset.
+     * When both limits are exhausted, the longer wait is authoritative.
+     */
     fun getSecondsUntilReset(clientId: String): Long {
         val now = System.currentTimeMillis()
         val minuteKey = "$clientId:${now / 60_000}"
-        val counter = minuteCounters[minuteKey] ?: return 0L
+        val hourKey = "$clientId:${now / 3_600_000}"
+        val epochSeconds = now / 1000L
 
-        return if (counter.counter.get() >= maxRequestsPerMinute) {
-            60L - ((now / 1000L) % 60L)
+        val minuteCounter = minuteCounters[minuteKey]
+        val minuteReset = if (minuteCounter != null && minuteCounter.counter.get() >= maxRequestsPerMinute) {
+            60L - (epochSeconds % 60L)
         } else {
             0L
         }
+
+        val hourCounter = hourCounters[hourKey]
+        val hourReset = if (hourCounter != null && hourCounter.counter.get() >= maxRequestsPerHour) {
+            3_600L - (epochSeconds % 3_600L)
+        } else {
+            0L
+        }
+
+        return maxOf(minuteReset, hourReset)
     }
 
     private fun cleanup(now: Long) {
