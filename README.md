@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/vericore-icon.svg" alt="Vericore" width="88" height="88">
+  <img src="docs/images/vericore-icon.svg" alt="Vericore" width="84" height="84">
 </p>
 
 <h1 align="center">Vericore</h1>
@@ -9,53 +9,54 @@
 </p>
 
 <p align="center">
-  An open-source, local-first verification layer for AI coding agents.
+  A local-first verification layer for AI-assisted software changes.
 </p>
 
 <p align="center">
   <a href="https://github.com/sonii-shivansh/Vericore/actions/workflows/ci.yml"><img src="https://github.com/sonii-shivansh/Vericore/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
   <a href="https://github.com/sonii-shivansh/Vericore/actions/workflows/release-audit.yml"><img src="https://github.com/sonii-shivansh/Vericore/actions/workflows/release-audit.yml/badge.svg?branch=main" alt="Release Audit"></a>
-  <a href="https://github.com/sonii-shivansh/Vericore/actions/workflows/docs-parity.yml"><img src="https://github.com/sonii-shivansh/Vericore/actions/workflows/docs-parity.yml/badge.svg?branch=main" alt="Documentation Parity"></a>
-  <a href="https://github.com/sonii-shivansh/Vericore/releases"><img src="https://img.shields.io/github/v/release/sonii-shivansh/Vericore" alt="Latest release"></a>
+  <a href="https://img.shields.io/github/v/release/sonii-shivansh/Vericore"><img src="https://img.shields.io/github/v/release/sonii-shivansh/Vericore" alt="Latest release"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-yellow.svg" alt="MIT License"></a>
 </p>
 
-AI coding agents can make large repository changes quickly. The engineering question is whether the final change stayed within the intended scope and whether the evidence used to assess it still describes the same repository state.
+AI coding agents can change many files quickly. The hard part is checking whether a change stayed within its intended boundary—and whether the evidence used to assess it still describes the same repository state.
 
-**Vericore establishes a repository-bound change boundary before an edit, then checks the actual repository state afterward.** It adds deterministic engineering evidence and a repeatable verification step around your existing coding-agent workflow. It is designed to complement agents, tests, and human review—not replace them.
+**Vericore records the intended change boundary before editing, then checks the repository against that original contract afterward.** It adds deterministic repository evidence around your existing AI coding workflow. It complements tests, code review, and your coding agent; it does not replace them.
 
-## How it works
+## See the workflow
 
-```mermaid
-sequenceDiagram
-    actor Dev as Developer
-    participant V as Vericore
-    participant Agent as Coding agent
-    participant Repo as Git repository
-
-    Dev->>V: prepare(intent, planned paths)
-    V->>Repo: inspect source and Git state
-    V-->>Dev: evidence, plan and persisted change contract
-    Dev->>Agent: implement the requested change
-    Agent->>Repo: edit files
-    Dev->>V: verify
-    V->>Repo: inspect current state
-    V-->>Dev: scope and contract verification result
+```text
+Prepare → AI agent changes code → Verify
+   │                                │
+   └── save the original boundary ──┘
+                                    ↓
+                       inspect the actual repository state
 ```
 
-Preparation records the boundary Vericore will later evaluate. Verification uses the original persisted Agent Change Contract rather than silently deriving a replacement from the already-mutated working tree.
+Before the edit, `prepare` records the change contract. After the edit, `verify` evaluates that persisted contract instead of silently inventing a new boundary from the changed working tree.
 
-## Try the workflow
+## Get started
 
-After installing Vericore, run this from the repository you want to analyze:
+Install the latest published release:
+
+**Linux / macOS**
+```bash
+curl -fsSL https://raw.githubusercontent.com/sonii-shivansh/Vericore/main/scripts/install.sh | bash
+```
+
+**Windows PowerShell**
+```powershell
+irm https://raw.githubusercontent.com/sonii-shivansh/Vericore/main/scripts/install.ps1 | iex
+```
+
+Then check the installation and analyze a repository:
 
 ```bash
-vericore init
-vericore scan --path .
-vericore inspect --path .
+vericore doctor
+vericore analyze /path/to/your/repository
 ```
 
-Before asking an AI agent to make a change, prepare the boundary:
+To verify an AI-assisted change, run these commands from the repository you want to change:
 
 ```bash
 vericore prepare "add payment validation" \
@@ -63,69 +64,44 @@ vericore prepare "add payment validation" \
   --planned-path src/main/kotlin/com/example/PaymentService.kt
 ```
 
-Use your normal coding agent to make the edit, then verify the original boundary:
+Now make the change with your usual coding agent, then run:
 
 ```bash
 vericore verify --path .
 ```
 
-Run your project's normal tests and review the diff as well. A Vericore result is evidence about the defined repository/change contract; it is not a proof that a feature is semantically correct.
+Run your project's tests and review the diff too. A Vericore PASS means the defined verification boundary passed; it is **not** proof that the feature is semantically correct.
 
-**First time here?** Follow [Getting Started](docs/GETTING_STARTED.md) for installation, first-run checks, analysis, and the complete prepare → change → verify workflow.
+**New to Vericore?** The [Getting Started guide](docs/GETTING_STARTED.md) walks through installation, repository analysis, and the full workflow.
 
-## Install
+## What it helps with
 
-The latest published release is available on [GitHub Releases](https://github.com/sonii-shivansh/Vericore/releases). Platform archives bundle a Java runtime for normal end-user use.
+- **Understand a repository:** source analysis, dependency relationships, Git signals, and architecture indicators.
+- **Assess a change:** deterministic evidence about changed files, affected components, and risk.
+- **Ground engineering decisions:** repository-bound snapshots, evidence, and plans.
+- **Verify agent changes:** a persisted Agent Change Contract checked after the edit.
+- **Integrate into existing workflows:** local MCP integration and a reusable GitHub Action.
+- **Automate with structured output:** versioned JSON artifacts as well as CLI reports.
 
-**Linux / macOS**
+Vericore currently focuses on **Java and Kotlin repositories**. Its Kotlin parsing is regex-based and has known limitations with complex syntax; it is not a Kotlin compiler front end.
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/sonii-shivansh/Vericore/main/scripts/install.sh | bash
-```
+## Why not just use tests or code review?
 
-**Windows PowerShell**
+Tests tell you whether tested behavior meets expectations. Code review helps people judge design and correctness. Vericore addresses a different, narrower question: **did the repository change remain within the boundary established before the edit, and does the evidence still refer to the intended repository state?**
 
-```powershell
-irm https://raw.githubusercontent.com/sonii-shivansh/Vericore/main/scripts/install.ps1 | iex
-```
+Use all three together. Vericore is not an AI coding agent, does not autonomously modify source code, and does not replace tests or human judgment.
 
-Then validate the local installation:
+## Integrate it
 
-```bash
-vericore doctor
-vericore --version
-```
-
-The installers select the latest **published** release and verify the archive's SHA-256 checksum before installation. Supported packaged targets are Linux x64, Windows x64, macOS x64, and macOS arm64. The main branch can contain unreleased work that is not part of those published archives.
-
-For manual installation, source builds, or troubleshooting, see [Getting Started](docs/GETTING_STARTED.md).
-
-## What Vericore provides
-
-- **Repository understanding:** Java/Kotlin source analysis, dependency graphs, Git signals, and architecture indicators.
-- **Change impact and PR intelligence:** deterministic signals for changed files, affected components, architecture, and risk.
-- **Grounded engineering context:** repository-bound snapshots, evidence, and evidence-backed plans.
-- **Prepare / verify contracts:** planned paths and repository state are persisted before the edit, then checked after the edit.
-- **Agent integration:** a local Model Context Protocol (MCP) server and a reusable GitHub Action.
-- **Machine-readable output:** versioned JSON artifacts for automation alongside human-readable CLI output.
-
-The principle behind these features is simple: **deterministic repository evidence first; optional AI reasoning second.** AI-provider integration is optional and is disabled unless configured.
-
-## Integrate Vericore
-
-### AI-agent workflows
-
-Generate MCP client configuration:
+**AI coding agents (MCP)**
 
 ```bash
 vericore mcp-config
 ```
 
-The local MCP surface exposes repository analysis, engineering context, evidence, planning, preparation, and verification capabilities. See [MCP / AI-agent integration](docs/MCP.md) and [Change Safety](docs/CHANGE_SAFETY.md).
+Start with the [MCP integration guide](docs/MCP.md) and [Change Safety](docs/CHANGE_SAFETY.md).
 
-### GitHub Actions
-
-Vericore can run in a workflow using the published action:
+**GitHub Actions**
 
 ```yaml
 - uses: actions/checkout@v7
@@ -134,36 +110,29 @@ Vericore can run in a workflow using the published action:
     command: analyze
 ```
 
-The action downloads a published platform archive, verifies its SHA-256 checksum, and runs the requested command. The example uses the latest published Vericore action tag at the time of writing. For stricter supply-chain controls, pin third-party actions to a reviewed immutable commit SHA and update it deliberately.
+The action downloads a published archive and verifies its SHA-256 checksum before execution. For stricter supply-chain controls, pin third-party actions to a reviewed immutable commit SHA. See the [GitHub Action guide](docs/GITHUB_ACTION.md).
 
-See [GitHub Action](docs/GITHUB_ACTION.md) for inputs, outputs, security boundaries, and examples.
+## Important boundaries
 
-## Supported scope and honest boundaries
+- A verification PASS is not a correctness proof; run project tests and review the diff.
+- The planner is read-only. An Agent Change Contract defines a verification boundary, not an authorization system.
+- Local REST and MCP are intended for trusted local/internal use. The REST server refuses non-loopback binding unless `--allow-remote-host` is explicitly supplied; that flag does **not** add authentication, authorization, tenant isolation, or deployment-level TLS.
+- Optional provider-backed AI may receive bounded repository-derived context when configured and invoked. Review [Data & Privacy](docs/DATA_PRIVACY.md) before enabling it.
 
-Vericore currently focuses on **Java and Kotlin repositories**. Kotlin parsing is regex-based and has known limitations with complex syntax; it is not a Kotlin compiler front end.
-
-- Vericore analyzes source; it does not autonomously modify source code.
-- The planner is read-only, and an Agent Change Contract is a verification boundary—not an authorization system.
-- A PASS result does not replace unit/integration tests, semantic review, or human judgment.
-- Local REST and MCP are intended for trusted local/internal use. The REST server refuses non-loopback binding unless `--allow-remote-host` is explicitly supplied; that opt-in only acknowledges the risk and does not add authentication, authorization, tenant isolation, or deployment-level TLS.
-- Optional provider-backed AI can receive bounded repository-derived context when configured and invoked. Review [Data & Privacy](docs/DATA_PRIVACY.md) before enabling it.
-
-See the [Support Matrix](docs/SUPPORT_MATRIX.md) and [Implementation Status](docs/IMPLEMENTATION_STATUS.md) for specific capabilities and limitations.
+See the [Support Matrix](docs/SUPPORT_MATRIX.md) for current support and known limitations. The latest published release is listed on [GitHub Releases](https://github.com/sonii-shivansh/Vericore/releases); unreleased `main` changes are not included in published archives.
 
 ## Documentation
 
-| Goal | Start here |
+| I want to… | Go to |
 |---|---|
-| Understand the product | [Why Vericore?](docs/WHY_VERICORE.md) |
-| Install and run your first workflow | [Getting Started](docs/GETTING_STARTED.md) |
-| Find a command's exact syntax and behavior | [CLI Reference](docs/CLI.md) |
-| Understand system design and trust boundaries | [Architecture](docs/ARCHITECTURE.md) |
-| Explore the code and folder layout | [Repository Map](docs/REPOSITORY_MAP.md) |
-| Connect an AI agent | [MCP](docs/MCP.md) |
-| Integrate a REST client | [API](docs/API.md) |
+| Understand the idea and design | [Why Vericore?](docs/WHY_VERICORE.md) |
+| Install and run the full workflow | [Getting Started](docs/GETTING_STARTED.md) |
+| Look up commands and options | [CLI Reference](docs/CLI.md) |
+| Understand architecture and trust boundaries | [Architecture](docs/ARCHITECTURE.md) |
+| Connect an AI agent or REST client | [MCP](docs/MCP.md) · [API](docs/API.md) |
 | Review privacy and data handling | [Data & Privacy](docs/DATA_PRIVACY.md) |
-| Build, test, or contribute | [Development](docs/DEVELOPMENT.md) |
-| Browse every guide and engineering record | [Documentation Hub](docs/INDEX.md) |
+| Build, test, or contribute | [Development](docs/DEVELOPMENT.md) · [Contributing](CONTRIBUTING.md) |
+| Browse advanced references and project records | [Documentation Hub](docs/INDEX.md) |
 
 ## Build from source
 
@@ -176,13 +145,13 @@ cd Vericore
 ./gradlew --no-daemon build installDist
 ```
 
-The installed CLI is under `build/install/vericore/bin/`. GitHub Actions is the authoritative clean-environment validation path used for release certification.
+The CLI is created under `build/install/vericore/bin/`. CI is the authoritative clean-environment validation path for release certification.
 
 ## Contribute
 
-Issues with a small reproduction, precise command output, and repository details (with secrets removed) are especially useful. Start with [Contributing](CONTRIBUTING.md); report security vulnerabilities privately using [Security Policy](SECURITY.md).
+Start with [Contributing](CONTRIBUTING.md). Include a small reproduction, exact command output, and relevant repository details with secrets removed. Report vulnerabilities privately using [Security Policy](SECURITY.md).
 
-If Vericore is useful in your agent workflow, a GitHub star helps other developers discover it. Honest bug reports, reproducible cases, and focused contributions help the project improve.
+If Vericore is useful to you, a GitHub star helps other developers discover it. Focused contributions and reproducible bug reports help us make it better.
 
 ## License
 
