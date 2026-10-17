@@ -180,7 +180,33 @@ class CandidateStateSnapshotterTest {
     }
 
     @Test
-    fun `directory symlinks fail closed instead of omitting linked inputs`() {
+    fun `in-repository directory symlinks include linked file content in the digest`() {
+        withRepository { root ->
+            val target = root.resolve("target/src")
+            Files.createDirectories(target)
+            val input = target.resolve("Config.kt")
+            Files.writeString(input, "const val mode = \"one\"\n")
+            try {
+                Files.createSymbolicLink(root.resolve("linked-directory"), root.resolve("target"))
+            } catch (error: Exception) {
+                assumeTrue(false, "Symbolic links are unavailable on this filesystem: ${error.message}")
+                return@withRepository
+            }
+
+            val before = CandidateStateSnapshotter.captureManifest(root.toFile())
+            Files.writeString(input, "const val mode = \"two\"\n")
+            val after = CandidateStateSnapshotter.captureManifest(root.toFile())
+
+            assertTrue(before.isValid())
+            assertTrue(after.isValid())
+            assertNotEquals(before.digest, after.digest)
+            assertTrue(before.entries.any { it.path == "linked-directory" },
+                "the manifest must represent linked directory inputs")
+        }
+    }
+
+    @Test
+    fun `external directory symlinks fail closed instead of omitting linked inputs`() {
         val externalDirectory = Files.createTempDirectory("vericore-external-directory")
         try {
             Files.writeString(externalDirectory.resolve("config.json"), "{}")
@@ -192,12 +218,33 @@ class CandidateStateSnapshotterTest {
                     return@withRepository
                 }
 
-                kotlin.test.assertFailsWith<IOException> {
+                val error = kotlin.test.assertFailsWith<IOException> {
                     CandidateStateSnapshotter.capture(root.toFile())
                 }
+                assertTrue(error.message.orEmpty().contains("outside the repository"))
             }
         } finally {
             externalDirectory.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `directory symlink cycles fail closed`() {
+        withRepository { root ->
+            val target = root.resolve("target")
+            Files.createDirectories(target.resolve("nested"))
+            Files.writeString(target.resolve("config.json"), "{}")
+            try {
+                Files.createSymbolicLink(root.resolve("linked-directory"), target)
+                Files.createSymbolicLink(target.resolve("nested/back"), target)
+            } catch (error: Exception) {
+                assumeTrue(false, "Symbolic links are unavailable on this filesystem: ${error.message}")
+                return@withRepository
+            }
+
+            kotlin.test.assertFailsWith<IOException> {
+                CandidateStateSnapshotter.capture(root.toFile())
+            }
         }
     }
 
