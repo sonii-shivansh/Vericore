@@ -65,7 +65,7 @@ fun Application.module() {
                 val (graph, parsedFiles, _) = AnalysisLogic.analyze(path, config)
                 val enrichedFiles = OptimizedGitAnalyzer().analyze(path, parsedFiles)
                 val reportId = UUID.randomUUID().toString()
-                val reportFile = File(path, "output/$reportId.html").apply { parentFile.mkdirs() }
+                val reportFile = reportOutputFile(reportId).apply { parentFile.mkdirs() }
                 com.vericore.output.ReportGenerator().generate(graph, reportFile.absolutePath, enrichedFiles, com.vericore.core.generator.LearningPathGenerator().generate(graph))
                 val hotspots = graph.getTopHotspots(5).map { HotspotInfo(File(it.first).name, it.second) }
                 call.respond(AnalysisResponse(parsedFiles.size, hotspots, "/reports/$reportId.html"))
@@ -239,3 +239,7 @@ fun Application.configureRateLimiting() {
         proceed()
     }
 }
+
+
+/** Report files are served from the server process output directory at /reports. */
+internal fun reportOutputFile(reportId: String): File = File("output", "$reportId.html")
