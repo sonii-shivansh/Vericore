@@ -183,14 +183,15 @@ internal fun generatedReportFile(reportId: String, outputDirectory: File = File(
 
 /**
  * Resolves only generated UUID-named HTML reports under the configured report directory.
- * Canonical containment also rejects a UUID-named symlink that points outside the directory.
+ * Resolve filesystem links explicitly before checking containment; canonicalFile alone is
+ * not sufficient for consistent symlink handling on every supported platform.
  */
 internal fun resolveGeneratedReport(reportId: String?, outputDirectory: File = File("output")): File? {
     if (reportId == null || !GENERATED_REPORT_ID_PATTERN.matches(reportId)) return null
     return runCatching {
-        val root = outputDirectory.canonicalFile
-        val candidate = generatedReportFile(reportId, root).canonicalFile
-        if (candidate.parentFile != root || !candidate.isFile) null else candidate
+        val root = outputDirectory.toPath().toRealPath()
+        val candidate = generatedReportFile(reportId, root.toFile()).toPath().toRealPath()
+        if (candidate.parent != root || !java.nio.file.Files.isRegularFile(candidate)) null else candidate.toFile()
     }.getOrNull()
 }
 
