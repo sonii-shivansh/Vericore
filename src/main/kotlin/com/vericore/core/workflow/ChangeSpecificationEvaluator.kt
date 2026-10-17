@@ -98,10 +98,10 @@ object ChangeSpecificationEvaluator {
         }.toMap()
         val criteria = buildList {
             addAll(normalized.requiredBehaviors.withIds("required-behavior", SpecificationCriterionKind.REQUIRED_BEHAVIOR, bindings, availableIds, citationsById, currentCandidateEvidenceAvailable, commandResultsById))
-            addAll(normalized.forbiddenBehaviors.withIds("forbidden-behavior", SpecificationCriterionKind.FORBIDDEN_BEHAVIOR, bindings, availableIds, citationsById, currentCandidateEvidenceAvailable))
-            addAll(normalized.protectedInvariants.withIds("protected-invariant", SpecificationCriterionKind.PROTECTED_INVARIANT, bindings, availableIds, citationsById, currentCandidateEvidenceAvailable))
-            addAll(normalized.acceptanceCriteria.withIds("acceptance-criterion", SpecificationCriterionKind.ACCEPTANCE_CRITERION, bindings, availableIds, citationsById, currentCandidateEvidenceAvailable))
-            addAll(normalized.requiredEvidence.withIds("required-evidence", SpecificationCriterionKind.REQUIRED_EVIDENCE, bindings, availableIds, citationsById, currentCandidateEvidenceAvailable))
+            addAll(normalized.forbiddenBehaviors.withIds("forbidden-behavior", SpecificationCriterionKind.FORBIDDEN_BEHAVIOR, bindings, availableIds, citationsById, currentCandidateEvidenceAvailable, commandResultsById))
+            addAll(normalized.protectedInvariants.withIds("protected-invariant", SpecificationCriterionKind.PROTECTED_INVARIANT, bindings, availableIds, citationsById, currentCandidateEvidenceAvailable, commandResultsById))
+            addAll(normalized.acceptanceCriteria.withIds("acceptance-criterion", SpecificationCriterionKind.ACCEPTANCE_CRITERION, bindings, availableIds, citationsById, currentCandidateEvidenceAvailable, commandResultsById))
+            addAll(normalized.requiredEvidence.withIds("required-evidence", SpecificationCriterionKind.REQUIRED_EVIDENCE, bindings, availableIds, citationsById, currentCandidateEvidenceAvailable, commandResultsById))
         }
         val notEvaluatedCount = criteria.count { it.status == CriterionEvaluationStatus.NOT_EVALUATED }
         val status = when {
