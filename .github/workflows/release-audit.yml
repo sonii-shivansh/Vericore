@@ -28,6 +28,8 @@ jobs:
         uses: actions/setup-java@v6
         with: { java-version: '21', distribution: temurin, cache: gradle }
       - name: Build and test
+        env:
+          GITHUB_SHA: ${{ github.sha }}
         run: |
           chmod +x ./gradlew
           ./gradlew --no-daemon clean test installDist
@@ -48,7 +50,9 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: vericore-phase0-foundation-results
-          path: ${{ runner.temp }}/vericore-phase0-benchmark-results.json
+          path: |
+            ${{ runner.temp }}/vericore-phase0-benchmark-results.json
+            build/reports/vericore-evaluator-benchmark.json
           if-no-files-found: warn
       - name: Resolve application version
         id: version
