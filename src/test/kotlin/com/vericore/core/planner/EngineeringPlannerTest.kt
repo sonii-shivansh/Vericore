@@ -39,7 +39,7 @@ class EngineeringPlannerTest {
     fun `required evidence can bind a canonical verification command ID`() {
         val repo = Files.createTempDirectory("vericore-command-evidence").toFile()
         try {
-            File(repo, "pom.xml").writeText("<project/>\\n")
+            File(repo, "pom.xml").writeText("<project/>")
             val specification = ChangeSpecification(
                 requiredEvidence = listOf("Declared verification commands succeed"),
                 evidenceBindings = listOf(
