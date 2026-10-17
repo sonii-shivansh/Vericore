@@ -13,7 +13,9 @@ The REST API is intended for trusted local/internal use. The application does no
 vericore server --host 127.0.0.1 --port 8080
 ```
 
-Keep the bind address on loopback for local development.
+Loopback binding is enforced by default. A non-loopback bind requires the explicit `--allow-remote-host` option and prints a security warning. This flag is only a deliberate escape hatch; it does not add authentication or TLS. Do not use it on an untrusted network, and place Vericore behind a trusted authenticated TLS boundary before remote access.
+
+
 
 ## CLI
 
@@ -166,7 +168,7 @@ Keep the allowed-root set as narrow as practical.
 
 ## Rate limiting
 
-Rate limiting is enabled by default and is applied at the HTTP application boundary. The response includes `Retry-After`, `X-RateLimit-Limit`, and `X-RateLimit-Remaining` headers when the limiter is active.
+Rate limiting is enabled by default and is applied at the HTTP application boundary. The response includes `Retry-After`, `X-RateLimit-Limit`, and `X-RateLimit-Remaining` headers when the limiter is active. Buckets are keyed by the direct connection peer address; a caller-supplied `X-API-Key` header is not authentication and cannot select a different bucket. Behind a reverse proxy, callers may share the proxy's address because forwarded headers are not trusted by this server.
 
 Example configuration:
 
