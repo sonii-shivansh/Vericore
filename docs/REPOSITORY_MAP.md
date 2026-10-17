@@ -67,7 +67,6 @@ Vericore/
 ├── docs/
 │   ├── schemas/              # Machine-readable artifact contracts
 │   ├── images/               # Documentation and brand assets
-│   └── superpowers/plans/    # Dated historical engineering plans
 ├── gradle/                   # Gradle wrapper files
 ├── scripts/
 │   └── audit/                # Release, CLI, MCP, REST and foundation audit runners
