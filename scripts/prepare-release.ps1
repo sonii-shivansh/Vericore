@@ -1,8 +1,9 @@
 # Vericore local release-preparation helper for Windows.
-# Official 0.9.0 packaging and publishing are performed by .github/workflows/release.yml.
+# Official 1.0.0 packaging and publishing are performed by .github/workflows/release.yml.
+# Run this helper only after the exact 1.0.0 candidate has passed the required release gates.
 
 $ErrorActionPreference = "Stop"
-$ExpectedVersion = "0.9.0"
+$ExpectedVersion = "1.0.0"
 $Root = Split-Path -Parent (Split-Path -Parent $MyInvocation.MyCommand.Path)
 Set-Location $Root
 
