@@ -8,6 +8,8 @@ This file records user-visible changes by release. It follows [Keep a Changelog]
 
 ### Added
 
+- Make evaluator benchmark vectors mirror production freshness defaults: positive/current-evidence cases attest freshness explicitly, while an omitted freshness flag exercises the fail-closed API default.
+
 - Add a GitHub Actions step summary for `verify` with the overall outcome, changed/unexpected path counts, criterion status counts, and criterion IDs/statuses.
 - Emit a candidate-bound evaluator benchmark JSON report with per-vector expected/observed statuses, elapsed time, fixture digest, and aggregate counts; validate and upload reports in Phase 0 and release-audit workflows.
 - Expand evaluator benchmark vectors to cover declared command success, non-zero exits, timeouts, missing command results, and contract-only stale-evidence handling.
