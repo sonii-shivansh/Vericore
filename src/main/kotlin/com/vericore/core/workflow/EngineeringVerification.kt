@@ -25,7 +25,7 @@ data class VerificationExecutionResult(
     val commandsExecuted: Int = commands.count { it.executed },
     val allCommandsExecuted: Boolean = commands.isNotEmpty() && commands.all { it.executed },
     val allCommandsPassed: Boolean = commands.isNotEmpty() && commands.all { it.executed && !it.timedOut && it.exitCode == 0 },
-    val executionComplete: Boolean = commands.isNotEmpty() && commands.all { it.executed }
+    val executionComplete: Boolean = commands.isNotEmpty() && commands.all { it.executed && !it.timedOut && it.exitCode != null }
 )
 
 @Serializable
