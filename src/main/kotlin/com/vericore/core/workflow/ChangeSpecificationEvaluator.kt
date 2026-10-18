@@ -68,7 +68,7 @@ object ChangeSpecificationEvaluator {
         specification: ChangeSpecification,
         availableEvidenceIds: Set<String> = emptySet(),
         evidenceCitations: List<EvidenceCitation> = emptyList(),
-        currentCandidateEvidenceAvailable: Boolean = true,
+        currentCandidateEvidenceAvailable: Boolean = false,
         commandResults: List<VerificationCommandResult> = emptyList()
     ): ChangeSpecificationEvaluation? {
         val normalized = try {
