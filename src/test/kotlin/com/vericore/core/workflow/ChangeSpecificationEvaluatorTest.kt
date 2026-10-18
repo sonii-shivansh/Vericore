@@ -31,8 +31,7 @@ class ChangeSpecificationEvaluatorTest {
                 protectedInvariants = listOf("Keep retries idempotent"),
                 acceptanceCriteria = listOf("Invalid input returns a client error"),
                 requiredEvidence = listOf("Unit test output for invalid input")
-            ),
-            currentCandidateEvidenceAvailable = true
+            )
         )!!
 
         assertEquals(CriterionEvaluationStatus.NOT_EVALUATED, evaluation.status)
@@ -60,8 +59,7 @@ class ChangeSpecificationEvaluatorTest {
                 acceptanceCriteria = listOf("Invalid input returns 400"),
                 evidenceBindings = listOf(CriterionEvidenceBinding("acceptance-criterion-001", listOf("file.1")))
             ),
-            availableEvidenceIds = setOf("file.1"),
-            currentCandidateEvidenceAvailable = true
+            availableEvidenceIds = setOf("file.1")
         )!!
 
         assertEquals(CriterionEvaluationStatus.INCONCLUSIVE, evaluation.status)
@@ -240,8 +238,7 @@ class ChangeSpecificationEvaluatorTest {
             availableEvidenceIds = setOf("file.1", "repo.metrics"),
             evidenceCitations = listOf(
                 EvidenceCitation("repo.metrics", "repository-metrics", detail = "metrics", metrics = mapOf("files" to "5"))
-            ),
-            currentCandidateEvidenceAvailable = true
+            )
         )!!
 
         assertEquals(CriterionEvaluationStatus.FAIL, evaluation.status)
@@ -382,8 +379,7 @@ class ChangeSpecificationEvaluatorTest {
                 acceptanceCriteria = listOf("Invalid input returns 400"),
                 evidenceBindings = listOf(CriterionEvidenceBinding("acceptance-criterion-001", listOf("missing.evidence")))
             ),
-            availableEvidenceIds = setOf("file.1"),
-            currentCandidateEvidenceAvailable = true
+            availableEvidenceIds = setOf("file.1")
         )!!
 
         assertEquals(CriterionEvaluationStatus.FAIL, evaluation.status)
@@ -401,8 +397,7 @@ class ChangeSpecificationEvaluatorTest {
             availableEvidenceIds = setOf("repo.metrics"),
             evidenceCitations = listOf(
                 EvidenceCitation("repo.metrics", "repository-metrics", detail = "metrics", metrics = mapOf("files" to "5"))
-            ),
-            currentCandidateEvidenceAvailable = true
+            )
         )!!
 
         assertEquals(CriterionEvaluationStatus.FAIL, evaluation.status)
@@ -412,8 +407,7 @@ class ChangeSpecificationEvaluatorTest {
     @Test
     fun `malformed persisted specification fails closed`() {
         val evaluation = ChangeSpecificationEvaluator.evaluate(
-            ChangeSpecification(requiredBehaviors = listOf("   ")),
-            currentCandidateEvidenceAvailable = true
+            ChangeSpecification(requiredBehaviors = listOf("   "))
         )!!
 
         assertEquals(CriterionEvaluationStatus.FAIL, evaluation.status)
@@ -425,8 +419,7 @@ class ChangeSpecificationEvaluatorTest {
     @Test
     fun `empty specification does not change legacy verification behavior`() {
         assertNull(ChangeSpecificationEvaluator.evaluate(
-            ChangeSpecification(),
-            currentCandidateEvidenceAvailable = true
+            ChangeSpecification()
         ))
     }
 
@@ -437,8 +430,7 @@ class ChangeSpecificationEvaluatorTest {
             acceptanceCriteria = listOf("A")
         )
         val first = ChangeSpecificationEvaluator.evaluate(
-            spec,
-            currentCandidateEvidenceAvailable = true
+            spec
         )!!
         val second = ChangeSpecificationEvaluator.evaluate(
             spec,
