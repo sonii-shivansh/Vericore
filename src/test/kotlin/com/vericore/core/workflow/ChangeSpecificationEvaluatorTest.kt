@@ -31,9 +31,9 @@ class ChangeSpecificationEvaluatorTest {
                 protectedInvariants = listOf("Keep retries idempotent"),
                 acceptanceCriteria = listOf("Invalid input returns a client error"),
                 requiredEvidence = listOf("Unit test output for invalid input")
-            )
-        ,
-            currentCandidateEvidenceAvailable = true)!!
+            ),
+            currentCandidateEvidenceAvailable = true
+        )!!
 
         assertEquals(CriterionEvaluationStatus.NOT_EVALUATED, evaluation.status)
         assertEquals(5, evaluation.criteria.size)
@@ -60,9 +60,9 @@ class ChangeSpecificationEvaluatorTest {
                 acceptanceCriteria = listOf("Invalid input returns 400"),
                 evidenceBindings = listOf(CriterionEvidenceBinding("acceptance-criterion-001", listOf("file.1")))
             ),
-            availableEvidenceIds = setOf("file.1")
-        ,
-            currentCandidateEvidenceAvailable = true)!!
+            availableEvidenceIds = setOf("file.1"),
+            currentCandidateEvidenceAvailable = true
+        )!!
 
         assertEquals(CriterionEvaluationStatus.INCONCLUSIVE, evaluation.status)
         assertEquals(CriterionEvaluationStatus.INCONCLUSIVE, evaluation.criteria.single().status)
@@ -93,9 +93,9 @@ class ChangeSpecificationEvaluatorTest {
             commandResults = listOf(
                 VerificationCommandResult(command = "./mvn -B test", executed = true, exitCode = 0),
                 VerificationCommandResult(command = "./mvn -B package -DskipTests", executed = true, exitCode = 1)
-            )
-        ,
-            currentCandidateEvidenceAvailable = true)!!
+            ),
+            currentCandidateEvidenceAvailable = true
+        )!!
 
         assertEquals(
             listOf(CriterionEvaluationStatus.PASS, CriterionEvaluationStatus.FAIL),
@@ -109,9 +109,9 @@ class ChangeSpecificationEvaluatorTest {
         val evaluation = ChangeSpecificationEvaluator.evaluate(
             commandEvidenceSpecification(),
             availableEvidenceIds = setOf(id),
-            commandResults = listOf(VerificationCommandResult(command = "./gradlew test", executed = true, exitCode = 0))
-        ,
-            currentCandidateEvidenceAvailable = true)!!
+            commandResults = listOf(VerificationCommandResult(command = "./gradlew test", executed = true, exitCode = 0)),
+            currentCandidateEvidenceAvailable = true
+        )!!
         assertEquals(CriterionEvaluationStatus.PASS, evaluation.status)
         assertEquals(CriterionEvaluationStatus.PASS, evaluation.criteria.single().status)
         assertTrue(evaluation.criteria.single().reason.contains("command success only"))
@@ -123,9 +123,9 @@ class ChangeSpecificationEvaluatorTest {
         val evaluation = ChangeSpecificationEvaluator.evaluate(
             commandEvidenceSpecification(),
             availableEvidenceIds = setOf(id),
-            commandResults = listOf(VerificationCommandResult(command = "./gradlew test", executed = true, exitCode = 1))
-        ,
-            currentCandidateEvidenceAvailable = true)!!
+            commandResults = listOf(VerificationCommandResult(command = "./gradlew test", executed = true, exitCode = 1)),
+            currentCandidateEvidenceAvailable = true
+        )!!
         assertEquals(CriterionEvaluationStatus.FAIL, evaluation.status)
         assertEquals(CriterionEvaluationStatus.FAIL, evaluation.criteria.single().status)
     }
@@ -136,9 +136,9 @@ class ChangeSpecificationEvaluatorTest {
         val evaluation = ChangeSpecificationEvaluator.evaluate(
             commandEvidenceSpecification(),
             availableEvidenceIds = setOf(id),
-            commandResults = listOf(VerificationCommandResult(command = "./gradlew test", executed = true, timedOut = true))
-        ,
-            currentCandidateEvidenceAvailable = true)!!
+            commandResults = listOf(VerificationCommandResult(command = "./gradlew test", executed = true, timedOut = true)),
+            currentCandidateEvidenceAvailable = true
+        )!!
         assertEquals(CriterionEvaluationStatus.INCONCLUSIVE, evaluation.status)
         assertEquals(CriterionEvaluationStatus.INCONCLUSIVE, evaluation.criteria.single().status)
     }
@@ -201,9 +201,9 @@ class ChangeSpecificationEvaluatorTest {
             availableEvidenceIds = setOf("repo.metrics"),
             evidenceCitations = listOf(
                 EvidenceCitation("repo.metrics", "repository-metrics", detail = "metrics", metrics = mapOf("files" to "5"))
-            )
-        ,
-            currentCandidateEvidenceAvailable = true)!!
+            ),
+            currentCandidateEvidenceAvailable = true
+        )!!
 
         assertEquals(CriterionEvaluationStatus.PASS, evaluation.status)
         assertEquals(CriterionEvaluationStatus.PASS, evaluation.criteria.single().status)
@@ -222,9 +222,9 @@ class ChangeSpecificationEvaluatorTest {
             availableEvidenceIds = setOf("repo.metrics"),
             evidenceCitations = listOf(
                 EvidenceCitation("repo.metrics", "repository-metrics", detail = "metrics", metrics = mapOf("files" to "5"))
-            )
-        ,
-            currentCandidateEvidenceAvailable = true)!!
+            ),
+            currentCandidateEvidenceAvailable = true
+        )!!
 
         assertEquals(CriterionEvaluationStatus.FAIL, evaluation.status)
         assertEquals(CriterionEvaluationStatus.FAIL, evaluation.criteria.single().status)
@@ -240,9 +240,9 @@ class ChangeSpecificationEvaluatorTest {
             availableEvidenceIds = setOf("file.1", "repo.metrics"),
             evidenceCitations = listOf(
                 EvidenceCitation("repo.metrics", "repository-metrics", detail = "metrics", metrics = mapOf("files" to "5"))
-            )
-        ,
-            currentCandidateEvidenceAvailable = true)!!
+            ),
+            currentCandidateEvidenceAvailable = true
+        )!!
 
         assertEquals(CriterionEvaluationStatus.FAIL, evaluation.status)
         assertTrue(evaluation.criteria.single().reason.contains("not bound"))
@@ -258,9 +258,9 @@ class ChangeSpecificationEvaluatorTest {
             availableEvidenceIds = setOf("repo.metrics"),
             evidenceCitations = listOf(
                 EvidenceCitation("repo.metrics", "repository-metrics", detail = "metrics", metrics = mapOf("nodes" to "5"))
-            )
-        ,
-            currentCandidateEvidenceAvailable = true)!!
+            ),
+            currentCandidateEvidenceAvailable = true
+        )!!
 
         assertEquals(CriterionEvaluationStatus.FAIL, evaluation.status)
         assertTrue(evaluation.criteria.single().reason.contains("absent"))
@@ -313,9 +313,9 @@ class ChangeSpecificationEvaluatorTest {
             availableEvidenceIds = setOf("architecture.summary"),
             evidenceCitations = listOf(
                 EvidenceCitation("architecture.summary", "architecture-summary", detail = "no cycles", metrics = mapOf("cycles" to "false"))
-            )
-        ,
-            currentCandidateEvidenceAvailable = true)!!
+            ),
+            currentCandidateEvidenceAvailable = true
+        )!!
 
         assertEquals(CriterionEvaluationStatus.PASS, evaluation.status)
         assertEquals(CriterionEvaluationStatus.PASS, evaluation.criteria.single().status)
@@ -331,9 +331,9 @@ class ChangeSpecificationEvaluatorTest {
             availableEvidenceIds = setOf("architecture.summary"),
             evidenceCitations = listOf(
                 EvidenceCitation("architecture.summary", "architecture-summary", detail = "cycles exist", metrics = mapOf("cycles" to "true"))
-            )
-        ,
-            currentCandidateEvidenceAvailable = true)!!
+            ),
+            currentCandidateEvidenceAvailable = true
+        )!!
 
         assertEquals(CriterionEvaluationStatus.FAIL, evaluation.status)
         assertEquals(CriterionEvaluationStatus.FAIL, evaluation.criteria.single().status)
@@ -349,9 +349,9 @@ class ChangeSpecificationEvaluatorTest {
             availableEvidenceIds = setOf("architecture.summary"),
             evidenceCitations = listOf(
                 EvidenceCitation("architecture.summary", "architecture-summary", detail = "cycles exist", metrics = mapOf("cycles" to "true"))
-            )
-        ,
-            currentCandidateEvidenceAvailable = true)!!
+            ),
+            currentCandidateEvidenceAvailable = true
+        )!!
 
         assertEquals(CriterionEvaluationStatus.FAIL, evaluation.status)
         assertTrue(evaluation.criteria.single().reason.contains("supports only == and !="))
@@ -367,9 +367,9 @@ class ChangeSpecificationEvaluatorTest {
             availableEvidenceIds = setOf("architecture.summary"),
             evidenceCitations = listOf(
                 EvidenceCitation("architecture.summary", "architecture-summary", detail = "invalid metric", metrics = mapOf("cycles" to "sometimes"))
-            )
-        ,
-            currentCandidateEvidenceAvailable = true)!!
+            ),
+            currentCandidateEvidenceAvailable = true
+        )!!
 
         assertEquals(CriterionEvaluationStatus.FAIL, evaluation.status)
         assertTrue(evaluation.criteria.single().reason.contains("not a boolean"))
@@ -382,9 +382,9 @@ class ChangeSpecificationEvaluatorTest {
                 acceptanceCriteria = listOf("Invalid input returns 400"),
                 evidenceBindings = listOf(CriterionEvidenceBinding("acceptance-criterion-001", listOf("missing.evidence")))
             ),
-            availableEvidenceIds = setOf("file.1")
-        ,
-            currentCandidateEvidenceAvailable = true)!!
+            availableEvidenceIds = setOf("file.1"),
+            currentCandidateEvidenceAvailable = true
+        )!!
 
         assertEquals(CriterionEvaluationStatus.FAIL, evaluation.status)
         assertEquals(CriterionEvaluationStatus.FAIL, evaluation.criteria.single().status)
@@ -401,9 +401,9 @@ class ChangeSpecificationEvaluatorTest {
             availableEvidenceIds = setOf("repo.metrics"),
             evidenceCitations = listOf(
                 EvidenceCitation("repo.metrics", "repository-metrics", detail = "metrics", metrics = mapOf("files" to "5"))
-            )
-        ,
-            currentCandidateEvidenceAvailable = true)!!
+            ),
+            currentCandidateEvidenceAvailable = true
+        )!!
 
         assertEquals(CriterionEvaluationStatus.FAIL, evaluation.status)
         assertTrue(evaluation.criteria.single().reason.contains("Malformed metric criterion"))
@@ -412,9 +412,9 @@ class ChangeSpecificationEvaluatorTest {
     @Test
     fun `malformed persisted specification fails closed`() {
         val evaluation = ChangeSpecificationEvaluator.evaluate(
-            ChangeSpecification(requiredBehaviors = listOf("   "))
-        ,
-            currentCandidateEvidenceAvailable = true)!!
+            ChangeSpecification(requiredBehaviors = listOf("   ")),
+            currentCandidateEvidenceAvailable = true
+        )!!
 
         assertEquals(CriterionEvaluationStatus.FAIL, evaluation.status)
         assertEquals(1, evaluation.evaluatedCount)
@@ -424,8 +424,10 @@ class ChangeSpecificationEvaluatorTest {
 
     @Test
     fun `empty specification does not change legacy verification behavior`() {
-        assertNull(ChangeSpecificationEvaluator.evaluate(ChangeSpecification(),
-            currentCandidateEvidenceAvailable = true))
+        assertNull(ChangeSpecificationEvaluator.evaluate(
+            ChangeSpecification(),
+            currentCandidateEvidenceAvailable = true
+        ))
     }
 
     @Test
@@ -434,10 +436,14 @@ class ChangeSpecificationEvaluatorTest {
             requiredBehaviors = listOf("One", "Two"),
             acceptanceCriteria = listOf("A")
         )
-        val first = ChangeSpecificationEvaluator.evaluate(spec,
-            currentCandidateEvidenceAvailable = true)!!
-        val second = ChangeSpecificationEvaluator.evaluate(spec,
-            currentCandidateEvidenceAvailable = true)!!
+        val first = ChangeSpecificationEvaluator.evaluate(
+            spec,
+            currentCandidateEvidenceAvailable = true
+        )!!
+        val second = ChangeSpecificationEvaluator.evaluate(
+            spec,
+            currentCandidateEvidenceAvailable = true
+        )!!
 
         assertEquals(first, second)
     }
