@@ -151,6 +151,25 @@ class ChangeSpecificationEvaluatorTest {
     }
 
     @Test
+    fun `stale command results cannot pass when current candidate evidence is unavailable`() {
+        val id = VerificationEvidenceIds.command(1)
+        val evaluation = ChangeSpecificationEvaluator.evaluate(
+            commandEvidenceSpecification(),
+            availableEvidenceIds = setOf(id),
+            currentCandidateEvidenceAvailable = false,
+            // Even if a caller accidentally supplies a prior successful result, it is not
+            // evidence for the current candidate and must not be accepted.
+            commandResults = listOf(VerificationCommandResult(command = "./gradlew test", executed = true, exitCode = 0))
+        )!!
+
+        assertEquals(CriterionEvaluationStatus.NOT_EVALUATED, evaluation.status)
+        assertEquals(CriterionEvaluationStatus.NOT_EVALUATED, evaluation.criteria.single().status)
+        assertTrue(evaluation.criteria.single().reason.contains("rather than relying on stale command outcomes"))
+        assertEquals(0, evaluation.evaluatedCount)
+        assertEquals(1, evaluation.notEvaluatedCount)
+    }
+
+    @Test
     fun `numeric metric criterion passes when current candidate meets threshold`() {
         val evaluation = ChangeSpecificationEvaluator.evaluate(
             ChangeSpecification(
