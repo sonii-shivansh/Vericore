@@ -17,6 +17,7 @@ This file records user-visible changes by release. It follows [Keep a Changelog]
 
 ### Changed
 
+- Refuse to pass required-evidence command criteria when current-candidate evidence is unavailable, even if a caller supplies a previously successful command result; add a false-acceptance regression vector.
 - Verification console output surfaces criterion-level evidence statuses and explanations in full and contract-only modes; missing structured specifications are explicitly not evaluated, and review-required reasons are visible.
 - Verification binds to the candidate repository input state captured at preparation, including relevant tracked, untracked, ignored, and symlink inputs; detected drift fails closed.
 - CLI output and documented JSON/human-readable contracts are more consistent across analysis, impact, architecture, planning, and verification.
