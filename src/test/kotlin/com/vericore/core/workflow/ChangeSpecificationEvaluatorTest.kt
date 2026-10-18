@@ -475,7 +475,7 @@ class ChangeSpecificationEvaluatorTest {
                 ?.let(CriterionEvidenceRule::valueOf)
                 ?: CriterionEvidenceRule.MANUAL_REVIEW
             val currentCandidateEvidenceAvailable =
-                case["currentCandidateEvidenceAvailable"]?.jsonPrimitive?.content?.toBoolean() ?: true
+                case["currentCandidateEvidenceAvailable"]?.jsonPrimitive?.content?.toBoolean()
             val commandResults = case["commandResults"]?.jsonArray?.map { resultElement ->
                 val result = resultElement.jsonObject
                 VerificationCommandResult(
@@ -501,13 +501,23 @@ class ChangeSpecificationEvaluatorTest {
                 requiredEvidence = if (criterionKind == "REQUIRED_EVIDENCE") listOf(criterion) else emptyList(),
                 evidenceBindings = listOf(CriterionEvidenceBinding(bindingId, boundIds, bindingRule))
             )
-            val evaluation = ChangeSpecificationEvaluator.evaluate(
-                specification,
-                availableEvidenceIds = availableIds.toSet(),
-                evidenceCitations = citations,
-                currentCandidateEvidenceAvailable = currentCandidateEvidenceAvailable,
-                commandResults = commandResults
-            )!!
+            val evaluation = if (currentCandidateEvidenceAvailable == null) {
+                // Deliberately omit the freshness flag so this vector exercises the evaluator's real API default.
+                ChangeSpecificationEvaluator.evaluate(
+                    specification,
+                    availableEvidenceIds = availableIds.toSet(),
+                    evidenceCitations = citations,
+                    commandResults = commandResults
+                )!!
+            } else {
+                ChangeSpecificationEvaluator.evaluate(
+                    specification,
+                    availableEvidenceIds = availableIds.toSet(),
+                    evidenceCitations = citations,
+                    currentCandidateEvidenceAvailable = currentCandidateEvidenceAvailable,
+                    commandResults = commandResults
+                )!!
+            }
             val expectedStatus = case.getValue("expectedStatus").jsonPrimitive.content
             val observedStatus = evaluation.criteria.single().status.name
             outcomes += Outcome(
