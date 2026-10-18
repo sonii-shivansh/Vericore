@@ -405,6 +405,31 @@
       ],
       "currentCandidateEvidenceAvailable": false,
       "expectedStatus": "NOT_EVALUATED"
+    },
+    {
+      "id": "stale-successful-command-result-is-not-current-evidence",
+      "classification": "false-acceptance-guard",
+      "criterionKind": "REQUIRED_EVIDENCE",
+      "criterion": "Declared unit-test command succeeds",
+      "bindingCriterionId": "required-evidence-001",
+      "boundEvidenceIds": [
+        "verification-command-001"
+      ],
+      "availableEvidenceIds": [
+        "verification-command-001"
+      ],
+      "bindingRule": "ALL_BOUND_COMMANDS_SUCCEEDED",
+      "currentCandidateEvidenceAvailable": false,
+      "commandResults": [
+        {
+          "command": "./gradlew test",
+          "executed": true,
+          "exitCode": 0,
+          "timedOut": false
+        }
+      ],
+      "citations": [],
+      "expectedStatus": "NOT_EVALUATED"
     }
   ]
 }
