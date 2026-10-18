@@ -165,13 +165,16 @@
           "minimum": 0
         },
         "allCommandsExecuted": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "True when every declared command process was started; does not imply completion or success."
         },
         "allCommandsPassed": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "True only when every declared command started, did not time out, and exited with code 0."
         },
         "executionComplete": {
-          "type": "boolean"
+          "type": "boolean",
+          "description": "True when at least one command was declared and every command started, did not time out, and produced an exit code. A non-zero exit code is complete execution, but not a pass."
         }
       },
       "additionalProperties": false
