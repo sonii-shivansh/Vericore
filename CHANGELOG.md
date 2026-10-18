@@ -30,6 +30,7 @@ This file records user-visible changes by release. It follows [Keep a Changelog]
 ### Fixed
 
 - Terminate verification command descendants on timeout, reducing the risk of child build processes mutating the repository after verification returns.
+- Report `executionComplete = false` when a verification command times out or lacks an exit code, while preserving the separate `allCommandsExecuted` signal for commands that were started.
 - Align criterion command-evidence IDs with persisted command execution order so evidence is not attributed to the wrong command.
 - Skip stale PR-review comment runs when the source PR is missing or closed, and retain the stale-head SHA guard.
 - Make REST binding loopback-only by default, require explicit opt-in for non-loopback binding, and prevent unauthenticated `X-API-Key` values from selecting separate rate-limit buckets.
