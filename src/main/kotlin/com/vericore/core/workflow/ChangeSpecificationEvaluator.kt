@@ -138,7 +138,7 @@ object ChangeSpecificationEvaluator {
         val commandEvaluation = if (binding != null && missingEvidence.isEmpty() &&
             binding.rule == CriterionEvidenceRule.ALL_BOUND_COMMANDS_SUCCEEDED
         ) {
-            evaluateBoundCommands(kind, binding, commandResultsById)
+            evaluateBoundCommands(kind, binding, commandResultsById, currentCandidateEvidenceAvailable)
         } else {
             null
         }
@@ -173,8 +173,13 @@ object ChangeSpecificationEvaluator {
     private fun evaluateBoundCommands(
         kind: SpecificationCriterionKind,
         binding: CriterionEvidenceBinding,
-        commandResultsById: Map<String, VerificationCommandResult>
+        commandResultsById: Map<String, VerificationCommandResult>,
+        currentCandidateEvidenceAvailable: Boolean
     ): Pair<CriterionEvaluationStatus, String> {
+        if (!currentCandidateEvidenceAvailable) {
+            return CriterionEvaluationStatus.NOT_EVALUATED to
+                "Current-candidate command results are unavailable; rerun full verify rather than relying on stale command outcomes."
+        }
         if (kind != SpecificationCriterionKind.REQUIRED_EVIDENCE) {
             return CriterionEvaluationStatus.FAIL to
                 "ALL_BOUND_COMMANDS_SUCCEEDED is only supported for required-evidence criteria."
