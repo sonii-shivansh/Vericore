@@ -28,6 +28,7 @@ This file records user-visible changes by release. It follows [Keep a Changelog]
 - Align criterion command-evidence IDs with persisted command execution order so evidence is not attributed to the wrong command.
 - Skip stale PR-review comment runs when the source PR is missing or closed, and retain the stale-head SHA guard.
 - Make REST binding loopback-only by default, require explicit opt-in for non-loopback binding, and prevent unauthenticated `X-API-Key` values from selecting separate rate-limit buckets.
+- Serve only existing UUID-named HTML reports from the server output directory; resolve symlinks before containment checks to prevent report-path escapes across platforms, and sanitize organization-analysis errors before returning them to API clients.
 - Ignore the generated root `.vericore.json` settings file during change-scope verification so first-run initialization is not counted as an unexpected source edit.
 - Reject filesystem roots as REST API allowed roots, including when launched from `/` or a Windows drive root.
 - Report controlled verification and MCP configuration failures as actionable validation errors rather than generic stack traces.
