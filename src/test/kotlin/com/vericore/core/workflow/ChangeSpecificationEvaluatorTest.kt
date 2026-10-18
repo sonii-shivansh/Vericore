@@ -91,7 +91,8 @@ class ChangeSpecificationEvaluatorTest {
             commandResults = listOf(
                 VerificationCommandResult(command = "./mvn -B test", executed = true, exitCode = 0),
                 VerificationCommandResult(command = "./mvn -B package -DskipTests", executed = true, exitCode = 1)
-            )
+            ),
+            currentCandidateEvidenceAvailable = true
         )!!
 
         assertEquals(
@@ -106,7 +107,8 @@ class ChangeSpecificationEvaluatorTest {
         val evaluation = ChangeSpecificationEvaluator.evaluate(
             commandEvidenceSpecification(),
             availableEvidenceIds = setOf(id),
-            commandResults = listOf(VerificationCommandResult(command = "./gradlew test", executed = true, exitCode = 0))
+            commandResults = listOf(VerificationCommandResult(command = "./gradlew test", executed = true, exitCode = 0)),
+            currentCandidateEvidenceAvailable = true
         )!!
         assertEquals(CriterionEvaluationStatus.PASS, evaluation.status)
         assertEquals(CriterionEvaluationStatus.PASS, evaluation.criteria.single().status)
@@ -119,7 +121,8 @@ class ChangeSpecificationEvaluatorTest {
         val evaluation = ChangeSpecificationEvaluator.evaluate(
             commandEvidenceSpecification(),
             availableEvidenceIds = setOf(id),
-            commandResults = listOf(VerificationCommandResult(command = "./gradlew test", executed = true, exitCode = 1))
+            commandResults = listOf(VerificationCommandResult(command = "./gradlew test", executed = true, exitCode = 1)),
+            currentCandidateEvidenceAvailable = true
         )!!
         assertEquals(CriterionEvaluationStatus.FAIL, evaluation.status)
         assertEquals(CriterionEvaluationStatus.FAIL, evaluation.criteria.single().status)
@@ -131,7 +134,8 @@ class ChangeSpecificationEvaluatorTest {
         val evaluation = ChangeSpecificationEvaluator.evaluate(
             commandEvidenceSpecification(),
             availableEvidenceIds = setOf(id),
-            commandResults = listOf(VerificationCommandResult(command = "./gradlew test", executed = true, timedOut = true))
+            commandResults = listOf(VerificationCommandResult(command = "./gradlew test", executed = true, timedOut = true)),
+            currentCandidateEvidenceAvailable = true
         )!!
         assertEquals(CriterionEvaluationStatus.INCONCLUSIVE, evaluation.status)
         assertEquals(CriterionEvaluationStatus.INCONCLUSIVE, evaluation.criteria.single().status)
@@ -170,6 +174,22 @@ class ChangeSpecificationEvaluatorTest {
     }
 
     @Test
+    fun `omitted current candidate evidence flag fails closed for a successful command result`() {
+        val id = VerificationEvidenceIds.command(1)
+        val evaluation = ChangeSpecificationEvaluator.evaluate(
+            commandEvidenceSpecification(),
+            availableEvidenceIds = setOf(id),
+            commandResults = listOf(VerificationCommandResult(command = "./gradlew test", executed = true, exitCode = 0))
+        )!!
+
+        assertEquals(CriterionEvaluationStatus.NOT_EVALUATED, evaluation.status)
+        assertEquals(CriterionEvaluationStatus.NOT_EVALUATED, evaluation.criteria.single().status)
+        assertTrue(evaluation.criteria.single().reason.contains("Current-candidate command results are unavailable"))
+        assertEquals(0, evaluation.evaluatedCount)
+        assertEquals(1, evaluation.notEvaluatedCount)
+    }
+
+    @Test
     fun `numeric metric criterion passes when current candidate meets threshold`() {
         val evaluation = ChangeSpecificationEvaluator.evaluate(
             ChangeSpecification(
@@ -179,7 +199,8 @@ class ChangeSpecificationEvaluatorTest {
             availableEvidenceIds = setOf("repo.metrics"),
             evidenceCitations = listOf(
                 EvidenceCitation("repo.metrics", "repository-metrics", detail = "metrics", metrics = mapOf("files" to "5"))
-            )
+            ),
+            currentCandidateEvidenceAvailable = true
         )!!
 
         assertEquals(CriterionEvaluationStatus.PASS, evaluation.status)
@@ -199,7 +220,8 @@ class ChangeSpecificationEvaluatorTest {
             availableEvidenceIds = setOf("repo.metrics"),
             evidenceCitations = listOf(
                 EvidenceCitation("repo.metrics", "repository-metrics", detail = "metrics", metrics = mapOf("files" to "5"))
-            )
+            ),
+            currentCandidateEvidenceAvailable = true
         )!!
 
         assertEquals(CriterionEvaluationStatus.FAIL, evaluation.status)
@@ -233,7 +255,8 @@ class ChangeSpecificationEvaluatorTest {
             availableEvidenceIds = setOf("repo.metrics"),
             evidenceCitations = listOf(
                 EvidenceCitation("repo.metrics", "repository-metrics", detail = "metrics", metrics = mapOf("nodes" to "5"))
-            )
+            ),
+            currentCandidateEvidenceAvailable = true
         )!!
 
         assertEquals(CriterionEvaluationStatus.FAIL, evaluation.status)
@@ -287,7 +310,8 @@ class ChangeSpecificationEvaluatorTest {
             availableEvidenceIds = setOf("architecture.summary"),
             evidenceCitations = listOf(
                 EvidenceCitation("architecture.summary", "architecture-summary", detail = "no cycles", metrics = mapOf("cycles" to "false"))
-            )
+            ),
+            currentCandidateEvidenceAvailable = true
         )!!
 
         assertEquals(CriterionEvaluationStatus.PASS, evaluation.status)
@@ -304,7 +328,8 @@ class ChangeSpecificationEvaluatorTest {
             availableEvidenceIds = setOf("architecture.summary"),
             evidenceCitations = listOf(
                 EvidenceCitation("architecture.summary", "architecture-summary", detail = "cycles exist", metrics = mapOf("cycles" to "true"))
-            )
+            ),
+            currentCandidateEvidenceAvailable = true
         )!!
 
         assertEquals(CriterionEvaluationStatus.FAIL, evaluation.status)
@@ -321,7 +346,8 @@ class ChangeSpecificationEvaluatorTest {
             availableEvidenceIds = setOf("architecture.summary"),
             evidenceCitations = listOf(
                 EvidenceCitation("architecture.summary", "architecture-summary", detail = "cycles exist", metrics = mapOf("cycles" to "true"))
-            )
+            ),
+            currentCandidateEvidenceAvailable = true
         )!!
 
         assertEquals(CriterionEvaluationStatus.FAIL, evaluation.status)
@@ -338,7 +364,8 @@ class ChangeSpecificationEvaluatorTest {
             availableEvidenceIds = setOf("architecture.summary"),
             evidenceCitations = listOf(
                 EvidenceCitation("architecture.summary", "architecture-summary", detail = "invalid metric", metrics = mapOf("cycles" to "sometimes"))
-            )
+            ),
+            currentCandidateEvidenceAvailable = true
         )!!
 
         assertEquals(CriterionEvaluationStatus.FAIL, evaluation.status)
@@ -391,7 +418,9 @@ class ChangeSpecificationEvaluatorTest {
 
     @Test
     fun `empty specification does not change legacy verification behavior`() {
-        assertNull(ChangeSpecificationEvaluator.evaluate(ChangeSpecification()))
+        assertNull(ChangeSpecificationEvaluator.evaluate(
+            ChangeSpecification()
+        ))
     }
 
     @Test
@@ -400,8 +429,13 @@ class ChangeSpecificationEvaluatorTest {
             requiredBehaviors = listOf("One", "Two"),
             acceptanceCriteria = listOf("A")
         )
-        val first = ChangeSpecificationEvaluator.evaluate(spec)!!
-        val second = ChangeSpecificationEvaluator.evaluate(spec)!!
+        val first = ChangeSpecificationEvaluator.evaluate(
+            spec
+        )!!
+        val second = ChangeSpecificationEvaluator.evaluate(
+            spec,
+            currentCandidateEvidenceAvailable = true
+        )!!
 
         assertEquals(first, second)
     }
