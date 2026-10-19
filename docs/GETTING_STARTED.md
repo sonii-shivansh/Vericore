@@ -1,211 +1,71 @@
 # Getting Started
 
-> From installation to your first repository analysis and verified AI-assisted change.
+Get from install to your first verified AI-assisted change in a few minutes.
 
-For the product story, start with [Why Vericore?](WHY_VERICORE.md). This page is the practical path.
+## 1. Install Vericore
 
-## 1. Install
-
-### Release archive
-
-Download the published archive from [GitHub Releases](https://github.com/sonii-shivansh/Vericore/releases).
-
-Platform archives bundle a Java runtime:
-
-```text
-Windows:      bin\vericore.bat --version
-Linux/macOS:  ./bin/vericore --version
-```
-
-### One-command installer
-
-**Linux / macOS:**
-
+**Linux / macOS**
 ```bash
 curl -fsSL https://raw.githubusercontent.com/sonii-shivansh/Vericore/main/scripts/install.sh | bash
 ```
 
-**Windows PowerShell:**
-
+**Windows PowerShell**
 ```powershell
 irm https://raw.githubusercontent.com/sonii-shivansh/Vericore/main/scripts/install.ps1 | iex
 ```
 
-The installer downloads the latest published platform archive and verifies its SHA-256 checksum before installation. Supported targets are Linux x64, macOS x64, macOS arm64, and Windows x64. Open a new shell after a PATH update.
+The installer selects the latest published release and checks its SHA-256 checksum. Release archives include a Java runtime.
 
-## 2. Check the installation
-
-Run:
-
+Check that Vericore is ready:
 ```bash
 vericore doctor
+vericore --version
 ```
 
-You do not need to be inside a Git repository for this check.
+## 2. Prepare before your coding agent edits
 
-For a specific repository:
+Open a terminal at the root of the Git repository you want to change. Initialize Vericore once, then record what you want changed and which files the agent is expected to touch:
 
 ```bash
-vericore doctor --path /path/to/repository
-```
-
-Doctor checks the local runtime and configuration, with repository and AI-provider details reported when applicable. Missing AI credentials are warnings because deterministic analysis does not require AI.
-
-## 3. Understand a repository
-
-For a quick repository analysis:
-
-```bash
-vericore analyze /path/to/repository
-```
-
-The default HTML report is written to:
-
-```text
-/path/to/repository/output/index.html
-```
-
-For deeper machine-readable evidence:
-
-```bash
-vericore evidence-graph /path/to/repository --json
-vericore reality /path/to/repository --json
-```
-
-For exact command syntax, options, defaults, outputs, and failure behavior, see the **[CLI Reference](CLI.md)**.
-
-## 4. The complete product journey
-
-Run these commands from the repository you want Vericore to inspect. This sequence uses deterministic repository evidence; AI-provider setup is optional.
-
-```bash
-# Initialize once, then analyze and inspect the repository.
 vericore init --path .
-vericore scan --path .
-vericore inspect --path .
-
-# Ask a grounded question using repository evidence.
-vericore repo-qa "What depends on the main service?" \
-  --path . \
-  --evidence-output output/grounded-evidence.json
-
-# Review the current change and create an evidence-backed plan.
-vericore review --path .
-vericore plan "describe the intended change" \
-  --repository . \
-  --evidence output/grounded-evidence.json \
-  --output output/engineering-plan-preview.json
-
-# Persist the boundary before editing.
-vericore prepare "describe the intended change" \
-  --path . \
-  --planned-path src/main/kotlin/com/example/Service.kt
-
-# Make the change with your normal coding agent, then verify the original contract.
-vericore verify --path .
-
-# Produce a durable HTML engineering report.
-vericore report --path . --output output/engineering-report.html
-```
-
-The plan preview is read-only. `prepare` persists the plan and original Agent Change Contract used by `verify`; do not replace the contract after the edit. Vericore does not autonomously modify source code. Run the repository's normal tests and review the diff as well.
-
-The journey's explanation step is covered by grounded `repo-qa` answers and review's optional evidence-backed AI explanation. There is no separate `vericore explain` command in this release line.
-
-## 5. Safely make an AI-assisted change
-
-This is Vericore's primary verification workflow:
-
-```text
-prepare → AI agent changes code → verify
-```
-
-### Before the edit
-
-Create the repository-bound change contract:
-
-```bash
 vericore prepare "add payment validation" \
-  --path /path/to/repository
-```
-
-For tighter scope, specify planned paths:
-
-```bash
-vericore prepare "add payment validation" \
-  --path /path/to/repository \
+  --path . \
   --planned-path src/main/kotlin/com/example/PaymentService.kt
 ```
 
-### Let the agent change the repository
+Replace the sample summary and path with your task and an expected file in your project.
 
-Use your normal AI coding workflow. Vericore does not autonomously modify source code.
+Preparation creates a plan and an Agent Change Contract from the repository state **before** the edit. Keep the original contract; do not recreate it after the agent has changed the code.
 
-### After the edit
+## 3. Let your agent work, then verify
 
-Run:
+Use your normal coding agent to make the change. Afterwards, run:
 
 ```bash
-vericore verify --path /path/to/repository
+vericore verify --path .
 ```
 
-Verification evaluates the **original persisted Agent Change Contract** rather than silently creating a new boundary from the mutated repository.
+Vericore checks the actual repository against the prepared boundary and writes a verification receipt to `output/verification-receipt.json`. Read the status and reasons, inspect the diff, and run your project's normal tests.
 
-Run the project's normal tests as part of your engineering workflow. A Vericore verification result does not replace tests or human review.
+**Important:** A successful build/test command proves only that the command succeeded. The current evaluator supports defined numeric/Boolean metric checks and narrowly bound command-success evidence; arbitrary natural-language requirements may remain `NOT_EVALUATED` or `INCONCLUSIVE`. A `PASS` is not proof that a feature is semantically correct or that the test suite is adequate.
 
-## 5. Connect an AI agent
+## Connect an AI agent
 
-Generate a client-ready MCP configuration:
+Generate MCP client configuration:
 
 ```bash
 vericore mcp-config
 ```
 
-Or start the local server directly:
+Follow [MCP / AI-agent integration](MCP.md) to connect your chosen client. MCP is a local integration; it does not sandbox the agent or build commands.
 
-```bash
-vericore mcp
-```
+## Need help?
 
-See [MCP](MCP.md) for the canonical tool surface and trust boundary.
+- [Exact commands and options](CLI.md)
+- [How change verification works](CHANGE_SAFETY.md)
+- [Supported languages and known limits](SUPPORT_MATRIX.md)
+- [GitHub Actions integration](GITHUB_ACTION.md)
+- [Data and privacy](DATA_PRIVACY.md)
+- [Development and contribution guide](DEVELOPMENT.md)
 
-## 6. Build Vericore from source
-
-For Vericore development, use **JDK 21+** and Git:
-
-```bash
-git clone https://github.com/sonii-shivansh/Vericore.git
-cd Vericore
-./gradlew --no-daemon clean test
-./gradlew --no-daemon installDist
-```
-
-The installed CLI is:
-
-```text
-build/install/vericore/bin/vericore
-```
-
-Verify it:
-
-```bash
-./build/install/vericore/bin/vericore --version
-./build/install/vericore/bin/vericore --help
-```
-
-## Go deeper
-
-| Goal | Read |
-|---|---|
-| Exact command contract | [CLI Reference](CLI.md) |
-| Understand safe changes | [Change Safety](CHANGE_SAFETY.md) |
-| Understand the system | [Architecture](ARCHITECTURE.md) |
-| Understand repository state | [Engineering Reality](ENGINEERING_REALITY.md) |
-| Integrate an AI agent | [MCP](MCP.md) |
-| Integrate REST | [API](API.md) |
-| Review data handling | [Data & Privacy](DATA_PRIVACY.md) |
-| Contribute code | [Development](DEVELOPMENT.md) |
-
-## Troubleshooting
-
-Start with the exact command and sanitized output. For CI-only failures, inspect the corresponding GitHub Actions job and artifact rather than inferring from a local result.
+Vericore currently focuses on Java and Kotlin repositories. Kotlin parsing is regex-based and has known limitations. Local REST/MCP interfaces are intended for trusted local/internal use, not unauthenticated public hosting.
