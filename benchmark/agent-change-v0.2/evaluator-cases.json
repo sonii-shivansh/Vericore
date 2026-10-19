@@ -486,17 +486,17 @@
         {
           "id": "repo.metrics",
           "type": "repository-metrics",
-          "detail": "first duplicate reports five files",
+          "detail": "first duplicate reports one file",
           "metrics": {
-            "files": "5"
+            "files": "1"
           }
         },
         {
           "id": "repo.metrics",
           "type": "repository-metrics",
-          "detail": "conflicting duplicate reports one file",
+          "detail": "conflicting duplicate reports five files",
           "metrics": {
-            "files": "1"
+            "files": "5"
           }
         }
       ],
