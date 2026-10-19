@@ -6,6 +6,10 @@ This file records user-visible changes by release. It follows [Keep a Changelog]
 
 ## [Unreleased]
 
+_No unreleased changes yet._
+
+## [1.0.0] — 2026-10-20
+
 ### Added
 
 - Make evaluator benchmark vectors mirror production freshness defaults: positive/current-evidence cases attest freshness explicitly, while an omitted freshness flag exercises the fail-closed API default.
