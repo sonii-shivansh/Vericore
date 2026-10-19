@@ -122,4 +122,21 @@ class JUnitXmlReportParserTest {
         val second = JUnitXmlReportParser.parse(report("""<testsuite><testcase name="two"/></testsuite>"""), candidate, candidate, "run")
         assertNotEquals(first.reportSha256, second.reportSha256)
     }
+
+    @Test
+    fun `oversized report is rejected before XML parsing`() {
+        val file = Files.createTempFile("vericore-junit-large-", ".xml").toFile()
+        file.writeBytes(ByteArray(JUnitXmlReportParser.MAX_REPORT_BYTES + 1) { ' '.code.toByte() })
+        file.deleteOnExit()
+        assertFailsWith<IllegalArgumentException> {
+            JUnitXmlReportParser.parse(file, candidate, candidate, "run-large")
+        }
+    }
+
+    @Test
+    fun `unsupported root element is rejected`() {
+        assertFailsWith<IllegalArgumentException> {
+            JUnitXmlReportParser.parse(report("""<not-junit><testcase name="x"/></not-junit>"""), candidate, candidate, "run-root")
+        }
+    }
 }
