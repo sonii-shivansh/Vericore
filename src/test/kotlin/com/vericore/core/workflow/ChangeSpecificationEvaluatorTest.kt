@@ -198,8 +198,8 @@ class ChangeSpecificationEvaluatorTest {
             ),
             availableEvidenceIds = setOf("repo.metrics"),
             evidenceCitations = listOf(
-                EvidenceCitation("repo.metrics", "repository-metrics", detail = "first copy says five files", metrics = mapOf("files" to "5")),
-                EvidenceCitation("repo.metrics", "repository-metrics", detail = "conflicting copy says one file", metrics = mapOf("files" to "1"))
+                EvidenceCitation("repo.metrics", "repository-metrics", detail = "first copy says one file", metrics = mapOf("files" to "1")),
+                EvidenceCitation("repo.metrics", "repository-metrics", detail = "conflicting copy says five files", metrics = mapOf("files" to "5"))
             ),
             currentCandidateEvidenceAvailable = true
         )!!
