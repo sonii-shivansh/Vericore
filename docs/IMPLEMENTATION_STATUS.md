@@ -79,7 +79,7 @@ GitHub Actions is the authoritative automated execution environment for release 
 
 ## Current release line
 
-**v0.9.0** is the latest published Vericore release, published on 2026-10-10 from tag `v0.9.0`. `main` contains post-release follow-up work that is not included in the published v0.9.0 artifacts; each later candidate must be validated and certified on its exact SHA before publication.
+The last confirmed publication record is `v0.9.0`, published on 2026-10-10. Consult the [GitHub Releases page](https://github.com/sonii-shivansh/Vericore/releases) for the current published version. The version in `main` is source state, not proof that an artifact has been published. A new release requires a successful machine-readable readiness certificate and official release workflow for the exact candidate SHA.
 
 ## Current limitations
 
@@ -102,7 +102,7 @@ The master strategic roadmap is documented in [Product Direction](PRODUCT_DIRECT
 
 **Phase 0 — Foundation Freeze & Truth is complete for its documented scope.** Its exit decision, acceptance evidence, and limitations are recorded in [Phase 0 Foundation Checklist](PHASE0_FOUNDATION_CHECKLIST.md) and [Phase 0 Benchmark Baseline](PHASE0_BENCHMARK_BASELINE.md). That closeout does not certify v0.9.0 or v1.0.0.
 
-**Current operational priority: validate post-release fixes and maintain exact-SHA release discipline.** The v0.9.0 publication is complete. Follow-up commits on `main` are unreleased development; they must pass the required gates on the exact candidate SHA before a new patch tag or artifacts are published.
+**Current operational priority: keep source, documentation, and published artifacts aligned.** Treat every candidate as unreleased until its tag and assets exist. Run the required gates on the exact candidate SHA before publication, and re-certify after any subsequent change.
 
 **Current product focus: structured change specification.** The prepare/plan CLI and MCP paths record explicit required behaviors, forbidden behaviors, protected invariants, acceptance criteria, and required evidence, with the specification bound to the plan and contract fingerprint. The deterministic evaluator supports numeric and Boolean metric comparisons against current-candidate evidence, plus the narrow `ALL_BOUND_COMMANDS_SUCCEEDED` rule for required-evidence criteria linked to declared verification commands. This command rule proves exit status only; it does not establish test coverage or semantic correctness. Natural-language obligations without a suitable evaluator remain `NOT_EVALUATED` or `INCONCLUSIVE`; citation presence alone is not proof, and contract-only verification does not rebuild candidate evidence.
 
