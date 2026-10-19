@@ -29,6 +29,8 @@ This file records user-visible changes by release. It follows [Keep a Changelog]
 
 ### Fixed
 
+- Reject metric criteria whose current-candidate evidence contains duplicate citation IDs, rather than selecting one conflicting record by list order.
+
 - Terminate verification command descendants on timeout, reducing the risk of child build processes mutating the repository after verification returns.
 - Report `executionComplete = false` when a verification command times out or lacks an exit code, while preserving the separate `allCommandsExecuted` signal for commands that were started.
 - Align criterion command-evidence IDs with persisted command execution order so evidence is not attributed to the wrong command.
