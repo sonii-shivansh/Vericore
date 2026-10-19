@@ -190,6 +190,26 @@ class ChangeSpecificationEvaluatorTest {
     }
 
     @Test
+    fun `duplicate current-candidate citations cannot make a metric criterion pass`() {
+        val evaluation = ChangeSpecificationEvaluator.evaluate(
+            ChangeSpecification(
+                acceptanceCriteria = listOf("metric:repo.metrics.files>=3"),
+                evidenceBindings = listOf(CriterionEvidenceBinding("acceptance-criterion-001", listOf("repo.metrics")))
+            ),
+            availableEvidenceIds = setOf("repo.metrics"),
+            evidenceCitations = listOf(
+                EvidenceCitation("repo.metrics", "repository-metrics", detail = "first copy says one file", metrics = mapOf("files" to "1")),
+                EvidenceCitation("repo.metrics", "repository-metrics", detail = "conflicting copy says five files", metrics = mapOf("files" to "5"))
+            ),
+            currentCandidateEvidenceAvailable = true
+        )!!
+
+        assertEquals(CriterionEvaluationStatus.FAIL, evaluation.status)
+        assertEquals(CriterionEvaluationStatus.FAIL, evaluation.criteria.single().status)
+        assertTrue(evaluation.criteria.single().reason.contains("appears more than once"))
+    }
+
+    @Test
     fun `numeric metric criterion passes when current candidate meets threshold`() {
         val evaluation = ChangeSpecificationEvaluator.evaluate(
             ChangeSpecification(

@@ -470,6 +470,38 @@
         }
       ],
       "expectedStatus": "NOT_EVALUATED"
+    },
+    {
+      "id": "duplicate-metric-citation-fails",
+      "classification": "false-acceptance-guard",
+      "criterion": "metric:repo.metrics.files>=3",
+      "bindingCriterionId": "acceptance-criterion-001",
+      "boundEvidenceIds": [
+        "repo.metrics"
+      ],
+      "availableEvidenceIds": [
+        "repo.metrics"
+      ],
+      "citations": [
+        {
+          "id": "repo.metrics",
+          "type": "repository-metrics",
+          "detail": "first duplicate reports one file",
+          "metrics": {
+            "files": "1"
+          }
+        },
+        {
+          "id": "repo.metrics",
+          "type": "repository-metrics",
+          "detail": "conflicting duplicate reports five files",
+          "metrics": {
+            "files": "5"
+          }
+        }
+      ],
+      "expectedStatus": "FAIL",
+      "currentCandidateEvidenceAvailable": true
     }
   ]
 }
