@@ -17,12 +17,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: sonii-shivansh/Vericore@v0.9.0
+      - uses: sonii-shivansh/Vericore@v1.0.0
         with:
           command: analyze
 ~~~
 
-The examples below use `v0.9.0`, the latest published Vericore release as of 2026-10-11. Later commits on `main` are not included in the published `v0.9.0` action assets. Update the reference deliberately when a new release is published. For stricter supply-chain controls, pin the action to a reviewed immutable commit SHA.
+The examples target `v1.0.0`. Use that tag only after it appears on the [GitHub Releases page](https://github.com/sonii-shivansh/Vericore/releases); until publication, use the latest available published tag. For stricter supply-chain controls, pin the action to a reviewed immutable commit SHA.
 
 ## PR review automation
 
@@ -66,7 +66,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - uses: sonii-shivansh/Vericore@v0.9.0
+      - uses: sonii-shivansh/Vericore@v1.0.0
         with:
           command: pr-intelligence
           args: --base ${{ github.event.pull_request.base.sha }} --head ${{ github.event.pull_request.head.sha }} --json
@@ -84,7 +84,7 @@ The reusable Action produces `output/pr-intelligence.json`. A separate trusted w
 Additional command arguments can be supplied with args:
 
 ~~~yaml
-- uses: sonii-shivansh/Vericore@v0.9.0
+- uses: sonii-shivansh/Vericore@v1.0.0
   with:
     command: verify
     args: --contract-only
@@ -96,7 +96,7 @@ When `command: verify` runs, the action writes a concise GitHub Actions step sum
 
 If the JSON report or Python 3 is unavailable, the action emits a warning and preserves the original Vericore exit status. A caller-supplied `--output` path is respected.
 
-This behavior is present on the current source branch; consumers pinned to the published `v0.9.0` action do not receive it until a new action release is published.
+This behavior is present in the source branch. Consumers receive it only from the published action tag they choose.
 
 ## Inputs
 
@@ -104,7 +104,7 @@ This behavior is present on the current source branch; consumers pinned to the p
 |---|---|---|
 | command | analyze | Vericore command to execute |
 | path | . | Repository path |
-| version | latest | Published release tag, such as v0.9.0 |
+| version | latest | Published release tag, such as v1.0.0 |
 | args | empty | Additional command arguments |
 
 ## Security and portability
