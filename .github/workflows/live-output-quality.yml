@@ -114,9 +114,11 @@ jobs:
           capture 03-doctor "$CLI" doctor
           capture 04-analyze "$CLI" analyze .
           capture 05-architecture "$CLI" architecture . --json
-          SOURCE_FILE="$(find . -type f -name '*.java' -not -path './build/*' -print -quit)"
+          # Select tracked source files only. Live builds can generate source files
+          # inside nested build/ directories, which are not part of the analyzed graph.
+          SOURCE_FILE="$(git ls-files '*.java' | head -n 1)"
           if [ -z "$SOURCE_FILE" ]; then
-            SOURCE_FILE="$(find . -type f -name '*.kt' -not -path './build/*' -print -quit)"
+            SOURCE_FILE="$(git ls-files '*.kt' | head -n 1)"
           fi
           test -n "$SOURCE_FILE"
           capture 06-impact "$CLI" impact . "$SOURCE_FILE" --json
