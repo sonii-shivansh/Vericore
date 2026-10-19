@@ -107,13 +107,15 @@ The final `v1.0.0` candidate is **not ready** until all applicable items below a
 
 ## Release rule
 
-Only after every required gate is green should the project:
+The release candidate must be prepared **before** final certification. The Gradle version and `Version.current` must already agree on `1.0.0`, and the changelog must describe the intended release. Do not change source, schemas, workflows, version fields, or release documentation after the certificate is generated: any such change creates a new candidate SHA and requires a fresh full audit.
 
-1. update the application version to `1.0.0`;
-2. update release documentation/changelog;
-3. create the immutable `v1.0.0` tag;
-4. build and publish the four supported release artifacts;
-5. publish the GitHub Marketplace Action against the stable release;
-6. run the final post-publication verification.
+The safe sequence is:
 
-As of 2026-10-17, `v0.9.0` remains the latest published release. The `1.0.0` release process must use the machine-readable certificate generated for the exact candidate SHA: publication is allowed only when every required gate is successful, `overallReady: true`, and the official tag-triggered release workflow also passes its version, packaging, checksum, and publication checks. Later commits are new candidates and require their own certification.
+1. Complete and review all candidate code and documentation changes.
+2. Run the full Release Audit on the exact candidate SHA and inspect the machine-readable certificate.
+3. Publish only when `overallReady: true` and all required checks succeed for that exact SHA.
+4. Trigger the official Release workflow for version `1.0.0`. It repeats the audit, validates version alignment, packages the four supported platforms, verifies checksums, and creates the GitHub Release/tag.
+5. Verify the published tag and assets, then complete the separate GitHub Marketplace publication/metadata step if publishing the Action listing. The workflow's GitHub Release publication does not itself prove that the Marketplace listing was published.
+6. Run post-publication verification and record the actual release result.
+
+At the time this checklist was prepared (2026-10-17), `v0.9.0` was the latest published release. That is historical context, not a live status claim. Use the Releases page and the exact-candidate certificate to determine current publication state. Later commits are new candidates and require their own certification.
