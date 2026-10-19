@@ -10,6 +10,8 @@ import kotlin.test.assertTrue
 
 class JUnitXmlReportParserTest {
     private val candidate = "0123456789abcdef0123456789abcdef01234567"
+    private val stateDigest = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+    private val differentStateDigest = "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210"
 
     private fun report(xml: String): File {
         val file = Files.createTempFile("vericore-junit-", ".xml").toFile()
@@ -27,7 +29,7 @@ class JUnitXmlReportParserTest {
             </testsuite></testsuites>"""
         )
 
-        val evidence = JUnitXmlReportParser.parse(file, candidate, candidate, "run-42")
+        val evidence = JUnitXmlReportParser.parse(file, candidate, candidate, stateDigest, stateDigest, "run-42")
 
         assertEquals(JUnitReportStatus.ALL_PASSED, evidence.status)
         assertEquals(2, evidence.tests)
@@ -35,6 +37,7 @@ class JUnitXmlReportParserTest {
         assertEquals(0, evidence.failed)
         assertEquals(0, evidence.skipped)
         assertEquals(candidate, evidence.candidateSha)
+        assertEquals(stateDigest, evidence.candidateStateDigest)
         assertEquals("run-42", evidence.executionId)
         assertTrue(evidence.reportSha256.matches(Regex("^[0-9a-f]{64}$")))
         assertEquals(JUnitXmlReportParser.PARSER_VERSION, evidence.parserVersion)
@@ -50,7 +53,7 @@ class JUnitXmlReportParserTest {
             </testsuite>"""
         )
 
-        val evidence = JUnitXmlReportParser.parse(file, candidate, candidate, "run-43")
+        val evidence = JUnitXmlReportParser.parse(file, candidate, candidate, stateDigest, stateDigest, "run-43")
 
         assertEquals(JUnitReportStatus.FAILED, evidence.status)
         assertEquals(1, evidence.passed)
@@ -66,18 +69,18 @@ class JUnitXmlReportParserTest {
 
         assertEquals(
             JUnitReportStatus.SKIPPED_ONLY,
-            JUnitXmlReportParser.parse(skipped, candidate, candidate, "run-skip").status
+            JUnitXmlReportParser.parse(skipped, candidate, candidate, stateDigest, stateDigest, "run-skip").status
         )
         assertEquals(
             JUnitReportStatus.INCOMPLETE,
-            JUnitXmlReportParser.parse(mixed, candidate, candidate, "run-mixed").status
+            JUnitXmlReportParser.parse(mixed, candidate, candidate, stateDigest, stateDigest, "run-mixed").status
         )
     }
 
     @Test
     fun `empty report is explicit no tests rather than a pass`() {
         val file = report("""<testsuite tests="0"/>""")
-        val evidence = JUnitXmlReportParser.parse(file, candidate, candidate, "run-empty")
+        val evidence = JUnitXmlReportParser.parse(file, candidate, candidate, stateDigest, stateDigest, "run-empty")
         assertEquals(JUnitReportStatus.NO_TESTS, evidence.status)
         assertEquals(0, evidence.tests)
     }
@@ -86,19 +89,29 @@ class JUnitXmlReportParserTest {
     fun `candidate drift during execution is rejected`() {
         assertFailsWith<IllegalArgumentException> {
             JUnitXmlReportParser.parse(report("""<testsuite><testcase name="x"/></testsuite>"""),
-                candidate, "fedcba9876543210fedcba9876543210fedcba98", "run-stale")
+                candidate, "fedcba9876543210fedcba9876543210fedcba98", stateDigest, stateDigest, "run-stale")
+        }
+    }
+
+    @Test
+    fun `working tree drift with unchanged HEAD is rejected`() {
+        assertFailsWith<IllegalArgumentException> {
+            JUnitXmlReportParser.parse(
+                report("""<testsuite><testcase name="x"/></testsuite>"""),
+                candidate, candidate, stateDigest, differentStateDigest, "run-dirty-stale"
+            )
         }
     }
 
     @Test
     fun `malformed XML and external entity declarations are rejected`() {
         assertFailsWith<IllegalArgumentException> {
-            JUnitXmlReportParser.parse(report("<testsuite><testcase>"), candidate, candidate, "run-bad")
+            JUnitXmlReportParser.parse(report("<testsuite><testcase>"), candidate, candidate, stateDigest, stateDigest, "run-bad")
         }
         assertFailsWith<IllegalArgumentException> {
             JUnitXmlReportParser.parse(
                 report("""<!DOCTYPE foo [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><testsuite><testcase name="&xxe;"/></testsuite>"""),
-                candidate, candidate, "run-xxe"
+                candidate, candidate, stateDigest, stateDigest, "run-xxe"
             )
         }
     }
@@ -106,20 +119,20 @@ class JUnitXmlReportParserTest {
     @Test
     fun `invalid provenance and missing report are rejected`() {
         assertFailsWith<IllegalArgumentException> {
-            JUnitXmlReportParser.parse(report("""<testsuite><testcase name="x"/></testsuite>"""), "abc", "abc", "run")
+            JUnitXmlReportParser.parse(report("""<testsuite><testcase name="x"/></testsuite>"""), "abc", "abc", stateDigest, stateDigest, "run")
         }
         assertFailsWith<IllegalArgumentException> {
-            JUnitXmlReportParser.parse(File("missing-junit-report.xml"), candidate, candidate, "run")
+            JUnitXmlReportParser.parse(File("missing-junit-report.xml"), candidate, candidate, stateDigest, stateDigest, "run")
         }
         assertFailsWith<IllegalArgumentException> {
-            JUnitXmlReportParser.parse(report("""<testsuite><testcase name="x"/></testsuite>"""), candidate, candidate, " ")
+            JUnitXmlReportParser.parse(report("""<testsuite><testcase name="x"/></testsuite>"""), candidate, candidate, stateDigest, stateDigest, " ")
         }
     }
 
     @Test
     fun `report digest changes when report content changes`() {
-        val first = JUnitXmlReportParser.parse(report("""<testsuite><testcase name="one"/></testsuite>"""), candidate, candidate, "run")
-        val second = JUnitXmlReportParser.parse(report("""<testsuite><testcase name="two"/></testsuite>"""), candidate, candidate, "run")
+        val first = JUnitXmlReportParser.parse(report("""<testsuite><testcase name="one"/></testsuite>"""), candidate, candidate, stateDigest, stateDigest, "run")
+        val second = JUnitXmlReportParser.parse(report("""<testsuite><testcase name="two"/></testsuite>"""), candidate, candidate, stateDigest, stateDigest, "run")
         assertNotEquals(first.reportSha256, second.reportSha256)
     }
 
@@ -129,14 +142,14 @@ class JUnitXmlReportParserTest {
         file.writeBytes(ByteArray(JUnitXmlReportParser.MAX_REPORT_BYTES + 1) { ' '.code.toByte() })
         file.deleteOnExit()
         assertFailsWith<IllegalArgumentException> {
-            JUnitXmlReportParser.parse(file, candidate, candidate, "run-large")
+            JUnitXmlReportParser.parse(file, candidate, candidate, stateDigest, stateDigest, "run-large")
         }
     }
 
     @Test
     fun `unsupported root element is rejected`() {
         assertFailsWith<IllegalArgumentException> {
-            JUnitXmlReportParser.parse(report("""<not-junit><testcase name="x"/></not-junit>"""), candidate, candidate, "run-root")
+            JUnitXmlReportParser.parse(report("""<not-junit><testcase name="x"/></not-junit>"""), candidate, candidate, stateDigest, stateDigest, "run-root")
         }
     }
 }

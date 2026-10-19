@@ -33,6 +33,7 @@ data class JUnitTestReportEvidence(
     val schemaVersion: String = "1.0",
     val parserVersion: String = JUnitXmlReportParser.PARSER_VERSION,
     val candidateSha: String,
+    val candidateStateDigest: String,
     val executionId: String,
     val reportSha256: String,
     val status: JUnitReportStatus,
@@ -60,6 +61,8 @@ object JUnitXmlReportParser {
         reportFile: File,
         candidateShaBefore: String,
         candidateShaAfter: String,
+        candidateStateDigestBefore: String,
+        candidateStateDigestAfter: String,
         executionId: String
     ): JUnitTestReportEvidence {
         require(candidateShaBefore.matches(shaPattern)) {
@@ -69,7 +72,17 @@ object JUnitXmlReportParser {
             "Candidate SHA after test execution must be a full 40-character Git SHA."
         }
         require(candidateShaBefore.equals(candidateShaAfter, ignoreCase = true)) {
-            "Candidate changed during test execution; test report evidence is stale."
+            "Git HEAD changed during test execution; test report evidence is stale."
+        }
+        val stateDigestPattern = Regex("^[0-9a-fA-F]{64}$")
+        require(candidateStateDigestBefore.matches(stateDigestPattern)) {
+            "Candidate state digest before test execution must be a full 64-character SHA-256 digest."
+        }
+        require(candidateStateDigestAfter.matches(stateDigestPattern)) {
+            "Candidate state digest after test execution must be a full 64-character SHA-256 digest."
+        }
+        require(candidateStateDigestBefore.equals(candidateStateDigestAfter, ignoreCase = true)) {
+            "Repository candidate inputs changed during test execution; test report evidence is stale."
         }
         require(executionId.isNotBlank() && executionId.length <= 256) {
             "Test execution ID must be non-blank and at most 256 characters."
@@ -150,6 +163,7 @@ object JUnitXmlReportParser {
 
         return JUnitTestReportEvidence(
             candidateSha = candidateShaBefore.lowercase(),
+            candidateStateDigest = candidateStateDigestBefore.lowercase(),
             executionId = executionId,
             reportSha256 = MessageDigest.getInstance("SHA-256")
                 .digest(bytes).joinToString("") { "%02x".format(it) },
