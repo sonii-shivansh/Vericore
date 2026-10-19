@@ -99,11 +99,11 @@ object ChangeSpecificationEvaluator {
             VerificationEvidenceIds.command(index + 1) to result
         }.toMap()
         val criteria = buildList {
-            addAll(normalized.requiredBehaviors.withIds("required-behavior", SpecificationCriterionKind.REQUIRED_BEHAVIOR, bindings, availableIds, citationsById, currentCandidateEvidenceAvailable, commandResultsById))
-            addAll(normalized.forbiddenBehaviors.withIds("forbidden-behavior", SpecificationCriterionKind.FORBIDDEN_BEHAVIOR, bindings, availableIds, citationsById, currentCandidateEvidenceAvailable, commandResultsById))
-            addAll(normalized.protectedInvariants.withIds("protected-invariant", SpecificationCriterionKind.PROTECTED_INVARIANT, bindings, availableIds, citationsById, currentCandidateEvidenceAvailable, commandResultsById))
-            addAll(normalized.acceptanceCriteria.withIds("acceptance-criterion", SpecificationCriterionKind.ACCEPTANCE_CRITERION, bindings, availableIds, citationsById, currentCandidateEvidenceAvailable, commandResultsById))
-            addAll(normalized.requiredEvidence.withIds("required-evidence", SpecificationCriterionKind.REQUIRED_EVIDENCE, bindings, availableIds, citationsById, currentCandidateEvidenceAvailable, commandResultsById))
+            addAll(normalized.requiredBehaviors.withIds("required-behavior", SpecificationCriterionKind.REQUIRED_BEHAVIOR, bindings, availableIds, citationsById, ambiguousCitationIds, currentCandidateEvidenceAvailable, commandResultsById))
+            addAll(normalized.forbiddenBehaviors.withIds("forbidden-behavior", SpecificationCriterionKind.FORBIDDEN_BEHAVIOR, bindings, availableIds, citationsById, ambiguousCitationIds, currentCandidateEvidenceAvailable, commandResultsById))
+            addAll(normalized.protectedInvariants.withIds("protected-invariant", SpecificationCriterionKind.PROTECTED_INVARIANT, bindings, availableIds, citationsById, ambiguousCitationIds, currentCandidateEvidenceAvailable, commandResultsById))
+            addAll(normalized.acceptanceCriteria.withIds("acceptance-criterion", SpecificationCriterionKind.ACCEPTANCE_CRITERION, bindings, availableIds, citationsById, ambiguousCitationIds, currentCandidateEvidenceAvailable, commandResultsById))
+            addAll(normalized.requiredEvidence.withIds("required-evidence", SpecificationCriterionKind.REQUIRED_EVIDENCE, bindings, availableIds, citationsById, ambiguousCitationIds, currentCandidateEvidenceAvailable, commandResultsById))
         }
         val notEvaluatedCount = criteria.count { it.status == CriterionEvaluationStatus.NOT_EVALUATED }
         val status = when {
@@ -126,6 +126,7 @@ object ChangeSpecificationEvaluator {
         bindings: Map<String, CriterionEvidenceBinding>,
         availableEvidenceIds: Set<String>,
         citationsById: Map<String, EvidenceCitation>,
+        ambiguousCitationIds: Set<String>,
         currentCandidateEvidenceAvailable: Boolean,
         commandResultsById: Map<String, VerificationCommandResult>
     ): List<SpecificationCriterionEvaluation> = mapIndexed { index, statement ->
