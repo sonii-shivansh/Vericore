@@ -93,6 +93,8 @@ object ChangeSpecificationEvaluator {
         val bindings = normalized.evidenceBindings.associateBy { it.criterionId }
         val availableIds = availableEvidenceIds.toSet()
         val citationsById = evidenceCitations.associateBy { it.id }
+        val ambiguousCitationIds = evidenceCitations.groupingBy { it.id }.eachCount()
+            .filterValues { it > 1 }.keys
         val commandResultsById = commandResults.mapIndexed { index, result ->
             VerificationEvidenceIds.command(index + 1) to result
         }.toMap()
@@ -131,7 +133,7 @@ object ChangeSpecificationEvaluator {
         val binding = bindings[id]
         val missingEvidence = binding?.evidenceIds.orEmpty().filterNot(availableEvidenceIds::contains)
         val metricEvaluation = if (binding != null && missingEvidence.isEmpty() && statement.startsWith(METRIC_PREFIX)) {
-            evaluateMetric(statement, binding.evidenceIds, citationsById, currentCandidateEvidenceAvailable)
+            evaluateMetric(statement, binding.evidenceIds, citationsById, ambiguousCitationIds, currentCandidateEvidenceAvailable)
         } else {
             null
         }
@@ -203,6 +205,7 @@ object ChangeSpecificationEvaluator {
         statement: String,
         boundEvidenceIds: List<String>,
         citationsById: Map<String, EvidenceCitation>,
+        ambiguousCitationIds: Set<String>,
         currentCandidateEvidenceAvailable: Boolean
     ): Pair<CriterionEvaluationStatus, String> {
         val match = metricPattern.matchEntire(statement)
@@ -225,6 +228,10 @@ object ChangeSpecificationEvaluator {
         if (!currentCandidateEvidenceAvailable) {
             return CriterionEvaluationStatus.NOT_EVALUATED to
                 "Current-candidate evidence is not rebuilt in contract-only mode; rerun full verify to evaluate this metric."
+        }
+        if (citationId in ambiguousCitationIds) {
+            return CriterionEvaluationStatus.FAIL to
+                "Metric citation '$citationId' appears more than once in current-candidate evidence; ambiguous evidence cannot satisfy a criterion."
         }
         val citation = citationsById[citationId] ?: return CriterionEvaluationStatus.FAIL to
             "Metric citation '$citationId' is absent from the current candidate's evidence."
