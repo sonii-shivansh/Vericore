@@ -446,7 +446,7 @@
           "parserVersion": { "type": "string", "minLength": 1 },
           "candidateSha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
           "candidateStateDigest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
-          "executionId": { "type": "string", "minLength": 1, "maxLength": 512 },
+          "executionId": { "type": "string", "minLength": 1, "maxLength": 256 },
           "reportSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
           "status": { "enum": ["ALL_PASSED", "FAILED", "NO_TESTS", "SKIPPED_ONLY", "INCOMPLETE"] },
           "tests": { "type": "integer", "minimum": 0 },
