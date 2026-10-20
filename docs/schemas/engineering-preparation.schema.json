@@ -289,7 +289,7 @@
                     "enum": [
                       "MANUAL_REVIEW",
                       "ALL_BOUND_COMMANDS_SUCCEEDED",
-                  "ALL_BOUND_JUNIT_CASES_PASSED"
+                      "ALL_BOUND_JUNIT_CASES_PASSED"
                     ],
                     "default": "MANUAL_REVIEW",
                     "description": "MANUAL_REVIEW is the safe default. ALL_BOUND_COMMANDS_SUCCEEDED is supported only for required-evidence criteria bound to declared verification-command-NNN IDs and proves command exit status only. ALL_BOUND_JUNIT_CASES_PASSED evaluates explicitly bound junit-test-case:<class>#<name> selectors from fresh Gradle/Maven reports; it proves those named tests passed, not requirement coverage."
@@ -452,7 +452,7 @@
                     "enum": [
                       "MANUAL_REVIEW",
                       "ALL_BOUND_COMMANDS_SUCCEEDED",
-                  "ALL_BOUND_JUNIT_CASES_PASSED"
+                      "ALL_BOUND_JUNIT_CASES_PASSED"
                     ],
                     "default": "MANUAL_REVIEW",
                     "description": "MANUAL_REVIEW is the safe default. ALL_BOUND_COMMANDS_SUCCEEDED is supported only for required-evidence criteria bound to declared verification-command-NNN IDs and proves command exit status only. ALL_BOUND_JUNIT_CASES_PASSED evaluates explicitly bound junit-test-case:<class>#<name> selectors from fresh Gradle/Maven reports; it proves those named tests passed, not requirement coverage."
