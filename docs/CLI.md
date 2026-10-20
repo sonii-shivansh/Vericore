@@ -1,6 +1,6 @@
 # CLI Reference
 
-> Complete reference for the Vericore command-line interface. Vericore v0.9.0 is published. The `main` branch may contain unreleased changes; use the tagged release and its changelog when verifying behavior of a packaged binary.
+> Complete reference for the Vericore command-line interface. Vericore v1.0.1 is the latest published release confirmed on 2026-10-20; this branch may contain unreleased changes. The `main` branch may contain unreleased changes; use the tagged release and its changelog when verifying behavior of a packaged binary.
 
 ## Global syntax
 
@@ -462,8 +462,8 @@ vericore plan "add payment validation" --evidence output/grounded-evidence.json 
 | `--protect-invariant <text>` | none | Declare an invariant that must remain true. Repeatable. |
 | `--acceptance-criterion <text>` | none | Declare an observable acceptance criterion. Repeatable. |
 | `--required-evidence <text>` | none | Declare evidence that must be supplied or reviewed. Repeatable. |
-| `--criterion-evidence <criterion-id>=<evidence-id>` | none | Bind a stable criterion ID to a prepared evidence citation ID or a declared `verification-command-NNN` ID based on the 1-based position in the persisted verification-command list, in the exact order commands execute. Repeatable. |
-| `--criterion-evidence-rule <criterion-id>=<rule>` | none | Set a rule for a bound criterion. `ALL_BOUND_COMMANDS_SUCCEEDED` is supported only for `required-evidence` criteria bound to `verification-command-NNN` IDs; it proves command exit status only. |
+| `--criterion-evidence <criterion-id>=<evidence-id>` | none | Bind a stable criterion ID to a grounded evidence citation ID, a declared `verification-command-NNN` ID, or an explicit JUnit selector `junit-test-case:<class>#<test-name>` when using the JUnit rule. Repeatable. |
+| `--criterion-evidence-rule <criterion-id>=<rule>` | none | Set a rule for a bound criterion. `ALL_BOUND_COMMANDS_SUCCEEDED` is only for required-evidence criteria bound to command IDs. `ALL_BOUND_JUNIT_CASES_PASSED` evaluates exact JUnit test-case selectors against fresh Gradle/Maven XML reports; it proves those cases passed, not requirement coverage. |
 
 The plan preserves these declarations in its structured `specification` object. They are bound to the contract fingerprint when prepared. Recording a criterion does not mean Vericore has automatically proven it.
 
@@ -507,7 +507,7 @@ output/agent-change-contract.json
 
 The Agent Change Contract is persisted at preparation time. Do not replace it before `verify`. New preparations emit contract schema `3.0`, embedding a deterministic, versioned per-path candidate baseline whose digest is included in the contract fingerprint. Preparation aborts if the repository-input digest changes during preparation. The baseline covers ignored and untracked inputs as well as tracked files, subject to the documented generated-output exclusions.
 
-Repeatable `--require-behavior`, `--forbid-behavior`, `--protect-invariant`, `--acceptance-criterion`, and `--required-evidence` options record explicit constraints in the plan and contract. Use `--criterion-evidence acceptance-criterion-001=file.1` to bind a criterion to an evidence ID expected to be included in the prepared contract. Choose IDs from the repository's grounded evidence output; if a referenced ID is absent from the contract, verification fails closed. Empty specifications preserve legacy contract fingerprints; non-empty specifications are included in the SHA-256 fingerprint. Evidence bindings are checked against the contract's evidence IDs. A missing ID fails closed; a valid link remains `INCONCLUSIVE` until a criterion-specific evaluator assesses the evidence content. Merely attaching an evidence ID does not prove the criterion.
+Repeatable `--require-behavior`, `--forbid-behavior`, `--protect-invariant`, `--acceptance-criterion`, and `--required-evidence` options record explicit constraints in the plan and contract. Use `--criterion-evidence acceptance-criterion-001=file.1` to bind a criterion to a grounded evidence ID. For test-level evidence, bind an exact selector and rule, for example `--criterion-evidence acceptance-criterion-001=junit-test-case:com.example.PaymentTest#rejectsInvalidPayment --criterion-evidence-rule acceptance-criterion-001=ALL_BOUND_JUNIT_CASES_PASSED`. Vericore accepts only conventional Gradle `build/test-results/test` and Maven `target/surefire-reports/TEST-*.xml` reports whose content changed during this verification run, and only when the candidate SHA and repository-input digest stayed stable. A missing or stale report cannot pass the criterion. The selected test case must be unique; failures produce `FAIL`, skipped or duplicate matches produce `INCONCLUSIVE`. This demonstrates that the named test passed on the current candidate, not that it fully covers the requirement. Empty specifications preserve legacy contract fingerprints; non-empty specifications are included in the SHA-256 fingerprint.
 
 ---
 
@@ -550,7 +550,7 @@ A successful or review-required full `vericore verify` run also writes:
 output/verification-receipt.json
 ```
 
-The receipt (schema `1.3`) is derived from the same verification result. It records the prepared and verified repository state, contract fingerprint, prepare-time baseline digest and validity, any unplanned baseline drift paths, changed/planned/unexpected paths, verification commands/results, deterministic safety reasons and verification reasons, candidate-state digests captured at analysis start, command start, and command completion, and optional per-criterion specification evaluation. `candidateStateStable` is true only when the repository-input digest remained identical across all three points. If relevant repository files change while analysis or verification commands are running, verification fails closed. When a non-empty specification has criteria that are not yet backed by criterion-specific evaluators, those criteria are explicitly marked `NOT_EVALUATED` and the overall status is at least `REVIEW_REQUIRED`. The receipt is an audit artifact, not a second verification decision.
+The receipt (schema `1.4`) is derived from the same verification result. It records the prepared and verified repository state, contract fingerprint, prepare-time baseline digest and validity, any unplanned baseline drift paths, changed/planned/unexpected paths, verification commands/results, deterministic safety reasons and verification reasons, candidate-state digests captured at analysis start, command start, and command completion, optional per-criterion specification evaluation, and parsed JUnit report digests, parser versions, execution IDs, and test-case outcomes. `candidateStateStable` is true only when the repository-input digest remained identical across all three points. If relevant repository files change while analysis or verification commands are running, verification fails closed. When a non-empty specification has criteria that are not yet backed by criterion-specific evaluators, those criteria are explicitly marked `NOT_EVALUATED` and the overall status is at least `REVIEW_REQUIRED`. The receipt is an audit artifact, not a second verification decision.
 
 ## 17. `ask`
 
