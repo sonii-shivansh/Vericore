@@ -33,7 +33,8 @@ data class VerificationReceipt(
     val candidateStateStable: Boolean,
     val candidateStateFileCount: Int,
     val postVerificationFileCount: Int,
-    val specificationEvaluation: ChangeSpecificationEvaluation? = null
+    val specificationEvaluation: ChangeSpecificationEvaluation? = null,
+    val junitTestReports: List<JUnitTestReportEvidence> = emptyList()
 ) {
     companion object {
         fun from(result: EngineeringVerificationResult): VerificationReceipt {
@@ -61,7 +62,8 @@ data class VerificationReceipt(
                 candidateStateStable = result.candidateStateStable,
                 candidateStateFileCount = result.candidateStateFileCount,
                 postVerificationFileCount = result.postVerificationFileCount,
-                specificationEvaluation = result.specificationEvaluation
+                specificationEvaluation = result.specificationEvaluation,
+                junitTestReports = result.junitTestReports
             )
         }
     }
