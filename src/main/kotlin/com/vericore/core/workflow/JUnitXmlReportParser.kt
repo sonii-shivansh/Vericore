@@ -96,7 +96,7 @@ object JUnitXmlReportParser {
         }
         require(reportPath == null || (
             reportPath.isNotBlank() && reportPath.length <= 1_024 &&
-                !reportPath.startsWith("/") && !reportPath.contains('\\\\') && !reportPath.contains(0.toChar()) &&
+                !reportPath.startsWith("/") && !reportPath.contains('\\') && !reportPath.contains(0.toChar()) &&
                 !Regex("^[A-Za-z]:").containsMatchIn(reportPath) &&
                 reportPath.split('/').none { it.isEmpty() || it == "." || it == ".." }
         )) {
