@@ -7,8 +7,10 @@ import javax.xml.XMLConstants
 import javax.xml.parsers.DocumentBuilderFactory
 import org.w3c.dom.Element
 import org.w3c.dom.Node
+import kotlinx.serialization.Serializable
 
 /** Result of interpreting a JUnit XML report; only ALL_PASSED may be considered successful evidence. */
+@Serializable
 enum class JUnitReportStatus {
     ALL_PASSED,
     FAILED,
@@ -17,18 +19,21 @@ enum class JUnitReportStatus {
     INCOMPLETE
 }
 
+@Serializable
 enum class JUnitCaseStatus {
     PASSED,
     FAILED,
     SKIPPED
 }
 
+@Serializable
 data class JUnitTestCaseEvidence(
     val className: String?,
     val name: String,
     val status: JUnitCaseStatus
 )
 
+@Serializable
 data class JUnitTestReportEvidence(
     val schemaVersion: String = "1.0",
     val parserVersion: String = JUnitXmlReportParser.PARSER_VERSION,
