@@ -40,7 +40,8 @@ internal object JUnitXmlReportCollector {
                     candidateShaAfter = candidateShaAfter,
                     candidateStateDigestBefore = candidateStateDigestBefore,
                     candidateStateDigestAfter = candidateStateDigestAfter,
-                    executionId = executionId
+                    executionId = executionId,
+                    reportPath = relativePath
                 )
             }.getOrNull()
         }
