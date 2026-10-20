@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:vericore:schema:verification-receipt-v1.3",
+  "$id": "urn:vericore:schema:verification-receipt-v1.4",
   "title": "Vericore Verification Receipt",
   "type": "object",
   "required": [
@@ -30,7 +30,7 @@
   ],
   "properties": {
     "schemaVersion": {
-      "const": "1.3"
+      "const": "1.4"
     },
     "repository": {
       "type": "string",
@@ -295,6 +295,40 @@
         }
       },
       "additionalProperties": false
+    },
+    "junitTestReports": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["schemaVersion", "parserVersion", "candidateSha", "candidateStateDigest", "executionId", "reportSha256", "status", "tests", "passed", "failed", "skipped", "cases"],
+        "properties": {
+          "schemaVersion": { "const": "1.0" },
+          "parserVersion": { "type": "string", "minLength": 1 },
+          "candidateSha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
+          "candidateStateDigest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "executionId": { "type": "string", "minLength": 1, "maxLength": 512 },
+          "reportSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "status": { "enum": ["ALL_PASSED", "FAILED", "NO_TESTS", "SKIPPED_ONLY", "INCOMPLETE"] },
+          "tests": { "type": "integer", "minimum": 0 },
+          "passed": { "type": "integer", "minimum": 0 },
+          "failed": { "type": "integer", "minimum": 0 },
+          "skipped": { "type": "integer", "minimum": 0 },
+          "cases": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["className", "name", "status"],
+              "properties": {
+                "className": { "type": ["string", "null"] },
+                "name": { "type": "string", "minLength": 1 },
+                "status": { "enum": ["PASSED", "FAILED", "SKIPPED"] }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
     },
     "preparedBaselineDigest": {
       "type": [
