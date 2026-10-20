@@ -13,9 +13,10 @@ internal object JUnitXmlReportCollector {
     private const val MAX_REPORTS = 100
 
     fun snapshot(repository: File): Map<String, String> =
-        candidateReports(repository).associate { file ->
-            file.relativeTo(repository).invariantSeparatorsPath to sha256(file)
-        }
+        candidateReports(repository).mapNotNull { file ->
+            val digest = runCatching { sha256(file) }.getOrNull() ?: return@mapNotNull null
+            file.relativeTo(repository).invariantSeparatorsPath to digest
+        }.toMap()
 
     fun collectFresh(
         repository: File,
@@ -26,9 +27,7 @@ internal object JUnitXmlReportCollector {
         candidateStateDigestAfter: String
     ): List<JUnitTestReportEvidence> {
         val candidates = candidateReports(repository)
-        require(candidates.size <= MAX_REPORTS) {
-            "JUnit report collection exceeds the $MAX_REPORTS-report limit."
-        }
+        if (candidates.size > MAX_REPORTS) return emptyList()
         val executionId = UUID.randomUUID().toString()
         return candidates.mapNotNull { file ->
             val relativePath = file.relativeTo(repository).invariantSeparatorsPath
@@ -64,7 +63,15 @@ internal object JUnitXmlReportCollector {
             .toList()
     }
 
-    private fun sha256(file: File): String =
-        MessageDigest.getInstance("SHA-256").digest(file.readBytes())
+    private fun sha256(file: File): String {
+        require(file.length() in 1..JUnitXmlReportParser.MAX_REPORT_BYTES.toLong()) {
+            "JUnit XML report is empty or exceeds the parser size limit."
+        }
+        val bytes = file.readBytes()
+        require(bytes.size <= JUnitXmlReportParser.MAX_REPORT_BYTES) {
+            "JUnit XML report exceeds the parser size limit."
+        }
+        return MessageDigest.getInstance("SHA-256").digest(bytes)
             .joinToString("") { "%02x".format(it) }
+    }
 }
