@@ -86,6 +86,32 @@ jobs:
           test -d .git
           git status --short
           git rev-parse HEAD > "$RUNNER_TEMP/target-before.sha"
+      - name: Warm Maven wrapper with retries
+        working-directory: ${{ runner.temp }}/target
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -x ./mvnw ]; then
+            echo "No Maven wrapper present; skipping Maven wrapper bootstrap."
+            exit 0
+          fi
+          # The live target's verification commands use ./mvnw. Bootstrap its
+          # pinned Maven distribution before Vericore runs verification so a
+          # transient Maven Central download failure does not masquerade as a
+          # repository verification failure. The real package/test commands
+          # still run later and remain fail-closed.
+          for attempt in 1 2 3 4 5; do
+            echo "Bootstrapping target Maven wrapper (attempt $attempt/5)..."
+            if ./mvnw -B -version; then
+              echo "Maven wrapper distribution is ready."
+              exit 0
+            fi
+            if [ "$attempt" -lt 5 ]; then
+              sleep $((attempt * 5))
+            fi
+          done
+          echo "Maven wrapper bootstrap failed after 5 attempts." >&2
+          exit 1
       - name: Run complete CLI surface
         working-directory: ${{ runner.temp }}/target
         run: |
