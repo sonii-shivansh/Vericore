@@ -126,6 +126,152 @@ jobs:
             "$GITHUB_WORKSPACE/target-repo" \
             "$RUNNER_TEMP/vericore-self-e2e"
 
+      - name: Exercise remaining deterministic CLI commands and MCP tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          REPO="$GITHUB_WORKSPACE/target-repo"
+          CLI="$RUNNER_TEMP/vericore-release/vericore/bin/vericore"
+          OUT="$RUNNER_TEMP/vericore-self-e2e-extra"
+          mkdir -p "$OUT"
+
+          run_ok() {
+            local name="$1"; shift
+            echo "===== $name ====="
+            "$@" >"$OUT/$name.stdout" 2>"$OUT/$name.stderr"
+            printf '0\n' >"$OUT/$name.exit"
+          }
+
+          run_ok 42-scan "$CLI" scan --path "$REPO" --clear-cache
+          test -s "$REPO/output/index.html"
+          test -s "$REPO/output/analysis-snapshot.json"
+
+          run_ok 43-inspect "$CLI" inspect --path "$REPO" --json
+          test -s "$REPO/output/inspection.json"
+          python3 - "$REPO/output/inspection.json" <<'PY'
+          import json, sys
+          data=json.load(open(sys.argv[1]))
+          assert isinstance(data, dict) and data, data
+          PY
+
+          run_ok 44-recommendations "$CLI" recommendations "$REPO" --json
+          test -s "$REPO/output/recommendations.json"
+          python3 - "$REPO/output/recommendations.json" <<'PY'
+          import json, sys
+          data=json.load(open(sys.argv[1]))
+          assert isinstance(data, list), type(data)
+          PY
+
+          run_ok 45-review "$CLI" review --path "$REPO" --base HEAD~1 --head HEAD --json
+          test -s "$REPO/output/review.json"
+          python3 - "$REPO/output/review.json" <<'PY'
+          import json, sys
+          data=json.load(open(sys.argv[1]))
+          assert isinstance(data, dict) and data, data
+          assert "deterministic" in data or "result" in data or "changeSummary" in data, list(data)
+          PY
+
+          run_ok 46-report "$CLI" report --path "$REPO" --output "$OUT/self-report.html"
+          test -s "$OUT/self-report.html"
+          grep -q "Vericore Engineering Report" "$OUT/self-report.html"
+
+          # Test the no-secret setup path only; never enter, save, or expose a credential.
+          set +e
+          "$CLI" setup --force --provider gemini </dev/null >"$OUT/47-setup-empty.stdout" 2>"$OUT/47-setup-empty.stderr"
+          setup_rc=$?
+          set -e
+          printf '%s\n' "$setup_rc" >"$OUT/47-setup-empty.exit"
+          test "$setup_rc" -eq 0
+          grep -q "No API key supplied. Nothing was changed." "$OUT/47-setup-empty.stdout"
+
+          # An unsupported provider must fail safely and identify the validation error.
+          set +e
+          "$CLI" setup --provider unsupported-provider >"$OUT/48-setup-invalid.stdout" 2>"$OUT/48-setup-invalid.stderr"
+          setup_rc=$?
+          set -e
+          printf '%s\n' "$setup_rc" >"$OUT/48-setup-invalid.exit"
+          test "$setup_rc" -ne 0
+          grep -qi "Unsupported provider" "$OUT/48-setup-invalid.stdout" "$OUT/48-setup-invalid.stderr"
+
+          # Without user or environment credentials, ask should fail closed with a useful message.
+          set +e
+          env -u VERICORE_GEMINI_API_KEY -u VERICORE_GOOGLE_API_KEY -u GEMINI_API_KEY -u GOOGLE_API_KEY \
+            "$CLI" ask "Summarize the architecture of this repository" >"$OUT/49-ask-without-credentials.stdout" 2>"$OUT/49-ask-without-credentials.stderr"
+          ask_rc=$?
+          set -e
+          printf '%s\n' "$ask_rc" >"$OUT/49-ask-without-credentials.exit"
+          test "$ask_rc" -ne 0
+          grep -Eqi "credential|API key|configured|AI" "$OUT/49-ask-without-credentials.stdout" "$OUT/49-ask-without-credentials.stderr"
+
+          # Exercise initialize, tools/list, ping, and actual deterministic MCP tool calls.
+          python3 - "$CLI" "$REPO" "$OUT" <<'PY'
+          import json, pathlib, subprocess, sys
+          cli, repo, out = map(pathlib.Path, sys.argv[1:])
+          requests = [
+              {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"published-self-e2e","version":"1.0.0"}}},
+              {"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}},
+              {"jsonrpc":"2.0","id":3,"method":"ping","params":{}},
+              {"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"vericore_get_engineering_reality","arguments":{"repoPath":str(repo)}}},
+              {"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"vericore_get_context_snapshot","arguments":{"repoPath":str(repo)}}},
+          ]
+          proc=subprocess.run([str(cli),"mcp"],input="\n".join(map(json.dumps,requests))+"\n",text=True,capture_output=True)
+          (out/"50-mcp-tools.stdout").write_text(proc.stdout)
+          (out/"50-mcp-tools.stderr").write_text(proc.stderr)
+          (out/"50-mcp-tools.exit").write_text(str(proc.returncode)+"\n")
+          if proc.returncode != 0:
+              raise SystemExit(f"MCP server exited {proc.returncode}: {proc.stderr}")
+          responses={item.get("id"):item for item in map(json.loads,proc.stdout.splitlines()) if item.strip()}
+          assert responses[1].get("result",{}).get("protocolVersion"), responses.get(1)
+          assert responses[3].get("result")=={}, responses.get(3)
+          names={x.get("name") for x in responses[2].get("result",{}).get("tools",[])}
+          required={"vericore_get_engineering_reality","vericore_get_context_snapshot"}
+          assert required <= names, sorted(required-names)
+          for request_id in (4,5):
+              result=responses[request_id].get("result")
+              assert result and result.get("isError") is False, responses.get(request_id)
+              text="".join(c.get("text","") for c in result.get("content",[]))
+              assert text.strip(), responses.get(request_id)
+          (out/"50-mcp-tools-summary.json").write_text(json.dumps({
+              "protocolVersion":responses[1]["result"]["protocolVersion"],
+              "advertisedToolCount":len(names),
+              "calledTools":["vericore_get_engineering_reality","vericore_get_context_snapshot"],
+              "callsPassed":2
+          },indent=2)+"\n")
+          print("MCP tool-call E2E: PASS")
+          PY
+
+          # Exercise init on the real tagged checkout, preserving any existing config.
+          config="$REPO/.vericore.json"
+          config_existed=false
+          if [[ -e "$config" ]]; then config_existed=true; fi
+          run_ok 51-init "$CLI" init --path "$REPO" --json
+          python3 - "$OUT/51-init.stdout" "$config" "$REPO/.vericore" <<'PY'
+          import json, pathlib, sys
+          result=json.loads(pathlib.Path(sys.argv[1]).read_text())
+          config=pathlib.Path(sys.argv[2])
+          workspace=pathlib.Path(sys.argv[3])
+          assert result.get("status") in {"PASS","ALREADY_INITIALIZED"}, result
+          assert config.is_file(), "init did not create/preserve .vericore.json"
+          assert workspace.is_dir(), "init did not create/preserve .vericore workspace"
+          PY
+          if [[ "$config_existed" == false ]]; then rm -f "$config"; fi
+
+          # Run generated-output schema checks and enforce a clean source checkout.
+          python3 - "$REPO" "$OUT" <<'PY'
+          import json, pathlib, sys
+          repo,out=map(pathlib.Path,sys.argv[1:])
+          for name in ["analysis-snapshot.json","inspection.json","recommendations.json","review.json",
+                       "architecture.json","architecture-contract.json","architecture-drift.json",
+                       "engineering-context.json","engineering-context-diff.json","engineering-reality.json",
+                       "grounded-evidence.json","engineering-plan.json"]:
+              path=repo/"output"/name
+              assert path.is_file() and path.stat().st_size>0, f"missing {name}"
+              json.loads(path.read_text())
+          report=out/"self-report.html"
+          assert report.is_file() and "Vericore Engineering Report" in report.read_text()
+          print("Additional CLI output audit: PASS")
+          PY
+
       - name: Audit command exit statuses and repository integrity
         shell: bash
         run: |
@@ -169,6 +315,7 @@ jobs:
           name: published-release-self-e2e-${{ github.run_id }}
           path: |
             ${{ runner.temp }}/vericore-self-e2e/
+            ${{ runner.temp }}/vericore-self-e2e-extra/
             target-repo/output/*.json
             target-repo/output/agent-e2e/
           if-no-files-found: warn
