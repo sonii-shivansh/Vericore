@@ -67,6 +67,99 @@ class ChangeSpecificationEvaluatorTest {
         assertEquals(listOf("file.1"), evaluation.criteria.single().evidenceIds)
     }
 
+    private fun junitEvidence(
+        className: String = "PaymentTest",
+        name: String = "rejectsInvalidPayment",
+        status: JUnitCaseStatus = JUnitCaseStatus.PASSED
+    ) = JUnitTestReportEvidence(
+        candidateSha = "0123456789abcdef0123456789abcdef01234567",
+        candidateStateDigest = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        executionId = "run-test:build/test-results/test/TEST-Payment.xml",
+        reportSha256 = "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
+        status = if (status == JUnitCaseStatus.FAILED) JUnitReportStatus.FAILED else JUnitReportStatus.ALL_PASSED,
+        tests = 1,
+        passed = if (status == JUnitCaseStatus.PASSED) 1 else 0,
+        failed = if (status == JUnitCaseStatus.FAILED) 1 else 0,
+        skipped = if (status == JUnitCaseStatus.SKIPPED) 1 else 0,
+        cases = listOf(JUnitTestCaseEvidence(className, name, status))
+    )
+
+    @Test
+    fun `explicitly bound passing JUnit testcase evaluates the criterion and cites report provenance`() {
+        val selector = VerificationEvidenceIds.junitTestCase("PaymentTest", "rejectsInvalidPayment")
+        val specification = ChangeSpecification(
+            acceptanceCriteria = listOf("Invalid payment is rejected"),
+            evidenceBindings = listOf(CriterionEvidenceBinding(
+                "acceptance-criterion-001", listOf(selector), CriterionEvidenceRule.ALL_BOUND_JUNIT_CASES_PASSED
+            ))
+        )
+
+        val evaluation = ChangeSpecificationEvaluator.evaluate(
+            specification,
+            availableEvidenceIds = setOf(selector),
+            currentCandidateEvidenceAvailable = true,
+            junitTestReports = listOf(junitEvidence())
+        )!!
+
+        assertEquals(CriterionEvaluationStatus.PASS, evaluation.status)
+        assertTrue(evaluation.criteria.single().reason.contains("run-test:build/test-results/test/TEST-Payment.xml"))
+        assertTrue(evaluation.criteria.single().reason.contains("not that the tests fully cover the requirement"))
+    }
+
+    @Test
+    fun `bound failed JUnit testcase fails the criterion`() {
+        val selector = VerificationEvidenceIds.junitTestCase("PaymentTest", "rejectsInvalidPayment")
+        val evaluation = ChangeSpecificationEvaluator.evaluate(
+            ChangeSpecification(
+                requiredBehaviors = listOf("Reject invalid payment"),
+                evidenceBindings = listOf(CriterionEvidenceBinding(
+                    "required-behavior-001", listOf(selector), CriterionEvidenceRule.ALL_BOUND_JUNIT_CASES_PASSED
+                ))
+            ),
+            availableEvidenceIds = setOf(selector),
+            currentCandidateEvidenceAvailable = true,
+            junitTestReports = listOf(junitEvidence(status = JUnitCaseStatus.FAILED))
+        )!!
+
+        assertEquals(CriterionEvaluationStatus.FAIL, evaluation.status)
+    }
+
+    @Test
+    fun `bound skipped JUnit testcase is inconclusive not passing`() {
+        val selector = VerificationEvidenceIds.junitTestCase("PaymentTest", "rejectsInvalidPayment")
+        val evaluation = ChangeSpecificationEvaluator.evaluate(
+            ChangeSpecification(
+                acceptanceCriteria = listOf("Invalid payment is rejected"),
+                evidenceBindings = listOf(CriterionEvidenceBinding(
+                    "acceptance-criterion-001", listOf(selector), CriterionEvidenceRule.ALL_BOUND_JUNIT_CASES_PASSED
+                ))
+            ),
+            availableEvidenceIds = setOf(selector),
+            currentCandidateEvidenceAvailable = true,
+            junitTestReports = listOf(junitEvidence(status = JUnitCaseStatus.SKIPPED))
+        )!!
+
+        assertEquals(CriterionEvaluationStatus.INCONCLUSIVE, evaluation.status)
+    }
+
+    @Test
+    fun `ambiguous duplicate JUnit selectors cannot pass`() {
+        val selector = VerificationEvidenceIds.junitTestCase("PaymentTest", "rejectsInvalidPayment")
+        val evaluation = ChangeSpecificationEvaluator.evaluate(
+            ChangeSpecification(
+                acceptanceCriteria = listOf("Invalid payment is rejected"),
+                evidenceBindings = listOf(CriterionEvidenceBinding(
+                    "acceptance-criterion-001", listOf(selector), CriterionEvidenceRule.ALL_BOUND_JUNIT_CASES_PASSED
+                ))
+            ),
+            availableEvidenceIds = setOf(selector),
+            currentCandidateEvidenceAvailable = true,
+            junitTestReports = listOf(junitEvidence(), junitEvidence())
+        )!!
+
+        assertEquals(CriterionEvaluationStatus.INCONCLUSIVE, evaluation.status)
+    }
+
     private fun commandEvidenceSpecification() = ChangeSpecification(
         requiredEvidence = listOf("Unit-test command succeeds"),
         evidenceBindings = listOf(CriterionEvidenceBinding(
