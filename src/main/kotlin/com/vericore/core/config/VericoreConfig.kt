@@ -118,7 +118,7 @@ object ConfigLoader {
             val json = Json { prettyPrint = true; encodeDefaults = true }
             File(path).writeText(json.encodeToString(config))
             logger.info { "Created default config at $path" }
-            println("✅ Created default config at $path")
+            System.err.println("✅ Created default config at $path")
         } catch (e: Exception) {
             throw ConfigurationException("Failed to create default config at $path", e)
         }
