@@ -65,17 +65,40 @@ jobs:
 
           python3 - "$archive" <<'PY'
           import pathlib, sys, tarfile
+
+          def stays_within_archive(path_parts, base_parts=()):
+              stack = list(base_parts)
+              for part in path_parts:
+                  if part in ("", "."):
+                      continue
+                  if part == "..":
+                      if not stack:
+                          return False
+                      stack.pop()
+                  else:
+                      stack.append(part)
+              return True
+
           archive = sys.argv[1]
           with tarfile.open(archive, "r:gz") as bundle:
               bad = []
               for member in bundle.getmembers():
                   path = pathlib.PurePosixPath(member.name)
-                  if path.is_absolute() or ".." in path.parts:
+                  # Archive entries themselves must not use traversal paths.
+                  if path.is_absolute() or ".." in path.parts or "\\" in member.name:
                       bad.append(member.name)
+                      continue
                   if member.issym() or member.islnk():
-                      target = pathlib.PurePosixPath(member.linkname)
-                      if target.is_absolute() or ".." in target.parts:
-                          bad.append(f"{member.name} -> {member.linkname}")
+                      link_text = member.linkname
+                      target = pathlib.PurePosixPath(link_text)
+                      if target.is_absolute() or "\\" in link_text:
+                          bad.append(f"{member.name} -> {link_text}")
+                          continue
+                      # POSIX symlinks are relative to the symlink's directory.
+                      # Tar hard-link names are relative to the archive root.
+                      base = path.parent.parts if member.issym() else ()
+                      if not stays_within_archive(target.parts, base):
+                          bad.append(f"{member.name} -> {link_text}")
               if bad:
                   raise SystemExit("Unsafe archive members: " + repr(bad))
           print("Archive path-safety check: PASS")
