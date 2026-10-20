@@ -107,10 +107,10 @@ object ChangeSpecificationEvaluator {
             .groupBy({ it.first }, { it.second })
         val criteria = buildList {
             addAll(normalized.requiredBehaviors.withIds("required-behavior", SpecificationCriterionKind.REQUIRED_BEHAVIOR, bindings, availableIds, citationsById, ambiguousCitationIds, currentCandidateEvidenceAvailable, commandResultsById, junitCasesById))
-            addAll(normalized.forbiddenBehaviors.withIds("forbidden-behavior", SpecificationCriterionKind.FORBIDDEN_BEHAVIOR, bindings, availableIds, citationsById, ambiguousCitationIds, currentCandidateEvidenceAvailable, commandResultsById))
-            addAll(normalized.protectedInvariants.withIds("protected-invariant", SpecificationCriterionKind.PROTECTED_INVARIANT, bindings, availableIds, citationsById, ambiguousCitationIds, currentCandidateEvidenceAvailable, commandResultsById))
-            addAll(normalized.acceptanceCriteria.withIds("acceptance-criterion", SpecificationCriterionKind.ACCEPTANCE_CRITERION, bindings, availableIds, citationsById, ambiguousCitationIds, currentCandidateEvidenceAvailable, commandResultsById))
-            addAll(normalized.requiredEvidence.withIds("required-evidence", SpecificationCriterionKind.REQUIRED_EVIDENCE, bindings, availableIds, citationsById, ambiguousCitationIds, currentCandidateEvidenceAvailable, commandResultsById))
+            addAll(normalized.forbiddenBehaviors.withIds("forbidden-behavior", SpecificationCriterionKind.FORBIDDEN_BEHAVIOR, bindings, availableIds, citationsById, ambiguousCitationIds, currentCandidateEvidenceAvailable, commandResultsById, junitCasesById))
+            addAll(normalized.protectedInvariants.withIds("protected-invariant", SpecificationCriterionKind.PROTECTED_INVARIANT, bindings, availableIds, citationsById, ambiguousCitationIds, currentCandidateEvidenceAvailable, commandResultsById, junitCasesById))
+            addAll(normalized.acceptanceCriteria.withIds("acceptance-criterion", SpecificationCriterionKind.ACCEPTANCE_CRITERION, bindings, availableIds, citationsById, ambiguousCitationIds, currentCandidateEvidenceAvailable, commandResultsById, junitCasesById))
+            addAll(normalized.requiredEvidence.withIds("required-evidence", SpecificationCriterionKind.REQUIRED_EVIDENCE, bindings, availableIds, citationsById, ambiguousCitationIds, currentCandidateEvidenceAvailable, commandResultsById, junitCasesById))
         }
         val notEvaluatedCount = criteria.count { it.status == CriterionEvaluationStatus.NOT_EVALUATED }
         val status = when {
