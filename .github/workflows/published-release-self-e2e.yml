@@ -1,0 +1,151 @@
+name: Published Release Self-E2E
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/published-release-self-e2e.yml"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Published version to validate, without the leading v
+        required: true
+        type: string
+        default: "1.0.0"
+
+permissions:
+  contents: read
+
+jobs:
+  published-release-self-e2e:
+    name: Test published binary against its own tagged repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      RELEASE_VERSION: ${{ inputs.version || '1.0.0' }}
+
+    steps:
+      - name: Checkout exact source tag
+        uses: actions/checkout@v7
+        with:
+          ref: v${{ inputs.version || '1.0.0' }}
+          path: target-repo
+          fetch-depth: 0
+
+      - name: Download and verify published Linux artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "Invalid release version: $RELEASE_VERSION" >&2
+            exit 1
+          fi
+
+          tag="v$RELEASE_VERSION"
+          asset="vericore-$RELEASE_VERSION-linux-x64.tar.gz"
+          url="https://github.com/$GITHUB_REPOSITORY/releases/download/$tag/$asset"
+          archive="$RUNNER_TEMP/$asset"
+          install_dir="$RUNNER_TEMP/vericore-release"
+
+          curl --fail --location --silent --show-error --retry 5 --retry-all-errors \
+            "$url" --output "$archive"
+
+          expected_digest="$(gh api "repos/$GITHUB_REPOSITORY/releases/tags/$tag" \
+            --jq ".assets[] | select(.name == \"$asset\") | .digest")"
+          if [[ ! "$expected_digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "No valid published SHA-256 digest found for $asset" >&2
+            exit 1
+          fi
+          expected_digest="${expected_digest#sha256:}"
+          actual_digest="$(sha256sum "$archive" | awk '{print $1}')"
+          printf 'Expected SHA-256: %s\nActual SHA-256:   %s\n' "$expected_digest" "$actual_digest"
+          test "$actual_digest" = "$expected_digest"
+
+          python3 - "$archive" <<'PY'
+          import pathlib, sys, tarfile
+          archive = sys.argv[1]
+          with tarfile.open(archive, "r:gz") as bundle:
+              bad = []
+              for member in bundle.getmembers():
+                  path = pathlib.PurePosixPath(member.name)
+                  if path.is_absolute() or ".." in path.parts:
+                      bad.append(member.name)
+                  if member.issym() or member.islnk():
+                      target = pathlib.PurePosixPath(member.linkname)
+                      if target.is_absolute() or ".." in target.parts:
+                          bad.append(f"{member.name} -> {member.linkname}")
+              if bad:
+                  raise SystemExit("Unsafe archive members: " + repr(bad))
+          print("Archive path-safety check: PASS")
+          PY
+
+          mkdir -p "$install_dir"
+          tar -xzf "$archive" -C "$install_dir"
+          cli="$install_dir/vericore/bin/vericore"
+          test -x "$cli"
+          actual_version="$("$cli" --version)"
+          printf 'Published CLI: %s\n' "$actual_version"
+          test "$actual_version" = "vericore version $RELEASE_VERSION"
+          echo "VERICORE_RELEASE_CLI=$cli" >> "$GITHUB_ENV"
+
+      - name: Run full command-surface E2E against Vericore itself
+        env:
+          CLI: ${{ runner.temp }}/vericore-release/vericore/bin/vericore
+          TARGET_REPOSITORY: sonii-shivansh/Vericore
+          VERICORE_E2E_COMMAND_TIMEOUT_SECONDS: "240"
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -x "$CLI"
+          bash target-repo/scripts/audit/production-e2e.sh \
+            "$GITHUB_WORKSPACE/target-repo" \
+            "$RUNNER_TEMP/vericore-self-e2e"
+
+      - name: Audit command exit statuses and repository integrity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - "$RUNNER_TEMP/vericore-self-e2e" <<'PY'
+          from pathlib import Path
+          import sys
+          output = Path(sys.argv[1])
+          status_files = sorted(output.glob("*.exit"))
+          if not status_files:
+              raise SystemExit("No command exit receipts were created")
+          expected_failures = {
+              "37-verify-without-mutation.exit",
+              "38-verify-unexpected.exit",
+          }
+          seen = {p.name for p in status_files}
+          missing = expected_failures - seen
+          if missing:
+              raise SystemExit(f"Missing expected negative-test receipts: {sorted(missing)}")
+          failures = []
+          for p in status_files:
+              code = int(p.read_text().strip())
+              if p.name in expected_failures:
+                  if code == 0:
+                      failures.append(f"{p.name}: expected a non-zero fail-closed result")
+              elif code != 0:
+                  failures.append(f"{p.name}: unexpected exit code {code}")
+          if failures:
+              raise SystemExit("\n".join(failures))
+          print(f"Command exit audit: PASS ({len(status_files)} receipts; expected fail-closed probes verified)")
+          PY
+
+          git -C target-repo status --short
+          test -z "$(git -C target-repo diff --name-only)"
+          test -z "$(git -C target-repo diff --cached --name-only)"
+
+      - name: Upload full self-E2E evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: published-release-self-e2e-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/vericore-self-e2e/
+            target-repo/output/*.json
+            target-repo/output/agent-e2e/
+          if-no-files-found: warn
