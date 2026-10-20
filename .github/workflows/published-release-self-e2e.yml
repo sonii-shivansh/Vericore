@@ -240,21 +240,38 @@ jobs:
           print("MCP tool-call E2E: PASS")
           PY
 
-          # Exercise init on the real tagged checkout, preserving any existing config.
-          config="$REPO/.vericore.json"
-          config_existed=false
-          if [[ -e "$config" ]]; then config_existed=true; fi
-          run_ok 51-init "$CLI" init --path "$REPO" --json
-          python3 - "$OUT/51-init.stdout" "$config" "$REPO/.vericore" <<'PY'
+          # Exercise init in an isolated temporary Git repository. Earlier E2E
+          # commands may have created config/output state in the tagged checkout;
+          # init must be tested from a clean, deterministic starting point.
+          INIT_REPO="$RUNNER_TEMP/vericore-init-fixture"
+          mkdir -p "$INIT_REPO"
+          git -C "$INIT_REPO" init --quiet
+          set +e
+          "$CLI" init --path "$INIT_REPO" --json >"$OUT/51-init.stdout" 2>"$OUT/51-init.stderr"
+          init_rc=$?
+          set -e
+          printf '%s\n' "$init_rc" >"$OUT/51-init.exit"
+          if [[ "$init_rc" -ne 0 ]]; then
+            echo "init --json exited $init_rc" >&2
+            cat "$OUT/51-init.stderr" >&2
+            exit "$init_rc"
+          fi
+          python3 - "$OUT/51-init.stdout" "$OUT/51-init.stderr" "$INIT_REPO" <<'PY'
           import json, pathlib, sys
-          result=json.loads(pathlib.Path(sys.argv[1]).read_text())
-          config=pathlib.Path(sys.argv[2])
-          workspace=pathlib.Path(sys.argv[3])
-          assert result.get("status") in {"PASS","ALREADY_INITIALIZED"}, result
-          assert config.is_file(), "init did not create/preserve .vericore.json"
-          assert workspace.is_dir(), "init did not create/preserve .vericore workspace"
+          stdout_path, stderr_path, repo_path = map(pathlib.Path, sys.argv[1:])
+          stdout = stdout_path.read_text()
+          if not stdout.strip():
+              raise SystemExit(
+                  "init --json returned an empty stdout stream; stderr was: "
+                  + repr(stderr_path.read_text())
+              )
+          result = json.loads(stdout)
+          repo = repo_path.resolve()
+          assert result.get("status") == "PASS", result
+          assert (repo / ".vericore.json").is_file(), "init did not create .vericore.json"
+          assert (repo / ".vericore").is_dir(), "init did not create .vericore workspace"
           PY
-          if [[ "$config_existed" == false ]]; then rm -f "$config"; fi
+          rm -rf "$INIT_REPO"
 
           # Run generated-output schema checks and enforce a clean source checkout.
           python3 - "$REPO" "$OUT" <<'PY'
