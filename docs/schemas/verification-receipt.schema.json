@@ -300,13 +300,14 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["schemaVersion", "parserVersion", "candidateSha", "candidateStateDigest", "executionId", "reportSha256", "status", "tests", "passed", "failed", "skipped", "cases"],
+        "required": ["schemaVersion", "parserVersion", "candidateSha", "candidateStateDigest", "executionId", "reportSha256", "status", "tests", "passed", "failed", "skipped", "cases", "reportPath"],
         "properties": {
           "schemaVersion": { "const": "1.0" },
           "parserVersion": { "type": "string", "minLength": 1 },
           "candidateSha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
           "candidateStateDigest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
           "executionId": { "type": "string", "minLength": 1, "maxLength": 256 },
+          "reportPath": { "type": ["string", "null"], "maxLength": 1024 },
           "reportSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
           "status": { "enum": ["ALL_PASSED", "FAILED", "NO_TESTS", "SKIPPED_ONLY", "INCOMPLETE"] },
           "tests": { "type": "integer", "minimum": 0 },
