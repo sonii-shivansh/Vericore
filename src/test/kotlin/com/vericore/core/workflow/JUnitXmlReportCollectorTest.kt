@@ -30,6 +30,7 @@ class JUnitXmlReportCollectorTest {
 
             assertEquals(1, reports.size)
             assertEquals(2, reports.single().tests)
+            assertEquals("module/build/test-results/test/TEST-Payment.xml", reports.single().reportPath)
             assertTrue(reports.single().reportSha256.matches(Regex("^[a-f0-9]{64}$")))
         } finally {
             repository.deleteRecursively()
