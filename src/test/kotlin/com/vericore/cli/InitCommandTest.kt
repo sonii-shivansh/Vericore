@@ -2,6 +2,7 @@ package com.vericore.cli
 
 import com.github.ajalt.clikt.testing.test
 import java.nio.file.Files
+import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -32,6 +33,7 @@ class InitCommandTest {
         val result = InitCommand().test("--path ${cliPath(root)} --json")
 
         assertEquals(0, result.statusCode)
+        Json.parseToJsonElement(result.stdout)
         assertTrue(result.stdout.contains("\"status\": \"ALREADY_INITIALIZED\""))
         assertTrue(result.stdout.contains("\"nextStep\""))
         assertTrue(!result.stdout.contains("PROJECT INITIALIZED"))
@@ -52,6 +54,7 @@ class InitCommandTest {
         root.resolve(".git").mkdirs()
         val result = InitCommand().test("--path ${cliPath(root)} --json")
         assertEquals(0, result.statusCode)
+        Json.parseToJsonElement(result.stdout)
         assertTrue(result.stdout.contains("\"schemaVersion\": \"1.0\""))
         assertTrue(result.stdout.contains("\"command\": \"init\""))
         assertTrue(result.stdout.contains("\"status\": \"PASS\""))
