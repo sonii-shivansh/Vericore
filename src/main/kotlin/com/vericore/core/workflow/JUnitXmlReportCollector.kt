@@ -49,6 +49,7 @@ internal object JUnitXmlReportCollector {
     private fun candidateReports(repository: File): List<File> {
         val root = repository.canonicalFile
         return root.walkTopDown()
+            .onEnter { directory -> directory.name !in setOf(".git", ".gradle", ".idea", "node_modules", ".vericore", ".codecontext") }
             .maxDepth(12)
             .filter { file ->
                 if (!file.isFile || !file.name.endsWith(".xml", ignoreCase = true)) return@filter false
