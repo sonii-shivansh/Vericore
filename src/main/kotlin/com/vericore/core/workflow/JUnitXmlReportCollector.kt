@@ -54,16 +54,18 @@ internal object JUnitXmlReportCollector {
             .maxDepth(12)
             .filter { file ->
                 if (!file.isFile || !file.name.endsWith(".xml", ignoreCase = true)) return@filter false
-                val path = runCatching { file.canonicalFile.relativeTo(root).invariantSeparatorsPath }.getOrNull()
-                    ?: return@filter false
-                val segments = path.split('/')
-                val gradleReport = segments.windowed(3).any { it == listOf("build", "test-results", "test") }
+                val path = runCatching {
+                    file.canonicalFile.relativeTo(root).path.replace('\\', '/')
+                }.getOrNull() ?: return@filter false
+                val segments = path.split('/').map { it.lowercase() }
+                val gradleReport = segments.windowed(3).any {
+                    it == listOf("build", "test-results", "test")
+                }
                 val mavenReport = segments.size >= 3 &&
                     segments[segments.size - 3] == "target" &&
                     segments[segments.size - 2] == "surefire-reports" &&
-                    segments.last().startsWith("TEST-")
-                gradleReport && file.name.endsWith(".xml", ignoreCase = true) ||
-                    mavenReport && file.name.endsWith(".xml", ignoreCase = true)
+                    segments.last().startsWith("test-")
+                (gradleReport || mavenReport) && file.name.endsWith(".xml", ignoreCase = true)
             }
             .sortedBy { it.relativeTo(root).invariantSeparatorsPath }
             .take(MAX_REPORTS + 1)
