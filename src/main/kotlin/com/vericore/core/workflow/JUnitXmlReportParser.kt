@@ -46,7 +46,8 @@ data class JUnitTestReportEvidence(
     val passed: Int,
     val failed: Int,
     val skipped: Int,
-    val cases: List<JUnitTestCaseEvidence>
+    val cases: List<JUnitTestCaseEvidence>,
+    val reportPath: String? = null
 )
 
 /**
@@ -68,7 +69,8 @@ object JUnitXmlReportParser {
         candidateShaAfter: String,
         candidateStateDigestBefore: String,
         candidateStateDigestAfter: String,
-        executionId: String
+        executionId: String,
+        reportPath: String? = null
     ): JUnitTestReportEvidence {
         require(candidateShaBefore.matches(shaPattern)) {
             "Candidate SHA before test execution must be a full 40-character Git SHA."
@@ -91,6 +93,13 @@ object JUnitXmlReportParser {
         }
         require(executionId.isNotBlank() && executionId.length <= 256) {
             "Test execution ID must be non-blank and at most 256 characters."
+        }
+        require(reportPath == null || (
+            reportPath.isNotBlank() && reportPath.length <= 1_024 &&
+                !reportPath.startsWith("/") && !Regex("^[A-Za-z]:").containsMatchIn(reportPath) &&
+                reportPath.split('/').none { it.isEmpty() || it == "." || it == ".." }
+        )) {
+            "JUnit report path must be a normalized repository-relative path of at most 1024 characters."
         }
         require(reportFile.isFile) { "JUnit XML report does not exist: ${reportFile.path}" }
         val length = reportFile.length()
@@ -177,7 +186,8 @@ object JUnitXmlReportParser {
             passed = passed,
             failed = failed,
             skipped = skipped,
-            cases = cases
+            cases = cases,
+            reportPath = reportPath
         )
     }
 }
