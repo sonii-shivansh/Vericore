@@ -18,7 +18,7 @@ object VerificationEvidenceIds {
         return "junit-test-case:$className#$testName"
     }
 
-    fun isJUnitTestCase(id: String): Boolean = id.matches(Regex("^junit-test-case:[^#\\s]+#[^#\\s].*$"))
+    fun isJUnitTestCase(id: String): Boolean = id.matches(Regex("^junit-test-case:[^#]+#[^#]+$"))
 }
 
 @Serializable
