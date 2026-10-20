@@ -10,7 +10,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class VerificationReceipt(
-    val schemaVersion: String = "1.3",
+    val schemaVersion: String = "1.4",
     val repository: String,
     val preparedHead: String,
     val verifiedHead: String,
