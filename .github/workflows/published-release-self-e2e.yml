@@ -11,7 +11,7 @@ on:
         description: Published version to validate, without the leading v
         required: true
         type: string
-        default: "1.0.0"
+        default: "1.0.1"
 
 permissions:
   contents: read
@@ -22,13 +22,13 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     env:
-      RELEASE_VERSION: ${{ inputs.version || '1.0.0' }}
+      RELEASE_VERSION: ${{ inputs.version || '1.0.1' }}
 
     steps:
       - name: Checkout exact source tag
         uses: actions/checkout@v7
         with:
-          ref: v${{ inputs.version || '1.0.0' }}
+          ref: v${{ inputs.version || '1.0.1' }}
           path: target-repo
           fetch-depth: 0
 
