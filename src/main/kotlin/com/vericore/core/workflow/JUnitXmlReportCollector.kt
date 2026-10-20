@@ -56,9 +56,14 @@ internal object JUnitXmlReportCollector {
                 if (!file.isFile || !file.name.endsWith(".xml", ignoreCase = true)) return@filter false
                 val path = runCatching { file.canonicalFile.relativeTo(root).invariantSeparatorsPath }.getOrNull()
                     ?: return@filter false
-                path.startsWith("build/test-results/test/") ||
-                    Regex("(^|/)build/test-results/test/").containsMatchIn(path) ||
-                    Regex("(^|/)target/surefire-reports/TEST-[^/]+\\.xml$").containsMatchIn(path)
+                val segments = path.split('/')
+                val gradleReport = segments.windowed(3).any { it == listOf("build", "test-results", "test") }
+                val mavenReport = segments.size >= 3 &&
+                    segments[segments.size - 3] == "target" &&
+                    segments[segments.size - 2] == "surefire-reports" &&
+                    segments.last().startsWith("TEST-")
+                gradleReport && file.name.endsWith(".xml", ignoreCase = true) ||
+                    mavenReport && file.name.endsWith(".xml", ignoreCase = true)
             }
             .sortedBy { it.relativeTo(root).invariantSeparatorsPath }
             .take(MAX_REPORTS + 1)
