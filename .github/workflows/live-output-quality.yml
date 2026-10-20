@@ -116,9 +116,11 @@ jobs:
           capture 05-architecture "$CLI" architecture . --json
           # Select tracked source files only. Live builds can generate source files
           # inside nested build/ directories, which are not part of the analyzed graph.
-          SOURCE_FILE="$(git ls-files '*.java' | head -n 1)"
+          # Use sed instead of head: this script enables pipefail, and head can
+          # close the pipe early, making git ls-files exit with SIGPIPE (141).
+          SOURCE_FILE="$(git ls-files '*.java' | sed -n '1p')"
           if [ -z "$SOURCE_FILE" ]; then
-            SOURCE_FILE="$(git ls-files '*.kt' | head -n 1)"
+            SOURCE_FILE="$(git ls-files '*.kt' | sed -n '1p')"
           fi
           test -n "$SOURCE_FILE"
           capture 06-impact "$CLI" impact . "$SOURCE_FILE" --json
