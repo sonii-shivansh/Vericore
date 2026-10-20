@@ -10,12 +10,22 @@ object VerificationEvidenceIds {
     }
 
     fun isCommand(id: String): Boolean = id.matches(Regex("^verification-command-[0-9]{3}$"))
+
+    /** Stable selector for one explicitly bound JUnit testcase, using its exact class and name. */
+    fun junitTestCase(className: String, testName: String): String {
+        require(className.isNotBlank() && !className.contains("#")) { "JUnit testcase class name must be non-blank and must not contain #." }
+        require(testName.isNotBlank() && !testName.contains("#")) { "JUnit testcase name must be non-blank and must not contain #." }
+        return "junit-test-case:$className#$testName"
+    }
+
+    fun isJUnitTestCase(id: String): Boolean = id.matches(Regex("^junit-test-case:[^#\\s]+#[^#\\s].*$"))
 }
 
 @Serializable
 enum class CriterionEvidenceRule {
     MANUAL_REVIEW,
-    ALL_BOUND_COMMANDS_SUCCEEDED
+    ALL_BOUND_COMMANDS_SUCCEEDED,
+    ALL_BOUND_JUNIT_CASES_PASSED
 }
 
 
@@ -112,13 +122,19 @@ data class ChangeSpecification(
                 }
                 trimmed
             }.distinct().sorted()
-            if (binding.rule == CriterionEvidenceRule.ALL_BOUND_COMMANDS_SUCCEEDED) {
-                require(criterionId.startsWith("required-evidence-")) {
-                    "ALL_BOUND_COMMANDS_SUCCEEDED is only supported for required-evidence criteria"
+            when (binding.rule) {
+                CriterionEvidenceRule.ALL_BOUND_COMMANDS_SUCCEEDED -> {
+                    require(criterionId.startsWith("required-evidence-")) {
+                        "ALL_BOUND_COMMANDS_SUCCEEDED is only supported for required-evidence criteria"
+                    }
+                    require(ids.all(VerificationEvidenceIds::isCommand)) {
+                        "ALL_BOUND_COMMANDS_SUCCEEDED bindings must reference verification-command-NNN evidence IDs"
+                    }
                 }
-                require(ids.all(VerificationEvidenceIds::isCommand)) {
-                    "ALL_BOUND_COMMANDS_SUCCEEDED bindings must reference verification-command-NNN evidence IDs"
+                CriterionEvidenceRule.ALL_BOUND_JUNIT_CASES_PASSED -> require(ids.all(VerificationEvidenceIds::isJUnitTestCase)) {
+                    "ALL_BOUND_JUNIT_CASES_PASSED bindings must reference explicit junit-test-case:<class>#<name> evidence IDs"
                 }
+                CriterionEvidenceRule.MANUAL_REVIEW -> Unit
             }
             CriterionEvidenceBinding(criterionId, ids, binding.rule)
         }.sortedBy { it.criterionId }
