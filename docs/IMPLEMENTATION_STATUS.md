@@ -79,7 +79,7 @@ GitHub Actions is the authoritative automated execution environment for release 
 
 ## Current release line
 
-The last confirmed publication record is `v0.9.0`, published on 2026-10-10. Consult the [GitHub Releases page](https://github.com/sonii-shivansh/Vericore/releases) for the current published version. The version in `main` is source state, not proof that an artifact has been published. A new release requires a successful machine-readable readiness certificate and official release workflow for the exact candidate SHA.
+The latest published release confirmed against GitHub Releases is `v1.0.1`, published on 2026-10-20. See the [v1.0.1 release](https://github.com/sonii-shivansh/Vericore/releases/tag/v1.0.1). The version in `main` is source state, not proof that an artifact has been published. A new release requires a successful machine-readable readiness certificate and official release workflow for the exact candidate SHA. The published v1.0.1 artifact must be distinguished from later source fixes: source CI passing does not retroactively validate or repair an already-published archive.
 
 ## Current limitations
 
@@ -104,7 +104,7 @@ The master strategic roadmap is documented in [Product Direction](PRODUCT_DIRECT
 
 **Current operational priority: keep source, documentation, and published artifacts aligned.** Treat every candidate as unreleased until its tag and assets exist. Run the required gates on the exact candidate SHA before publication, and re-certify after any subsequent change.
 
-**Current product focus: structured change specification.** The prepare/plan CLI and MCP paths record explicit required behaviors, forbidden behaviors, protected invariants, acceptance criteria, and required evidence, with the specification bound to the plan and contract fingerprint. The deterministic evaluator supports numeric and Boolean metric comparisons against current-candidate evidence, plus the narrow `ALL_BOUND_COMMANDS_SUCCEEDED` rule for required-evidence criteria linked to declared verification commands. This command rule proves exit status only; it does not establish test coverage or semantic correctness. Natural-language obligations without a suitable evaluator remain `NOT_EVALUATED` or `INCONCLUSIVE`; citation presence alone is not proof, and contract-only verification does not rebuild candidate evidence.
+**Current product focus: connect test-report evidence to requirement-level verification.** The prepare/plan CLI and MCP paths record explicit required behaviors, forbidden behaviors, protected invariants, acceptance criteria, and required evidence, with the specification bound to the plan and contract fingerprint. The deterministic evaluator supports numeric and Boolean metric comparisons against current-candidate evidence, plus the narrow `ALL_BOUND_COMMANDS_SUCCEEDED` rule for required-evidence criteria linked to declared verification commands. This command rule proves exit status only; it does not establish test coverage or semantic correctness. `JUnitXmlReportParser` currently parses bounded JUnit XML and records test-level outcomes and report provenance, but the next development step is to wire this evidence into criterion evaluation and verification receipts with explicit, auditable bindings. Until that integration is implemented, natural-language obligations without a suitable evaluator remain `NOT_EVALUATED` or `INCONCLUSIVE`; citation presence alone is not proof, and contract-only verification does not rebuild candidate evidence.
 
 ### Ongoing regression expectations
 
