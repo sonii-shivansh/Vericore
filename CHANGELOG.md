@@ -8,6 +8,13 @@ This file records user-visible changes by release. It follows [Keep a Changelog]
 
 _No unreleased changes yet._
 
+## [1.0.1] — 2026-10-20
+
+### Fixed
+
+- Send application logs to stderr so commands using `--json` keep stdout valid JSON for scripts and AI-agent integrations.
+- Add regression assertions that parse the complete `init --json` output as a JSON document.
+
 ## [1.0.0] — 2026-10-20
 
 ### Added
