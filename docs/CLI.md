@@ -1,6 +1,6 @@
 # CLI Reference
 
-> Complete reference for the Vericore command-line interface. Vericore v1.0.1 is the latest published release confirmed on 2026-10-20; this branch may contain unreleased changes. The `main` branch may contain unreleased changes; use the tagged release and its changelog when verifying behavior of a packaged binary.
+> Complete reference for the Vericore command-line interface. Vericore v1.0.1 is the latest published release confirmed on 2026-10-20; this branch may contain unreleased changes; use the tagged release and its changelog when verifying behavior of a packaged binary.
 
 ## Global syntax
 
