@@ -222,7 +222,7 @@ For AI-assisted features, also document evidence sources, provider boundaries, d
 9. Confirm Agent Change Contract mutation tests pass.
 10. Tag and publish only from the exact candidate certified by the final release audit.
 
-The latest published release is `v0.9.0`, documented in [RELEASE_READINESS_0.9.0.md](RELEASE_READINESS_0.9.0.md). The published `v0.8.2`, `v0.8.1`, and `v0.8.0` releases remain historical records. `main` may contain post-release changes not included in the v0.9.0 artifacts. Do not describe changes on `main` as part of a published release unless they are included in that exact tag and artifact set.
+The latest published release confirmed on 2026-10-20 is `v1.0.1` ([release page](https://github.com/sonii-shivansh/Vericore/releases/tag/v1.0.1)). `v0.9.0`, `v0.8.2`, `v0.8.1`, and `v0.8.0` remain historical releases; `RELEASE_READINESS_0.9.0.md` is a historical certification record, not the current release status. `main` may contain changes not included in the published v1.0.1 artifacts. Do not describe changes on `main` as part of a published release unless they are included in that exact tag and artifact set.
 
 ## Documentation ownership
 
