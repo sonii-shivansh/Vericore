@@ -130,6 +130,22 @@ class JUnitXmlReportParserTest {
     }
 
     @Test
+    fun `report provenance path must be normalized and repository relative`() {
+        assertFailsWith<IllegalArgumentException> {
+            JUnitXmlReportParser.parse(
+                report("""<testsuite><testcase name="x"/></testsuite>"""),
+                candidate, candidate, stateDigest, stateDigest, "run-path", "../outside.xml"
+            )
+        }
+        assertFailsWith<IllegalArgumentException> {
+            JUnitXmlReportParser.parse(
+                report("""<testsuite><testcase name="x"/></testsuite>"""),
+                candidate, candidate, stateDigest, stateDigest, "run-path", "C:/outside.xml"
+            )
+        }
+    }
+
+    @Test
     fun `report digest changes when report content changes`() {
         val first = JUnitXmlReportParser.parse(report("""<testsuite><testcase name="one"/></testsuite>"""), candidate, candidate, stateDigest, stateDigest, "run")
         val second = JUnitXmlReportParser.parse(report("""<testsuite><testcase name="two"/></testsuite>"""), candidate, candidate, stateDigest, stateDigest, "run")
