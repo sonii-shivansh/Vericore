@@ -171,7 +171,7 @@ object ChangeSpecificationEvaluator {
                 "No concrete artifact has been linked to this evidence obligation."
             binding == null -> NOT_EVALUATED_REASON
             missingEvidence.isNotEmpty() ->
-                "Evidence binding references IDs absent from the prepared contract: ${missingEvidence.sorted().joinToString(", ")}."
+                "Evidence binding references IDs absent from current verification evidence: ${missingEvidence.sorted().joinToString(", ")}."
             commandEvaluation != null -> commandEvaluation.second
             junitEvaluation != null -> junitEvaluation.second
             metricEvaluation != null -> metricEvaluation.second
