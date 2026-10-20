@@ -96,7 +96,8 @@ object JUnitXmlReportParser {
         }
         require(reportPath == null || (
             reportPath.isNotBlank() && reportPath.length <= 1_024 &&
-                !reportPath.startsWith("/") && !Regex("^[A-Za-z]:").containsMatchIn(reportPath) &&
+                !reportPath.startsWith("/") && !reportPath.contains('\\\\') && !reportPath.contains(0.toChar()) &&
+                !Regex("^[A-Za-z]:").containsMatchIn(reportPath) &&
                 reportPath.split('/').none { it.isEmpty() || it == "." || it == ".." }
         )) {
             "JUnit report path must be a normalized repository-relative path of at most 1024 characters."
