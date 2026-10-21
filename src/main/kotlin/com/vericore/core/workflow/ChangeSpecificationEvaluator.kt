@@ -140,7 +140,11 @@ object ChangeSpecificationEvaluator {
     ): List<SpecificationCriterionEvaluation> = mapIndexed { index, statement ->
         val id = "$prefix-${(index + 1).toString().padStart(3, '0')}"
         val binding = bindings[id]
-        val missingEvidence = binding?.evidenceIds.orEmpty().filterNot(availableEvidenceIds::contains)
+        // A JUnit selector is proven by an exact match in the fresh report set below. Do not let its
+        // absence from the generic ID inventory mask the JUnit evaluator's NOT_EVALUATED result.
+        val isJUnitBinding = binding?.rule == CriterionEvidenceRule.ALL_BOUND_JUNIT_CASES_PASSED
+        val missingEvidence = if (isJUnitBinding) emptyList()
+            else binding?.evidenceIds.orEmpty().filterNot(availableEvidenceIds::contains)
         val metricEvaluation = if (binding != null && missingEvidence.isEmpty() && statement.startsWith(METRIC_PREFIX)) {
             evaluateMetric(statement, binding.evidenceIds, citationsById, ambiguousCitationIds, currentCandidateEvidenceAvailable)
         } else {

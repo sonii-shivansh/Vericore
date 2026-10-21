@@ -188,6 +188,35 @@ class ChangeSpecificationEvaluatorTest {
         assertEquals(CriterionEvaluationStatus.INCONCLUSIVE, evaluation.status)
     }
 
+    @Test
+    fun `missing JUnit testcase without available selector remains not evaluated`() {
+        val selector = VerificationEvidenceIds.junitTestCase("PaymentTest", "rejectsInvalidPayment")
+        val specification = ChangeSpecification(
+            acceptanceCriteria = listOf("Invalid payment is rejected"),
+            evidenceBindings = listOf(CriterionEvidenceBinding(
+                "acceptance-criterion-001", listOf(selector), CriterionEvidenceRule.ALL_BOUND_JUNIT_CASES_PASSED
+            ))
+        )
+
+        val missing = ChangeSpecificationEvaluator.evaluate(
+            specification,
+            availableEvidenceIds = emptySet(),
+            currentCandidateEvidenceAvailable = true,
+            junitTestReports = emptyList()
+        )!!
+        assertEquals(CriterionEvaluationStatus.NOT_EVALUATED, missing.status)
+        assertTrue(missing.criteria.single().reason.contains("not found in fresh reports"))
+
+        val stale = ChangeSpecificationEvaluator.evaluate(
+            specification,
+            availableEvidenceIds = emptySet(),
+            currentCandidateEvidenceAvailable = false,
+            junitTestReports = emptyList()
+        )!!
+        assertEquals(CriterionEvaluationStatus.NOT_EVALUATED, stale.status)
+        assertTrue(stale.criteria.single().reason.contains("unavailable"))
+    }
+
     private fun commandEvidenceSpecification() = ChangeSpecification(
         requiredEvidence = listOf("Unit-test command succeeds"),
         evidenceBindings = listOf(CriterionEvidenceBinding(

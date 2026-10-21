@@ -693,9 +693,7 @@
       "boundEvidenceIds": [
         "junit-test-case:PaymentTest#rejectsInvalidPayment"
       ],
-      "availableEvidenceIds": [
-        "junit-test-case:PaymentTest#rejectsInvalidPayment"
-      ],
+      "availableEvidenceIds": [],
       "citations": [],
       "bindingRule": "ALL_BOUND_JUNIT_CASES_PASSED",
       "junitTestReports": [],
@@ -711,9 +709,7 @@
       "boundEvidenceIds": [
         "junit-test-case:PaymentTest#rejectsInvalidPayment"
       ],
-      "availableEvidenceIds": [
-        "junit-test-case:PaymentTest#rejectsInvalidPayment"
-      ],
+      "availableEvidenceIds": [],
       "citations": [],
       "bindingRule": "ALL_BOUND_JUNIT_CASES_PASSED",
       "junitTestReports": [
