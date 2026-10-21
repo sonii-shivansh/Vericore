@@ -11,12 +11,21 @@ object VerificationEvidenceIds {
 
     fun isCommand(id: String): Boolean = id.matches(Regex("^verification-command-[0-9]{3}$"))
 
-    /** Stable selector for one explicitly bound JUnit testcase, using its exact class and name. */
+    /**
+     * Stable selector for one explicitly bound JUnit testcase.
+     *
+     * Escape '%' before '#' so selectors remain unambiguous even when a legal test class/name
+     * contains the delimiter or text that looks like an escape sequence. Existing selectors
+     * without these characters retain their original, human-readable representation.
+     */
     fun junitTestCase(className: String, testName: String): String {
-        require(className.isNotBlank() && !className.contains("#")) { "JUnit testcase class name must be non-blank and must not contain #." }
-        require(testName.isNotBlank() && !testName.contains("#")) { "JUnit testcase name must be non-blank and must not contain #." }
-        return "junit-test-case:$className#$testName"
+        require(className.isNotBlank()) { "JUnit testcase class name must be non-blank." }
+        require(testName.isNotBlank()) { "JUnit testcase name must be non-blank." }
+        return "junit-test-case:${escapeJUnitSelectorPart(className)}#${escapeJUnitSelectorPart(testName)}"
     }
+
+    private fun escapeJUnitSelectorPart(value: String): String =
+        value.replace("%", "%25").replace("#", "%23")
 
     fun isJUnitTestCase(id: String): Boolean = id.matches(Regex("^junit-test-case:[^#]+#[^#]+$"))
 }

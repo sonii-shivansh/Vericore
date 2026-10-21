@@ -10,7 +10,7 @@ This rule establishes command-execution outcomes only. A passing build or test c
 
 ## Explicit JUnit test-case criteria
 
-A criterion may explicitly bind to named test cases using `ALL_BOUND_JUNIT_CASES_PASSED` and selectors of the form `junit-test-case:<class>#<test-name>`. The selector identifies a test case by the class name and test name recorded in the JUnit XML; the evaluator does not infer that an arbitrary test is relevant to the requirement.
+A criterion may explicitly bind to named test cases using `ALL_BOUND_JUNIT_CASES_PASSED` and selectors of the form `junit-test-case:<class>#<test-name>`. The single `#` separates class and test name. Within either component, `%` is escaped as `%25` and `#` as `%23` (escape `%` first), so legal test names containing the separator remain addressable without selector collisions. Selectors with no escaped characters keep their existing spelling. The selector identifies a test case by the class name and test name recorded in the JUnit XML; the evaluator does not infer that an arbitrary test is relevant to the requirement.
 
 The collector recognizes conventional Gradle reports under `<module>/build/test-results/test/*.xml` and Maven Surefire reports under `<module>/target/surefire-reports/TEST-*.xml`. A report is fresh only when its bytes differ from the pre-verification snapshot and the Git candidate SHA and repository candidate-state digest remain unchanged across verification. Evidence preserves its normalized repository-relative path, SHA-256 report digest, parser version, execution ID, candidate SHA, and state digest. Report discovery and parsing are bounded, and DTD/external-entity access is disabled.
 

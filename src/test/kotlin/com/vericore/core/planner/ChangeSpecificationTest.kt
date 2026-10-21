@@ -103,9 +103,17 @@ class ChangeSpecificationTest {
                 evidenceBindings = listOf(CriterionEvidenceBinding("acceptance-criterion-001", listOf("file.1"), rule))
             ).normalized()
         }
-        assertFailsWith<IllegalArgumentException> {
-            VerificationEvidenceIds.junitTestCase("com.example#Bad", "test")
-        }
+        assertEquals(
+            "junit-test-case:com.example%23Bad#rejects%23Payment",
+            VerificationEvidenceIds.junitTestCase("com.example#Bad", "rejects#Payment")
+        )
+        assertEquals(
+            "junit-test-case:com.example%2523Bad#rejects%2523Payment",
+            VerificationEvidenceIds.junitTestCase("com.example%23Bad", "rejects%23Payment")
+        )
+        assertTrue(VerificationEvidenceIds.isJUnitTestCase(
+            VerificationEvidenceIds.junitTestCase("com.example#Bad", "rejects#Payment")
+        ))
     }
 
     @Test

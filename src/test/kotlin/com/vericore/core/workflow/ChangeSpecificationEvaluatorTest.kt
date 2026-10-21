@@ -107,6 +107,34 @@ class ChangeSpecificationEvaluatorTest {
     }
 
     @Test
+    fun `JUnit selector encoding handles delimiter characters without collisions`() {
+        val className = "Payment#Test"
+        val testName = "rejects#Payment"
+        val selector = VerificationEvidenceIds.junitTestCase(className, testName)
+        assertEquals("junit-test-case:Payment%23Test#rejects%23Payment", selector)
+
+        val literalEscapeText = VerificationEvidenceIds.junitTestCase("Payment%23Test", "rejects%23Payment")
+        assertEquals("junit-test-case:Payment%2523Test#rejects%2523Payment", literalEscapeText)
+        assertTrue(selector != literalEscapeText)
+
+        val evaluation = ChangeSpecificationEvaluator.evaluate(
+            ChangeSpecification(
+                acceptanceCriteria = listOf("Invalid payment is rejected"),
+                evidenceBindings = listOf(CriterionEvidenceBinding(
+                    "acceptance-criterion-001",
+                    listOf(selector),
+                    CriterionEvidenceRule.ALL_BOUND_JUNIT_CASES_PASSED
+                ))
+            ),
+            availableEvidenceIds = setOf(selector),
+            currentCandidateEvidenceAvailable = true,
+            junitTestReports = listOf(junitEvidence(className = className, name = testName))
+        )!!
+
+        assertEquals(CriterionEvaluationStatus.PASS, evaluation.status)
+    }
+
+    @Test
     fun `bound failed JUnit testcase fails the criterion`() {
         val selector = VerificationEvidenceIds.junitTestCase("PaymentTest", "rejectsInvalidPayment")
         val evaluation = ChangeSpecificationEvaluator.evaluate(
