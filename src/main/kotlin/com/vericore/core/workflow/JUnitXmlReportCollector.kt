@@ -54,22 +54,27 @@ internal object JUnitXmlReportCollector {
             .maxDepth(12)
             .filter { file ->
                 if (!file.isFile || !file.name.endsWith(".xml", ignoreCase = true)) return@filter false
-                val path = runCatching {
-                    file.canonicalFile.relativeTo(root).path.replace('\\', '/')
-                }.getOrNull() ?: return@filter false
-                val segments = path.split('/').map { it.lowercase() }
-                val gradleReport = segments.windowed(3).any {
-                    it == listOf("build", "test-results", "test")
-                }
-                val mavenReport = segments.size >= 3 &&
-                    segments[segments.size - 3] == "target" &&
-                    segments[segments.size - 2] == "surefire-reports" &&
-                    segments.last().startsWith("test-")
-                (gradleReport || mavenReport) && file.name.endsWith(".xml", ignoreCase = true)
+                val normalized = runCatching { file.canonicalFile }.getOrNull()
+                    ?: return@filter false
+                if (!normalized.toPath().startsWith(root.toPath())) return@filter false
+                val gradleReport = hasAncestorChain(normalized, "test", "test-results", "build")
+                val mavenReport = normalized.name.startsWith("TEST-", ignoreCase = true) &&
+                    hasAncestorChain(normalized, "surefire-reports", "target")
+                gradleReport || mavenReport
             }
             .sortedBy { it.relativeTo(root).invariantSeparatorsPath }
             .take(MAX_REPORTS + 1)
             .toList()
+    }
+
+
+    private fun hasAncestorChain(file: File, vararg expectedParentNames: String): Boolean {
+        var current = file.parentFile ?: return false
+        for (expectedName in expectedParentNames) {
+            if (!current.name.equals(expectedName, ignoreCase = true)) return false
+            current = current.parentFile ?: return expectedName == expectedParentNames.last()
+        }
+        return true
     }
 
     private fun sha256(file: File): String {
