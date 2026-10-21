@@ -598,6 +598,30 @@ class ChangeSpecificationEvaluatorTest {
                     timedOut = result["timedOut"]?.jsonPrimitive?.content?.toBoolean() ?: false
                 )
             }.orEmpty()
+            val junitTestReports = case["junitTestReports"]?.jsonArray?.map { reportElement ->
+                val report = reportElement.jsonObject
+                val testCases = report.getValue("cases").jsonArray.map { testCaseElement ->
+                    val testCase = testCaseElement.jsonObject
+                    JUnitTestCaseEvidence(
+                        className = testCase["className"]?.jsonPrimitive?.content,
+                        name = testCase.getValue("name").jsonPrimitive.content,
+                        status = JUnitCaseStatus.valueOf(testCase.getValue("status").jsonPrimitive.content)
+                    )
+                }
+                JUnitTestReportEvidence(
+                    candidateSha = report.getValue("candidateSha").jsonPrimitive.content,
+                    candidateStateDigest = report.getValue("candidateStateDigest").jsonPrimitive.content,
+                    executionId = report.getValue("executionId").jsonPrimitive.content,
+                    reportSha256 = report.getValue("reportSha256").jsonPrimitive.content,
+                    status = JUnitReportStatus.valueOf(report.getValue("status").jsonPrimitive.content),
+                    tests = report.getValue("tests").jsonPrimitive.content.toInt(),
+                    passed = report.getValue("passed").jsonPrimitive.content.toInt(),
+                    failed = report.getValue("failed").jsonPrimitive.content.toInt(),
+                    skipped = report.getValue("skipped").jsonPrimitive.content.toInt(),
+                    cases = testCases,
+                    reportPath = report.getValue("reportPath").jsonPrimitive.content
+                )
+            }.orEmpty()
             val citations = case.getValue("citations").jsonArray.map { citationElement ->
                 val citation = citationElement.jsonObject
                 EvidenceCitation(
@@ -620,7 +644,8 @@ class ChangeSpecificationEvaluatorTest {
                     specification,
                     availableEvidenceIds = availableIds.toSet(),
                     evidenceCitations = citations,
-                    commandResults = commandResults
+                    commandResults = commandResults,
+                    junitTestReports = junitTestReports
                 )!!
             } else {
                 ChangeSpecificationEvaluator.evaluate(
@@ -628,7 +653,8 @@ class ChangeSpecificationEvaluatorTest {
                     availableEvidenceIds = availableIds.toSet(),
                     evidenceCitations = citations,
                     currentCandidateEvidenceAvailable = currentCandidateEvidenceAvailable,
-                    commandResults = commandResults
+                    commandResults = commandResults,
+                    junitTestReports = junitTestReports
                 )!!
             }
             val expectedStatus = case.getValue("expectedStatus").jsonPrimitive.content
