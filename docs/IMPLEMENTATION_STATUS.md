@@ -42,7 +42,7 @@
 - deterministic SHA-256 contract fingerprint
 - persisted output/agent-change-contract.json
 - schema 3.0 contracts embed a validated, deterministic per-path candidate baseline whose digest is fingerprint-bound; prepare fails on input drift during analysis, and full plus contract-only verification reject unplanned prepare-to-verify drift (including ignored/untracked inputs)
-- legacy schema 2.0 contracts without a baseline fail closed and require re-preparation; verification receipt schema 1.4 records baseline digest validity, unplanned drift paths, and JUnit report provenance
+- legacy schema 2.0 contracts without a baseline fail closed and require re-preparation; verification receipt schema 1.5 records baseline digest validity, unplanned drift paths, JUnit report provenance, and optional agent/session/event context
 - contract tamper, plan mismatch, repository mismatch, stale-HEAD, and unexpected-change detection
 - candidate repository-input state digests captured before analysis, before declared verification commands, and after those commands; relevant candidate drift fails closed
 - structured specification evaluation records stable per-criterion IDs; numeric and Boolean metric criteria are evaluated against current-candidate grounded evidence; malformed expressions, unbound/dangling citations, missing metrics, and type mismatches fail closed; unsupported free-form criteria remain `NOT_EVALUATED` or `INCONCLUSIVE`; any failed criterion makes the overall verification `FAIL`, while unevaluated/inconclusive criteria require review; contract-only verification leaves metrics `NOT_EVALUATED` because it does not rebuild candidate evidence

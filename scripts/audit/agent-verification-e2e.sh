@@ -55,6 +55,7 @@ prepare = mcp([{
         "repoPath":str(root),
         "changeSummary":"Update Target value safely",
         "plannedPaths":["src/main/kotlin/Target.kt"],
+        "agentContext":{"provider":" Cursor ","agentId":"agent-e2e-1","sessionId":"session-e2e-1","eventId":"event-e2e-1"},
         "specification":{
             "requiredBehaviors":["Return the updated target value"],
             "forbiddenBehaviors":["Do not alter unrelated files"],
@@ -72,6 +73,11 @@ result = next(r["result"] for r in prepare if r.get("id")==2)
 assert result["isError"] is False, result
 prepared = json.loads(next(x["text"] for x in result["content"]))
 assert prepared["contract"]["fingerprint"]
+assert prepared["contract"]["schemaVersion"] == "3.1", prepared["contract"]
+assert prepared["contract"]["agentContext"] == {
+    "schemaVersion":"1.0","provider":"cursor","agentId":"agent-e2e-1",
+    "sessionId":"session-e2e-1","eventId":"event-e2e-1","source":"mcp"
+}, prepared["contract"]
 assert prepared["plan"]["plannedPaths"] == ["src/main/kotlin/Target.kt"]
 assert prepared["plan"]["specification"]["requiredBehaviors"] == ["Return the updated target value"]
 assert prepared["plan"]["specification"] == prepared["contract"]["specification"]
@@ -119,6 +125,7 @@ cli_verify = subprocess.run(
 assert cli_verify.returncode == 0, cli_verify.stdout + chr(10) + cli_verify.stderr
 receipt = json.loads((root/"output/verification-receipt.json").read_text())
 assert receipt["schemaVersion"] == "1.5", receipt
+assert receipt["agentContext"] == prepared["contract"]["agentContext"], receipt
 assert receipt["preparedBaselineDigest"] and len(receipt["preparedBaselineDigest"]) == 64, receipt
 assert receipt["baselineManifestValid"] is True, receipt
 assert receipt["unplannedBaselineDriftPaths"] == [], receipt
@@ -156,6 +163,22 @@ drift_verification = json.loads(drift_path.read_text())
 assert drift_verification["status"] == "FAIL", drift_verification
 assert "baseline-drift.secret" in drift_verification["changedPaths"], drift_verification
 ignored_drift.unlink()
+
+# Exercise the CLI adapter boundary after the MCP flow has been fully audited.
+cli_prepare = subprocess.run(
+    [app, "prepare", "Record CLI agent context", "--path", str(root),
+     "--planned-path", "src/main/kotlin/Target.kt", "--agent-provider", "Codex",
+     "--agent-id", "cli-agent-1", "--agent-session-id", "cli-session-1",
+     "--agent-event-id", "cli-event-1"],
+    cwd=root, text=True, capture_output=True
+)
+assert cli_prepare.returncode == 0, cli_prepare.stdout + chr(10) + cli_prepare.stderr
+cli_contract = json.loads((root/"output/agent-change-contract.json").read_text())
+assert cli_contract["schemaVersion"] == "3.1", cli_contract
+assert cli_contract["agentContext"] == {
+    "schemaVersion":"1.0","provider":"codex","agentId":"cli-agent-1",
+    "sessionId":"cli-session-1","eventId":"cli-event-1","source":"cli"
+}, cli_contract
 
 
 # Exercise supported metric criteria through preparation, real candidate analysis,
