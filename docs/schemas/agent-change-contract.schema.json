@@ -248,7 +248,7 @@
         }
       },
       "additionalProperties": false,
-      "description": "Prepare-time deterministic per-path repository-input manifest. Required and digest-bound for schema 3.0; absent on legacy schema 2.0 contracts."
+      "description": "Prepare-time deterministic per-path repository-input manifest. Required and digest-bound for schema 3.0/3.1; absent on legacy schema 2.0/2.1 contracts."
     },
     "agentContext": {
       "type": [
