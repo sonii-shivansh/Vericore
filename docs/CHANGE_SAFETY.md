@@ -55,7 +55,7 @@ Its SHA-256 fingerprint covers the meaningful persisted contract fields, includi
 
 The plan and contract are deterministic artifacts. Preparation does not modify source code.
 
-The structured specification is caller-authored. Vericore validates its shape and size, normalizes whitespace and duplicate entries, and preserves it in both artifacts. Evidence bindings must reference a declared criterion ID and evidence IDs present in the prepared contract. A dangling evidence ID or unknown criterion fails closed. A valid evidence link is recorded as `INCONCLUSIVE` because the current system does not yet semantically evaluate arbitrary evidence content. The overall result remains `REVIEW_REQUIRED` until the criterion can be evaluated appropriately.
+The structured specification is caller-authored. Vericore validates its shape and size, normalizes whitespace and duplicate entries, and preserves it in both artifacts. Every evidence binding must reference a declared criterion ID. Grounded-citation bindings must refer to evidence in the prepared contract; `ALL_BOUND_COMMANDS_SUCCEEDED` binds `required-evidence` criteria to IDs in the persisted verification-command list; `ALL_BOUND_JUNIT_CASES_PASSED` binds an explicit test selector to a matching testcase in a fresh JUnit report collected during full verification. Invalid rules, unsupported evidence IDs, dangling citations, and unknown criteria fail closed. Manual-review bindings and unsupported free-form obligations do not become passes merely because an ID is present; they remain `INCONCLUSIVE` or `NOT_EVALUATED` until appropriate evidence can be evaluated.
 
 ## 2. Change the code
 
@@ -84,7 +84,7 @@ Verification loads the persisted contract and validates:
 10. recommended verification commands;
 11. verification provenance.
 
-For a fast boundary check, `vericore verify --contract-only` validates the persisted contract, repository identity, prepared `HEAD`, prepare-time baseline integrity and drift, plan binding, and current mutation scope without rebuilding the full dependency analysis graph. It also reports the structured specification evaluation. Because this mode does not rebuild current-candidate evidence, supported metric criteria whose citation is unavailable in this mode remain `NOT_EVALUATED` rather than being incorrectly marked `FAIL`; the result remains `REVIEW_REQUIRED`. Use full `vericore verify` to evaluate metric criteria against current-candidate evidence.
+For a fast boundary check, `vericore verify --contract-only` validates the persisted contract, repository identity, prepared `HEAD`, prepare-time baseline integrity and drift, plan binding, and current mutation scope without rebuilding the full dependency analysis graph. It also reports the structured specification evaluation. Because this mode neither executes the declared verification commands nor rebuilds current-candidate evidence, metric, command-result, and JUnit-report criteria remain `NOT_EVALUATED`; prepared or stale evidence must not be reused as proof. Use full `vericore verify` to evaluate supported metrics against current-candidate evidence and command/JUnit rules against outcomes and reports collected during that verification.
 
 A missing, tampered, mismatched, cross-repository, or stale contract produces `FAIL`. Verification does not silently reconstruct a replacement contract from a mutable plan.
 
@@ -138,7 +138,13 @@ The goal is to fail closed when the prepared verification boundary is no longer 
 
 ### Specification evaluation status
 
-A non-empty structured specification is expanded into stable per-criterion records. Current criteria are explicitly `NOT_EVALUATED` because no criterion-specific evidence evaluator is implemented yet. Vericore does not infer that a behavior passed merely because test commands passed or the repository stayed in scope. The overall verification result is `REVIEW_REQUIRED` until each obligation can be evaluated against appropriate evidence. Empty specifications preserve the prior status behavior.
+A non-empty structured specification is expanded into stable per-criterion records. The current deterministic evaluators are deliberately narrow:
+
+- Numeric and Boolean `metric:<citation-id>.<metric-key><operator><value>` criteria are evaluated against fresh current-candidate grounded evidence during full verification. They remain `NOT_EVALUATED` in contract-only mode.
+- `ALL_BOUND_COMMANDS_SUCCEEDED` is supported only for `requiredEvidence` criteria bound to declared `verification-command-NNN` IDs. All bound commands must have executed, avoided timeout and exited zero to pass; non-zero exit is `FAIL`, missing results are `NOT_EVALUATED`, and timeouts are `INCONCLUSIVE`.
+- `ALL_BOUND_JUNIT_CASES_PASSED` evaluates explicit `junit-test-case:<class>#<test-name>` selectors against fresh conventional Gradle/Maven XML reports. A unique passing case can pass that criterion; a failed case is `FAIL`, skipped or ambiguous cases are `INCONCLUSIVE`, and missing/stale reports are `NOT_EVALUATED`. Within selector components, `%` is escaped as `%25` and `#` as `%23` (escape percent first).
+
+These rules prove only the deterministic outcome they inspect. A successful command does not establish test coverage, and a passing named testcase does not prove that it fully covers the natural-language requirement. Unsupported free-form criteria and manual-review obligations remain `NOT_EVALUATED` or `INCONCLUSIVE`; Vericore never infers a pass merely from command success or an in-scope diff. Any failed criterion makes the overall result `FAIL`; unevaluated or inconclusive obligations require `REVIEW_REQUIRED`. Empty specifications preserve the prior status behavior.
 
 ## AI-agent workflow
 

@@ -7,8 +7,10 @@ import javax.xml.XMLConstants
 import javax.xml.parsers.DocumentBuilderFactory
 import org.w3c.dom.Element
 import org.w3c.dom.Node
+import kotlinx.serialization.Serializable
 
 /** Result of interpreting a JUnit XML report; only ALL_PASSED may be considered successful evidence. */
+@Serializable
 enum class JUnitReportStatus {
     ALL_PASSED,
     FAILED,
@@ -17,18 +19,21 @@ enum class JUnitReportStatus {
     INCOMPLETE
 }
 
+@Serializable
 enum class JUnitCaseStatus {
     PASSED,
     FAILED,
     SKIPPED
 }
 
+@Serializable
 data class JUnitTestCaseEvidence(
     val className: String?,
     val name: String,
     val status: JUnitCaseStatus
 )
 
+@Serializable
 data class JUnitTestReportEvidence(
     val schemaVersion: String = "1.0",
     val parserVersion: String = JUnitXmlReportParser.PARSER_VERSION,
@@ -41,7 +46,8 @@ data class JUnitTestReportEvidence(
     val passed: Int,
     val failed: Int,
     val skipped: Int,
-    val cases: List<JUnitTestCaseEvidence>
+    val cases: List<JUnitTestCaseEvidence>,
+    val reportPath: String? = null
 )
 
 /**
@@ -63,7 +69,8 @@ object JUnitXmlReportParser {
         candidateShaAfter: String,
         candidateStateDigestBefore: String,
         candidateStateDigestAfter: String,
-        executionId: String
+        executionId: String,
+        reportPath: String? = null
     ): JUnitTestReportEvidence {
         require(candidateShaBefore.matches(shaPattern)) {
             "Candidate SHA before test execution must be a full 40-character Git SHA."
@@ -86,6 +93,14 @@ object JUnitXmlReportParser {
         }
         require(executionId.isNotBlank() && executionId.length <= 256) {
             "Test execution ID must be non-blank and at most 256 characters."
+        }
+        require(reportPath == null || (
+            reportPath.isNotBlank() && reportPath.length <= 1_024 &&
+                !reportPath.startsWith("/") && !reportPath.contains('\\') && !reportPath.contains(0.toChar()) &&
+                !Regex("^[A-Za-z]:").containsMatchIn(reportPath) &&
+                reportPath.split('/').none { it.isEmpty() || it == "." || it == ".." }
+        )) {
+            "JUnit report path must be a normalized repository-relative path of at most 1024 characters."
         }
         require(reportFile.isFile) { "JUnit XML report does not exist: ${reportFile.path}" }
         val length = reportFile.length()
@@ -172,7 +187,8 @@ object JUnitXmlReportParser {
             passed = passed,
             failed = failed,
             skipped = skipped,
-            cases = cases
+            cases = cases,
+            reportPath = reportPath
         )
     }
 }

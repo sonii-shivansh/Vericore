@@ -69,7 +69,8 @@ object ChangeSpecificationEvaluator {
         availableEvidenceIds: Set<String> = emptySet(),
         evidenceCitations: List<EvidenceCitation> = emptyList(),
         currentCandidateEvidenceAvailable: Boolean = false,
-        commandResults: List<VerificationCommandResult> = emptyList()
+        commandResults: List<VerificationCommandResult> = emptyList(),
+        junitTestReports: List<JUnitTestReportEvidence> = emptyList()
     ): ChangeSpecificationEvaluation? {
         val normalized = try {
             specification.normalized()
@@ -98,12 +99,18 @@ object ChangeSpecificationEvaluator {
         val commandResultsById = commandResults.mapIndexed { index, result ->
             VerificationEvidenceIds.command(index + 1) to result
         }.toMap()
+        val junitCasesById = junitTestReports
+            .flatMap { report -> report.cases.mapNotNull { testCase ->
+                val className = testCase.className ?: return@mapNotNull null
+                VerificationEvidenceIds.junitTestCase(className, testCase.name) to (report to testCase)
+            } }
+            .groupBy({ it.first }, { it.second })
         val criteria = buildList {
-            addAll(normalized.requiredBehaviors.withIds("required-behavior", SpecificationCriterionKind.REQUIRED_BEHAVIOR, bindings, availableIds, citationsById, ambiguousCitationIds, currentCandidateEvidenceAvailable, commandResultsById))
-            addAll(normalized.forbiddenBehaviors.withIds("forbidden-behavior", SpecificationCriterionKind.FORBIDDEN_BEHAVIOR, bindings, availableIds, citationsById, ambiguousCitationIds, currentCandidateEvidenceAvailable, commandResultsById))
-            addAll(normalized.protectedInvariants.withIds("protected-invariant", SpecificationCriterionKind.PROTECTED_INVARIANT, bindings, availableIds, citationsById, ambiguousCitationIds, currentCandidateEvidenceAvailable, commandResultsById))
-            addAll(normalized.acceptanceCriteria.withIds("acceptance-criterion", SpecificationCriterionKind.ACCEPTANCE_CRITERION, bindings, availableIds, citationsById, ambiguousCitationIds, currentCandidateEvidenceAvailable, commandResultsById))
-            addAll(normalized.requiredEvidence.withIds("required-evidence", SpecificationCriterionKind.REQUIRED_EVIDENCE, bindings, availableIds, citationsById, ambiguousCitationIds, currentCandidateEvidenceAvailable, commandResultsById))
+            addAll(normalized.requiredBehaviors.withIds("required-behavior", SpecificationCriterionKind.REQUIRED_BEHAVIOR, bindings, availableIds, citationsById, ambiguousCitationIds, currentCandidateEvidenceAvailable, commandResultsById, junitCasesById))
+            addAll(normalized.forbiddenBehaviors.withIds("forbidden-behavior", SpecificationCriterionKind.FORBIDDEN_BEHAVIOR, bindings, availableIds, citationsById, ambiguousCitationIds, currentCandidateEvidenceAvailable, commandResultsById, junitCasesById))
+            addAll(normalized.protectedInvariants.withIds("protected-invariant", SpecificationCriterionKind.PROTECTED_INVARIANT, bindings, availableIds, citationsById, ambiguousCitationIds, currentCandidateEvidenceAvailable, commandResultsById, junitCasesById))
+            addAll(normalized.acceptanceCriteria.withIds("acceptance-criterion", SpecificationCriterionKind.ACCEPTANCE_CRITERION, bindings, availableIds, citationsById, ambiguousCitationIds, currentCandidateEvidenceAvailable, commandResultsById, junitCasesById))
+            addAll(normalized.requiredEvidence.withIds("required-evidence", SpecificationCriterionKind.REQUIRED_EVIDENCE, bindings, availableIds, citationsById, ambiguousCitationIds, currentCandidateEvidenceAvailable, commandResultsById, junitCasesById))
         }
         val notEvaluatedCount = criteria.count { it.status == CriterionEvaluationStatus.NOT_EVALUATED }
         val status = when {
@@ -128,11 +135,16 @@ object ChangeSpecificationEvaluator {
         citationsById: Map<String, EvidenceCitation>,
         ambiguousCitationIds: Set<String>,
         currentCandidateEvidenceAvailable: Boolean,
-        commandResultsById: Map<String, VerificationCommandResult>
+        commandResultsById: Map<String, VerificationCommandResult>,
+        junitCasesById: Map<String, List<Pair<JUnitTestReportEvidence, JUnitTestCaseEvidence>>>
     ): List<SpecificationCriterionEvaluation> = mapIndexed { index, statement ->
         val id = "$prefix-${(index + 1).toString().padStart(3, '0')}"
         val binding = bindings[id]
-        val missingEvidence = binding?.evidenceIds.orEmpty().filterNot(availableEvidenceIds::contains)
+        // A JUnit selector is proven by an exact match in the fresh report set below. Do not let its
+        // absence from the generic ID inventory mask the JUnit evaluator's NOT_EVALUATED result.
+        val isJUnitBinding = binding?.rule == CriterionEvidenceRule.ALL_BOUND_JUNIT_CASES_PASSED
+        val missingEvidence = if (isJUnitBinding) emptyList()
+            else binding?.evidenceIds.orEmpty().filterNot(availableEvidenceIds::contains)
         val metricEvaluation = if (binding != null && missingEvidence.isEmpty() && statement.startsWith(METRIC_PREFIX)) {
             evaluateMetric(statement, binding.evidenceIds, citationsById, ambiguousCitationIds, currentCandidateEvidenceAvailable)
         } else {
@@ -145,10 +157,16 @@ object ChangeSpecificationEvaluator {
         } else {
             null
         }
+        val junitEvaluation = if (binding != null && missingEvidence.isEmpty() &&
+            binding.rule == CriterionEvidenceRule.ALL_BOUND_JUNIT_CASES_PASSED
+        ) {
+            evaluateBoundJUnitCases(binding, junitCasesById, currentCandidateEvidenceAvailable)
+        } else null
         val status = when {
             binding == null -> CriterionEvaluationStatus.NOT_EVALUATED
             missingEvidence.isNotEmpty() -> CriterionEvaluationStatus.FAIL
             commandEvaluation != null -> commandEvaluation.first
+            junitEvaluation != null -> junitEvaluation.first
             metricEvaluation != null -> metricEvaluation.first
             else -> CriterionEvaluationStatus.INCONCLUSIVE
         }
@@ -157,8 +175,9 @@ object ChangeSpecificationEvaluator {
                 "No concrete artifact has been linked to this evidence obligation."
             binding == null -> NOT_EVALUATED_REASON
             missingEvidence.isNotEmpty() ->
-                "Evidence binding references IDs absent from the prepared contract: ${missingEvidence.sorted().joinToString(", ")}."
+                "Evidence binding references IDs absent from current verification evidence: ${missingEvidence.sorted().joinToString(", ")}."
             commandEvaluation != null -> commandEvaluation.second
+            junitEvaluation != null -> junitEvaluation.second
             metricEvaluation != null -> metricEvaluation.second
             else ->
                 "Evidence IDs are bound to this criterion, but their content has not been semantically evaluated."
@@ -171,6 +190,41 @@ object ChangeSpecificationEvaluator {
             reason = reason,
             evidenceIds = binding?.evidenceIds.orEmpty()
         )
+    }
+
+
+    private fun evaluateBoundJUnitCases(
+        binding: CriterionEvidenceBinding,
+        junitCasesById: Map<String, List<Pair<JUnitTestReportEvidence, JUnitTestCaseEvidence>>>,
+        currentCandidateEvidenceAvailable: Boolean
+    ): Pair<CriterionEvaluationStatus, String> {
+        if (!currentCandidateEvidenceAvailable) {
+            return CriterionEvaluationStatus.NOT_EVALUATED to
+                "Current-candidate JUnit evidence is unavailable; rerun full verify rather than relying on stale test reports."
+        }
+        val matches = binding.evidenceIds.map { id -> id to junitCasesById[id].orEmpty() }
+        if (matches.any { it.second.isEmpty() }) {
+            return CriterionEvaluationStatus.NOT_EVALUATED to
+                "One or more explicitly bound JUnit test cases were not found in fresh reports from this verification run."
+        }
+        if (matches.any { it.second.size != 1 }) {
+            return CriterionEvaluationStatus.INCONCLUSIVE to
+                "At least one bound JUnit test-case selector matched multiple reports; ambiguous test evidence cannot satisfy a criterion."
+        }
+        val selected = matches.map { it.second.single() }
+        val failed = selected.filter { it.second.status == JUnitCaseStatus.FAILED }
+        if (failed.isNotEmpty()) {
+            return CriterionEvaluationStatus.FAIL to
+                "At least one explicitly bound JUnit test case failed."
+        }
+        val skipped = selected.filter { it.second.status == JUnitCaseStatus.SKIPPED }
+        if (skipped.isNotEmpty()) {
+            return CriterionEvaluationStatus.INCONCLUSIVE to
+                "At least one explicitly bound JUnit test case was skipped; skipped tests do not prove the requirement."
+        }
+        val reportRefs = selected.map { (report, _) -> "${report.executionId}:${report.reportSha256}" }.distinct().sorted()
+        return CriterionEvaluationStatus.PASS to
+            "All explicitly bound JUnit test cases passed on the current candidate. Report provenance: ${reportRefs.joinToString(", ")}. This proves these tests passed, not that the tests fully cover the requirement."
     }
 
     private fun evaluateBoundCommands(

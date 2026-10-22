@@ -1,6 +1,6 @@
 {
   "benchmarkId": "vericore-agent-change",
-  "benchmarkVersion": "0.2.0",
+  "benchmarkVersion": "0.2.1",
   "purpose": "Deterministic regression vectors guarding against false acceptance and false rejection in change-specification evaluation. These vectors are executed by ChangeSpecificationEvaluatorTest in the full Gradle unit suite; they are not counted as executed in the separate Phase 0 CLI audit result.",
   "cases": [
     {
@@ -502,6 +502,241 @@
       ],
       "expectedStatus": "FAIL",
       "currentCandidateEvidenceAvailable": true
+    },
+    {
+      "id": "bound-junit-case-passes",
+      "classification": "false-rejection-guard",
+      "criterionKind": "ACCEPTANCE_CRITERION",
+      "criterion": "Invalid payments are rejected",
+      "bindingCriterionId": "acceptance-criterion-001",
+      "boundEvidenceIds": [
+        "junit-test-case:PaymentTest#rejectsInvalidPayment"
+      ],
+      "availableEvidenceIds": [
+        "junit-test-case:PaymentTest#rejectsInvalidPayment"
+      ],
+      "citations": [],
+      "bindingRule": "ALL_BOUND_JUNIT_CASES_PASSED",
+      "junitTestReports": [
+        {
+          "schemaVersion": "1.0",
+          "parserVersion": "1.0",
+          "candidateSha": "0123456789abcdef0123456789abcdef01234567",
+          "candidateStateDigest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          "executionId": "benchmark-run-pass",
+          "reportSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "status": "ALL_PASSED",
+          "tests": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "cases": [
+            {
+              "className": "PaymentTest",
+              "name": "rejectsInvalidPayment",
+              "status": "PASSED"
+            }
+          ],
+          "reportPath": "build/test-results/test/TEST-Payment.xml"
+        }
+      ],
+      "expectedStatus": "PASS",
+      "currentCandidateEvidenceAvailable": true
+    },
+    {
+      "id": "bound-junit-case-fails",
+      "classification": "false-acceptance-guard",
+      "criterionKind": "ACCEPTANCE_CRITERION",
+      "criterion": "Invalid payments are rejected",
+      "bindingCriterionId": "acceptance-criterion-001",
+      "boundEvidenceIds": [
+        "junit-test-case:PaymentTest#rejectsInvalidPayment"
+      ],
+      "availableEvidenceIds": [
+        "junit-test-case:PaymentTest#rejectsInvalidPayment"
+      ],
+      "citations": [],
+      "bindingRule": "ALL_BOUND_JUNIT_CASES_PASSED",
+      "junitTestReports": [
+        {
+          "schemaVersion": "1.0",
+          "parserVersion": "1.0",
+          "candidateSha": "0123456789abcdef0123456789abcdef01234567",
+          "candidateStateDigest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          "executionId": "benchmark-run-fail",
+          "reportSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "status": "FAILED",
+          "tests": 1,
+          "passed": 0,
+          "failed": 1,
+          "skipped": 0,
+          "cases": [
+            {
+              "className": "PaymentTest",
+              "name": "rejectsInvalidPayment",
+              "status": "FAILED"
+            }
+          ],
+          "reportPath": "build/test-results/test/TEST-Payment.xml"
+        }
+      ],
+      "expectedStatus": "FAIL",
+      "currentCandidateEvidenceAvailable": true
+    },
+    {
+      "id": "bound-junit-case-skipped-is-inconclusive",
+      "classification": "fail-closed-guard",
+      "criterionKind": "ACCEPTANCE_CRITERION",
+      "criterion": "Invalid payments are rejected",
+      "bindingCriterionId": "acceptance-criterion-001",
+      "boundEvidenceIds": [
+        "junit-test-case:PaymentTest#rejectsInvalidPayment"
+      ],
+      "availableEvidenceIds": [
+        "junit-test-case:PaymentTest#rejectsInvalidPayment"
+      ],
+      "citations": [],
+      "bindingRule": "ALL_BOUND_JUNIT_CASES_PASSED",
+      "junitTestReports": [
+        {
+          "schemaVersion": "1.0",
+          "parserVersion": "1.0",
+          "candidateSha": "0123456789abcdef0123456789abcdef01234567",
+          "candidateStateDigest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          "executionId": "benchmark-run-skip",
+          "reportSha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+          "status": "SKIPPED_ONLY",
+          "tests": 1,
+          "passed": 0,
+          "failed": 0,
+          "skipped": 1,
+          "cases": [
+            {
+              "className": "PaymentTest",
+              "name": "rejectsInvalidPayment",
+              "status": "SKIPPED"
+            }
+          ],
+          "reportPath": "build/test-results/test/TEST-Payment.xml"
+        }
+      ],
+      "expectedStatus": "INCONCLUSIVE",
+      "currentCandidateEvidenceAvailable": true
+    },
+    {
+      "id": "duplicate-junit-selector-is-inconclusive",
+      "classification": "fail-closed-guard",
+      "criterionKind": "ACCEPTANCE_CRITERION",
+      "criterion": "Invalid payments are rejected",
+      "bindingCriterionId": "acceptance-criterion-001",
+      "boundEvidenceIds": [
+        "junit-test-case:PaymentTest#rejectsInvalidPayment"
+      ],
+      "availableEvidenceIds": [
+        "junit-test-case:PaymentTest#rejectsInvalidPayment"
+      ],
+      "citations": [],
+      "bindingRule": "ALL_BOUND_JUNIT_CASES_PASSED",
+      "junitTestReports": [
+        {
+          "schemaVersion": "1.0",
+          "parserVersion": "1.0",
+          "candidateSha": "0123456789abcdef0123456789abcdef01234567",
+          "candidateStateDigest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          "executionId": "benchmark-run-duplicate",
+          "reportSha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "status": "ALL_PASSED",
+          "tests": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "cases": [
+            {
+              "className": "PaymentTest",
+              "name": "rejectsInvalidPayment",
+              "status": "PASSED"
+            }
+          ],
+          "reportPath": "service/build/test-results/test/TEST-Payment.xml"
+        },
+        {
+          "schemaVersion": "1.0",
+          "parserVersion": "1.0",
+          "candidateSha": "0123456789abcdef0123456789abcdef01234567",
+          "candidateStateDigest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          "executionId": "benchmark-run-duplicate-2",
+          "reportSha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "status": "ALL_PASSED",
+          "tests": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "cases": [
+            {
+              "className": "PaymentTest",
+              "name": "rejectsInvalidPayment",
+              "status": "PASSED"
+            }
+          ],
+          "reportPath": "integration/build/test-results/test/TEST-Payment.xml"
+        }
+      ],
+      "expectedStatus": "INCONCLUSIVE",
+      "currentCandidateEvidenceAvailable": true
+    },
+    {
+      "id": "missing-junit-selector-is-not-evaluated",
+      "classification": "false-acceptance-guard",
+      "criterionKind": "ACCEPTANCE_CRITERION",
+      "criterion": "Invalid payments are rejected",
+      "bindingCriterionId": "acceptance-criterion-001",
+      "boundEvidenceIds": [
+        "junit-test-case:PaymentTest#rejectsInvalidPayment"
+      ],
+      "availableEvidenceIds": [],
+      "citations": [],
+      "bindingRule": "ALL_BOUND_JUNIT_CASES_PASSED",
+      "junitTestReports": [],
+      "expectedStatus": "NOT_EVALUATED",
+      "currentCandidateEvidenceAvailable": true
+    },
+    {
+      "id": "stale-junit-evidence-is-not-evaluated",
+      "classification": "false-acceptance-guard",
+      "criterionKind": "ACCEPTANCE_CRITERION",
+      "criterion": "Invalid payments are rejected",
+      "bindingCriterionId": "acceptance-criterion-001",
+      "boundEvidenceIds": [
+        "junit-test-case:PaymentTest#rejectsInvalidPayment"
+      ],
+      "availableEvidenceIds": [],
+      "citations": [],
+      "bindingRule": "ALL_BOUND_JUNIT_CASES_PASSED",
+      "junitTestReports": [
+        {
+          "schemaVersion": "1.0",
+          "parserVersion": "1.0",
+          "candidateSha": "0123456789abcdef0123456789abcdef01234567",
+          "candidateStateDigest": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+          "executionId": "benchmark-run-pass",
+          "reportSha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "status": "ALL_PASSED",
+          "tests": 1,
+          "passed": 1,
+          "failed": 0,
+          "skipped": 0,
+          "cases": [
+            {
+              "className": "PaymentTest",
+              "name": "rejectsInvalidPayment",
+              "status": "PASSED"
+            }
+          ],
+          "reportPath": "build/test-results/test/TEST-Payment.xml"
+        }
+      ],
+      "expectedStatus": "NOT_EVALUATED",
+      "currentCandidateEvidenceAvailable": false
     }
   ]
 }

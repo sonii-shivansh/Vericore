@@ -30,7 +30,7 @@ data class VerificationExecutionResult(
 
 @Serializable
 data class EngineeringVerificationResult(
-    val schemaVersion: String = "1.6",
+    val schemaVersion: String = "1.7",
     val repository: String,
     val safety: ChangeSafetyResult,
     val prIntelligence: com.vericore.core.intelligence.PRIntelligenceResult,
@@ -50,7 +50,8 @@ data class EngineeringVerificationResult(
     val candidateStateStable: Boolean,
     val candidateStateFileCount: Int,
     val postVerificationFileCount: Int,
-    val specificationEvaluation: ChangeSpecificationEvaluation? = null
+    val specificationEvaluation: ChangeSpecificationEvaluation? = null,
+    val junitTestReports: List<JUnitTestReportEvidence> = emptyList()
 )
 
 /** Runs deterministic post-change checks against the exact persisted contract produced by prepare. */
@@ -133,6 +134,7 @@ object EngineeringVerification {
         val contractValid = contractReasons.isEmpty()
         val contractResult = AgentChangeContractResult(contract, contractValid, contractReasons)
         val currentCandidateEvidence = GroundedEvidenceBuilder.fromSnapshot(snapshot)
+        val junitReportsBefore = JUnitXmlReportCollector.snapshot(root)
         val execution = if (contractValid && safety.status != SafetyStatus.FAIL && analysisStateStable) {
             VerificationExecutionResult(commands = VerificationCommandExecutor.execute(root, contract.verificationCommands))
         } else {
@@ -140,6 +142,16 @@ object EngineeringVerification {
         }
         val postVerificationCandidate = CandidateStateSnapshotter.capture(root, excludedPaths)
         val headAfterVerification = RepositoryState.head(root.path).orEmpty()
+        val junitTestReports = if (execution.commands.any { it.executed }) {
+            JUnitXmlReportCollector.collectFresh(
+                repository = root,
+                before = junitReportsBefore,
+                candidateShaBefore = currentHead,
+                candidateShaAfter = headAfterVerification,
+                candidateStateDigestBefore = candidateAtVerification.digest,
+                candidateStateDigestAfter = postVerificationCandidate.digest
+            )
+        } else emptyList()
         val candidateStateDriftReasons = buildList {
             if (headBeforeAnalysis != currentHead) {
                 add("Git HEAD changed during analysis; the verification contract and analysis may refer to different repository revisions.")
@@ -160,10 +172,15 @@ object EngineeringVerification {
             candidateStateDriftReasons.isEmpty()
         val specificationEvaluation = ChangeSpecificationEvaluator.evaluate(
             contract.specification,
-            availableEvidenceIds = contract.evidenceIds.toSet() + contract.verificationCommands.indices.map { VerificationEvidenceIds.command(it + 1) },
+            availableEvidenceIds = contract.evidenceIds.toSet() +
+                contract.verificationCommands.indices.map { VerificationEvidenceIds.command(it + 1) } +
+                junitTestReports.flatMap { report -> report.cases.mapNotNull { testCase ->
+                    testCase.className?.let { VerificationEvidenceIds.junitTestCase(it, testCase.name) }
+                } },
             evidenceCitations = currentCandidateEvidence.citations,
             currentCandidateEvidenceAvailable = candidateEvidenceIsCurrent,
-            commandResults = if (candidateEvidenceIsCurrent) execution.commands else emptyList()
+            commandResults = if (candidateEvidenceIsCurrent) execution.commands else emptyList(),
+            junitTestReports = if (candidateEvidenceIsCurrent) junitTestReports else emptyList()
         )
         val status = when {
             !contractValid -> SafetyStatus.FAIL
@@ -219,7 +236,8 @@ object EngineeringVerification {
             candidateStateStable = candidateStateDriftReasons.isEmpty(),
             candidateStateFileCount = candidateAtVerification.fileCount,
             postVerificationFileCount = postVerificationCandidate.fileCount,
-            specificationEvaluation = specificationEvaluation
+            specificationEvaluation = specificationEvaluation,
+            junitTestReports = if (candidateEvidenceIsCurrent) junitTestReports else emptyList()
         )
     }
 }

@@ -8,6 +8,16 @@ For a `requiredEvidence` criterion only, an evidence binding may set `rule` to `
 
 This rule establishes command-execution outcomes only. A passing build or test command does not prove that tests cover the requested behavior, that the test suite ran non-empty tests, or that the implementation is semantically correct. Criterion-level test-quality and regression-proof evaluators remain future work.
 
+## Explicit JUnit test-case criteria
+
+A criterion may explicitly bind to named test cases using `ALL_BOUND_JUNIT_CASES_PASSED` and selectors of the form `junit-test-case:<class>#<test-name>`. The single `#` separates class and test name. Within either component, `%` is escaped as `%25` and `#` as `%23` (escape `%` first), so legal test names containing the separator remain addressable without selector collisions. Selectors with no escaped characters keep their existing spelling. The selector identifies a test case by the class name and test name recorded in the JUnit XML; the evaluator does not infer that an arbitrary test is relevant to the requirement.
+
+The collector recognizes conventional Gradle reports under `<module>/build/test-results/test/*.xml` and Maven Surefire reports under `<module>/target/surefire-reports/TEST-*.xml`. A report is fresh only when its bytes differ from the pre-verification snapshot and the Git candidate SHA and repository candidate-state digest remain unchanged across verification. Evidence preserves its normalized repository-relative path, SHA-256 report digest, parser version, execution ID, candidate SHA, and state digest. Report discovery and parsing are bounded, and DTD/external-entity access is disabled.
+
+A uniquely matched passing test case yields `PASS`; a failed case yields `FAIL`; skipped or duplicate matches yield `INCONCLUSIVE`; missing matches or unavailable current-candidate evidence yield `NOT_EVALUATED`. JUnit-selector presence is determined from the parsed report cases themselves, not the generic available-evidence-ID inventory: a missing selector must not be treated as a failed assertion merely because no report can supply that ID. Reports whose bytes are unchanged from the pre-run snapshot are not fresh evidence.
+
+This rule proves only that the explicitly selected test case appears in a fresh report and is marked passed on a stable candidate. It does **not** prove that the test exercises or fully covers the natural-language criterion. The verifier is also not a sandbox for repository build logic: permitted build/test commands execute with the invoking user's permissions.
+
 ## Numeric and boolean metric criteria
 
 The first supported form is:

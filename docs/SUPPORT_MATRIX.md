@@ -10,6 +10,7 @@ This matrix separates implemented interfaces from platforms and behaviors exerci
 | Kotlin source | Supported for repository scan and analysis | KotlinRegexParser is regex-based and has known limitations for complex syntax; it is not a Kotlin compiler front end |
 | Other source languages | Not supported by the current scanner as first-class parsed source | RepositoryScanner selects .java and .kt source files |
 | Build/test execution | Maven and Gradle wrapper/system commands, subject to the current strict verification-command grammar | BuildSystemDetector and VerificationCommandExecutor; arbitrary shell commands are intentionally not accepted |
+| Requirement-bound JUnit evidence | Conventional Gradle JUnit XML and Maven Surefire XML report paths | Explicit `junit-test-case:<class>#<name>` selectors and fresh changed-byte reports tied to stable candidate state; this proves a named test result, not requirement coverage |
 | Repository scale | Bounded by effective maxFilesAnalyze configuration (default 50,000) | VericoreConfig; live-repository workflows use timeouts and contract-only verification for selected large repositories |
 
 ## Interfaces
@@ -31,6 +32,7 @@ This matrix separates implemented interfaces from platforms and behaviors exerci
 - Persisted SHA-256 contract fingerprints detect inconsistent/tampered contents; they are not signatures, user authentication, or authorization.
 - Verification-command validation restricts the allowed command grammar. It is not a sandbox for the build tool: a permitted Maven/Gradle build may execute repository build logic with the invoking user's permissions.
 - Local REST rejects remote repository URLs; remote checkout/analysis through the local endpoint is not supported.
+- Explicit JUnit evidence is accepted only from a changed-byte report in a conventional Gradle/Maven output path with stable candidate SHA and working-tree state; missing, skipped or ambiguous cases cannot pass.
 - A PASS result should be read with its receipt and executed-command evidence. It is not a guarantee of semantic correctness or a replacement for human review.
 - Autonomous source-code modification is not implemented; Vericore prepares and verifies changes made by an external agent or developer.
 

@@ -67,6 +67,156 @@ class ChangeSpecificationEvaluatorTest {
         assertEquals(listOf("file.1"), evaluation.criteria.single().evidenceIds)
     }
 
+    private fun junitEvidence(
+        className: String = "PaymentTest",
+        name: String = "rejectsInvalidPayment",
+        status: JUnitCaseStatus = JUnitCaseStatus.PASSED
+    ) = JUnitTestReportEvidence(
+        candidateSha = "0123456789abcdef0123456789abcdef01234567",
+        candidateStateDigest = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        executionId = "run-test:build/test-results/test/TEST-Payment.xml",
+        reportSha256 = "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
+        status = if (status == JUnitCaseStatus.FAILED) JUnitReportStatus.FAILED else JUnitReportStatus.ALL_PASSED,
+        tests = 1,
+        passed = if (status == JUnitCaseStatus.PASSED) 1 else 0,
+        failed = if (status == JUnitCaseStatus.FAILED) 1 else 0,
+        skipped = if (status == JUnitCaseStatus.SKIPPED) 1 else 0,
+        cases = listOf(JUnitTestCaseEvidence(className, name, status))
+    )
+
+    @Test
+    fun `explicitly bound passing JUnit testcase evaluates the criterion and cites report provenance`() {
+        val selector = VerificationEvidenceIds.junitTestCase("PaymentTest", "rejectsInvalidPayment")
+        val specification = ChangeSpecification(
+            acceptanceCriteria = listOf("Invalid payment is rejected"),
+            evidenceBindings = listOf(CriterionEvidenceBinding(
+                "acceptance-criterion-001", listOf(selector), CriterionEvidenceRule.ALL_BOUND_JUNIT_CASES_PASSED
+            ))
+        )
+
+        val evaluation = ChangeSpecificationEvaluator.evaluate(
+            specification,
+            availableEvidenceIds = setOf(selector),
+            currentCandidateEvidenceAvailable = true,
+            junitTestReports = listOf(junitEvidence())
+        )!!
+
+        assertEquals(CriterionEvaluationStatus.PASS, evaluation.status)
+        assertTrue(evaluation.criteria.single().reason.contains("run-test:build/test-results/test/TEST-Payment.xml"))
+        assertTrue(evaluation.criteria.single().reason.contains("not that the tests fully cover the requirement"))
+    }
+
+    @Test
+    fun `JUnit selector encoding handles delimiter characters without collisions`() {
+        val className = "Payment#Test"
+        val testName = "rejects#Payment"
+        val selector = VerificationEvidenceIds.junitTestCase(className, testName)
+        assertEquals("junit-test-case:Payment%23Test#rejects%23Payment", selector)
+
+        val literalEscapeText = VerificationEvidenceIds.junitTestCase("Payment%23Test", "rejects%23Payment")
+        assertEquals("junit-test-case:Payment%2523Test#rejects%2523Payment", literalEscapeText)
+        assertTrue(selector != literalEscapeText)
+
+        val evaluation = ChangeSpecificationEvaluator.evaluate(
+            ChangeSpecification(
+                acceptanceCriteria = listOf("Invalid payment is rejected"),
+                evidenceBindings = listOf(CriterionEvidenceBinding(
+                    "acceptance-criterion-001",
+                    listOf(selector),
+                    CriterionEvidenceRule.ALL_BOUND_JUNIT_CASES_PASSED
+                ))
+            ),
+            availableEvidenceIds = setOf(selector),
+            currentCandidateEvidenceAvailable = true,
+            junitTestReports = listOf(junitEvidence(className = className, name = testName))
+        )!!
+
+        assertEquals(CriterionEvaluationStatus.PASS, evaluation.status)
+    }
+
+    @Test
+    fun `bound failed JUnit testcase fails the criterion`() {
+        val selector = VerificationEvidenceIds.junitTestCase("PaymentTest", "rejectsInvalidPayment")
+        val evaluation = ChangeSpecificationEvaluator.evaluate(
+            ChangeSpecification(
+                requiredBehaviors = listOf("Reject invalid payment"),
+                evidenceBindings = listOf(CriterionEvidenceBinding(
+                    "required-behavior-001", listOf(selector), CriterionEvidenceRule.ALL_BOUND_JUNIT_CASES_PASSED
+                ))
+            ),
+            availableEvidenceIds = setOf(selector),
+            currentCandidateEvidenceAvailable = true,
+            junitTestReports = listOf(junitEvidence(status = JUnitCaseStatus.FAILED))
+        )!!
+
+        assertEquals(CriterionEvaluationStatus.FAIL, evaluation.status)
+    }
+
+    @Test
+    fun `bound skipped JUnit testcase is inconclusive not passing`() {
+        val selector = VerificationEvidenceIds.junitTestCase("PaymentTest", "rejectsInvalidPayment")
+        val evaluation = ChangeSpecificationEvaluator.evaluate(
+            ChangeSpecification(
+                acceptanceCriteria = listOf("Invalid payment is rejected"),
+                evidenceBindings = listOf(CriterionEvidenceBinding(
+                    "acceptance-criterion-001", listOf(selector), CriterionEvidenceRule.ALL_BOUND_JUNIT_CASES_PASSED
+                ))
+            ),
+            availableEvidenceIds = setOf(selector),
+            currentCandidateEvidenceAvailable = true,
+            junitTestReports = listOf(junitEvidence(status = JUnitCaseStatus.SKIPPED))
+        )!!
+
+        assertEquals(CriterionEvaluationStatus.INCONCLUSIVE, evaluation.status)
+    }
+
+    @Test
+    fun `ambiguous duplicate JUnit selectors cannot pass`() {
+        val selector = VerificationEvidenceIds.junitTestCase("PaymentTest", "rejectsInvalidPayment")
+        val evaluation = ChangeSpecificationEvaluator.evaluate(
+            ChangeSpecification(
+                acceptanceCriteria = listOf("Invalid payment is rejected"),
+                evidenceBindings = listOf(CriterionEvidenceBinding(
+                    "acceptance-criterion-001", listOf(selector), CriterionEvidenceRule.ALL_BOUND_JUNIT_CASES_PASSED
+                ))
+            ),
+            availableEvidenceIds = setOf(selector),
+            currentCandidateEvidenceAvailable = true,
+            junitTestReports = listOf(junitEvidence(), junitEvidence())
+        )!!
+
+        assertEquals(CriterionEvaluationStatus.INCONCLUSIVE, evaluation.status)
+    }
+
+    @Test
+    fun `missing JUnit testcase without available selector remains not evaluated`() {
+        val selector = VerificationEvidenceIds.junitTestCase("PaymentTest", "rejectsInvalidPayment")
+        val specification = ChangeSpecification(
+            acceptanceCriteria = listOf("Invalid payment is rejected"),
+            evidenceBindings = listOf(CriterionEvidenceBinding(
+                "acceptance-criterion-001", listOf(selector), CriterionEvidenceRule.ALL_BOUND_JUNIT_CASES_PASSED
+            ))
+        )
+
+        val missing = ChangeSpecificationEvaluator.evaluate(
+            specification,
+            availableEvidenceIds = emptySet(),
+            currentCandidateEvidenceAvailable = true,
+            junitTestReports = emptyList()
+        )!!
+        assertEquals(CriterionEvaluationStatus.NOT_EVALUATED, missing.status)
+        assertTrue(missing.criteria.single().reason.contains("not found in fresh reports"))
+
+        val stale = ChangeSpecificationEvaluator.evaluate(
+            specification,
+            availableEvidenceIds = emptySet(),
+            currentCandidateEvidenceAvailable = false,
+            junitTestReports = emptyList()
+        )!!
+        assertEquals(CriterionEvaluationStatus.NOT_EVALUATED, stale.status)
+        assertTrue(stale.criteria.single().reason.contains("unavailable"))
+    }
+
     private fun commandEvidenceSpecification() = ChangeSpecification(
         requiredEvidence = listOf("Unit-test command succeeds"),
         evidenceBindings = listOf(CriterionEvidenceBinding(
@@ -505,6 +655,30 @@ class ChangeSpecificationEvaluatorTest {
                     timedOut = result["timedOut"]?.jsonPrimitive?.content?.toBoolean() ?: false
                 )
             }.orEmpty()
+            val junitTestReports = case["junitTestReports"]?.jsonArray?.map { reportElement ->
+                val report = reportElement.jsonObject
+                val testCases = report.getValue("cases").jsonArray.map { testCaseElement ->
+                    val testCase = testCaseElement.jsonObject
+                    JUnitTestCaseEvidence(
+                        className = testCase["className"]?.jsonPrimitive?.content,
+                        name = testCase.getValue("name").jsonPrimitive.content,
+                        status = JUnitCaseStatus.valueOf(testCase.getValue("status").jsonPrimitive.content)
+                    )
+                }
+                JUnitTestReportEvidence(
+                    candidateSha = report.getValue("candidateSha").jsonPrimitive.content,
+                    candidateStateDigest = report.getValue("candidateStateDigest").jsonPrimitive.content,
+                    executionId = report.getValue("executionId").jsonPrimitive.content,
+                    reportSha256 = report.getValue("reportSha256").jsonPrimitive.content,
+                    status = JUnitReportStatus.valueOf(report.getValue("status").jsonPrimitive.content),
+                    tests = report.getValue("tests").jsonPrimitive.content.toInt(),
+                    passed = report.getValue("passed").jsonPrimitive.content.toInt(),
+                    failed = report.getValue("failed").jsonPrimitive.content.toInt(),
+                    skipped = report.getValue("skipped").jsonPrimitive.content.toInt(),
+                    cases = testCases,
+                    reportPath = report.getValue("reportPath").jsonPrimitive.content
+                )
+            }.orEmpty()
             val citations = case.getValue("citations").jsonArray.map { citationElement ->
                 val citation = citationElement.jsonObject
                 EvidenceCitation(
@@ -527,7 +701,8 @@ class ChangeSpecificationEvaluatorTest {
                     specification,
                     availableEvidenceIds = availableIds.toSet(),
                     evidenceCitations = citations,
-                    commandResults = commandResults
+                    commandResults = commandResults,
+                    junitTestReports = junitTestReports
                 )!!
             } else {
                 ChangeSpecificationEvaluator.evaluate(
@@ -535,7 +710,8 @@ class ChangeSpecificationEvaluatorTest {
                     availableEvidenceIds = availableIds.toSet(),
                     evidenceCitations = citations,
                     currentCandidateEvidenceAvailable = currentCandidateEvidenceAvailable,
-                    commandResults = commandResults
+                    commandResults = commandResults,
+                    junitTestReports = junitTestReports
                 )!!
             }
             val expectedStatus = case.getValue("expectedStatus").jsonPrimitive.content

@@ -45,6 +45,23 @@ class ChangeSpecificationOptionsTest {
     }
 
     @Test
+    fun `CLI accepts explicit JUnit testcase selectors and rule`() {
+        val selector = "junit-test-case:com.example.PaymentTest#rejectsInvalidPayment"
+        val bindings = parseCriterionEvidenceBindings(
+            listOf("acceptance-criterion-001=$selector"),
+            listOf("acceptance-criterion-001=ALL_BOUND_JUNIT_CASES_PASSED")
+        )
+        assertEquals(
+            CriterionEvidenceBinding(
+                "acceptance-criterion-001",
+                listOf(selector),
+                CriterionEvidenceRule.ALL_BOUND_JUNIT_CASES_PASSED
+            ),
+            bindings.single()
+        )
+    }
+
+    @Test
     fun `malformed CLI evidence flags are rejected`() {
         assertFailsWith<IllegalArgumentException> {
             parseCriterionEvidenceBindings(listOf("acceptance-criterion-001"))

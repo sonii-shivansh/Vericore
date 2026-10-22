@@ -42,10 +42,11 @@
 - deterministic SHA-256 contract fingerprint
 - persisted output/agent-change-contract.json
 - schema 3.0 contracts embed a validated, deterministic per-path candidate baseline whose digest is fingerprint-bound; prepare fails on input drift during analysis, and full plus contract-only verification reject unplanned prepare-to-verify drift (including ignored/untracked inputs)
-- legacy schema 2.0 contracts without a baseline fail closed and require re-preparation; verification receipt schema 1.3 records baseline digest validity and unplanned drift paths
+- legacy schema 2.0 contracts without a baseline fail closed and require re-preparation; verification receipt schema 1.4 records baseline digest validity, unplanned drift paths, and JUnit report provenance
 - contract tamper, plan mismatch, repository mismatch, stale-HEAD, and unexpected-change detection
 - candidate repository-input state digests captured before analysis, before declared verification commands, and after those commands; relevant candidate drift fails closed
 - structured specification evaluation records stable per-criterion IDs; numeric and Boolean metric criteria are evaluated against current-candidate grounded evidence; malformed expressions, unbound/dangling citations, missing metrics, and type mismatches fail closed; unsupported free-form criteria remain `NOT_EVALUATED` or `INCONCLUSIVE`; any failed criterion makes the overall verification `FAIL`, while unevaluated/inconclusive criteria require review; contract-only verification leaves metrics `NOT_EVALUATED` because it does not rebuild candidate evidence
+- explicit JUnit testcase bindings use `junit-test-case:<class>#<name>` selectors; only fresh Gradle/Maven report bytes with stable candidate SHA/state are accepted, report digests and execution IDs are preserved, and passing testcase evidence does not prove natural-language requirement coverage
 - verification against the persisted contract rather than a replacement derived from the mutated repository
 
 **Authoritative rule:** the persisted contract is the verification boundary.
@@ -79,7 +80,7 @@ GitHub Actions is the authoritative automated execution environment for release 
 
 ## Current release line
 
-The last confirmed publication record is `v0.9.0`, published on 2026-10-10. Consult the [GitHub Releases page](https://github.com/sonii-shivansh/Vericore/releases) for the current published version. The version in `main` is source state, not proof that an artifact has been published. A new release requires a successful machine-readable readiness certificate and official release workflow for the exact candidate SHA.
+The latest confirmed published release is `v1.0.1`, published on 2026-10-20. Changes on an open pull request remain unreleased until the release tag and assets exist. Consult the [GitHub Releases page](https://github.com/sonii-shivansh/Vericore/releases) for subsequent publication records. Source version strings alone are not proof that an artifact has been published. A new release requires a successful machine-readable readiness certificate and official release workflow for the exact candidate SHA.
 
 ## Current limitations
 
@@ -100,11 +101,11 @@ The last confirmed publication record is `v0.9.0`, published on 2026-10-10. Cons
 
 The master strategic roadmap is documented in [Product Direction](PRODUCT_DIRECTION.md) and follows Phase 0 through Phase 9. It is a plan, not a statement that every listed capability is already shipped.
 
-**Phase 0 — Foundation Freeze & Truth is complete for its documented scope.** Its exit decision, acceptance evidence, and limitations are recorded in [Phase 0 Foundation Checklist](PHASE0_FOUNDATION_CHECKLIST.md) and [Phase 0 Benchmark Baseline](PHASE0_BENCHMARK_BASELINE.md). That closeout does not certify v0.9.0 or v1.0.0.
+**Phase 0 — Foundation Freeze & Truth is complete for its documented scope.** Its exit decision, acceptance evidence, and limitations are recorded in [Phase 0 Foundation Checklist](PHASE0_FOUNDATION_CHECKLIST.md) and [Phase 0 Benchmark Baseline](PHASE0_BENCHMARK_BASELINE.md). That closeout does not automatically certify a release; each published artifact requires its own exact-candidate readiness evidence.
 
 **Current operational priority: keep source, documentation, and published artifacts aligned.** Treat every candidate as unreleased until its tag and assets exist. Run the required gates on the exact candidate SHA before publication, and re-certify after any subsequent change.
 
-**Current product focus: structured change specification.** The prepare/plan CLI and MCP paths record explicit required behaviors, forbidden behaviors, protected invariants, acceptance criteria, and required evidence, with the specification bound to the plan and contract fingerprint. The deterministic evaluator supports numeric and Boolean metric comparisons against current-candidate evidence, plus the narrow `ALL_BOUND_COMMANDS_SUCCEEDED` rule for required-evidence criteria linked to declared verification commands. This command rule proves exit status only; it does not establish test coverage or semantic correctness. Natural-language obligations without a suitable evaluator remain `NOT_EVALUATED` or `INCONCLUSIVE`; citation presence alone is not proof, and contract-only verification does not rebuild candidate evidence.
+**Current product focus: structured change specification.** The prepare/plan CLI and MCP paths record explicit required behaviors, forbidden behaviors, protected invariants, acceptance criteria, and required evidence, with the specification bound to the plan and contract fingerprint. The deterministic evaluator supports numeric and Boolean metric comparisons against current-candidate evidence, plus the narrow `ALL_BOUND_COMMANDS_SUCCEEDED` rule for required-evidence criteria linked to declared verification commands, and `ALL_BOUND_JUNIT_CASES_PASSED` for explicitly selected test cases in fresh Gradle/Maven reports. Command success proves exit status only; a passing named test proves that case passed but not that it covers the requested behavior or establishes semantic correctness. Natural-language obligations without a suitable evaluator remain `NOT_EVALUATED` or `INCONCLUSIVE`; citation presence alone is not proof, and contract-only verification does not rebuild candidate evidence.
 
 ### Ongoing regression expectations
 

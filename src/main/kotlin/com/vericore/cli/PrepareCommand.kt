@@ -25,8 +25,8 @@ class PrepareCommand : CliktCommand(name = "prepare", help = "Prepare an evidenc
     private val protectedInvariants by option("--protect-invariant", help = "Existing invariant this change must preserve").multiple()
     private val acceptanceCriteria by option("--acceptance-criterion", help = "Observable criterion for accepting this change").multiple()
     private val requiredEvidence by option("--required-evidence", help = "Evidence that must be supplied/reviewed for acceptance").multiple()
-    private val criterionEvidence by option("--criterion-evidence", help = "Bind a criterion to a prepared evidence citation or verification-command-NNN ID as <criterion-id>=<evidence-id>; repeatable").multiple()
-    private val criterionEvidenceRules by option("--criterion-evidence-rule", help = "Set a criterion evidence rule as <criterion-id>=<rule>; repeatable").multiple()
+    private val criterionEvidence by option("--criterion-evidence", help = "Bind a criterion to evidence, a verification-command-NNN ID, or junit-test-case:<class>#<name> as <criterion-id>=<evidence-id>; repeatable").multiple()
+    private val criterionEvidenceRules by option("--criterion-evidence-rule", help = "Set a criterion evidence rule (ALL_BOUND_COMMANDS_SUCCEEDED or ALL_BOUND_JUNIT_CASES_PASSED) as <criterion-id>=<rule>; repeatable").multiple()
 
     override fun run() {
         val root = File(path).canonicalFile

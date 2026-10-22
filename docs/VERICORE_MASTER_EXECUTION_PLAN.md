@@ -3,7 +3,7 @@
 **Version:** 1.0  
 **Prepared:** 2026-10-17  
 **Repository:** https://github.com/sonii-shivansh/Vericore  
-**Observed release:** v0.9.0 (2026-10-10)  
+**Observed release:** v1.0.1 (2026-10-20; confirmed from the GitHub Releases API)  
 **Purpose:** Prompt-ready operating context for every future Vericore task.
 
 > **Mission:** Independently evaluate whether an AI-authored software change satisfies its declared obligations, stays within its agreed scope, and has fresh, auditable evidence for the exact change being merged.
@@ -214,7 +214,8 @@ Zero false passes on a defined critical regression suite may be a gate; it is no
 | B11 | Align evaluator benchmark freshness defaults with production API | MERGED | PR #320 merged to `main` as `e464e3e93b23bdcd0b5b9b50f739df0d3b2f5ad6`; successful benchmark vectors explicitly attest current evidence, and an omitted freshness flag exercises the production fail-closed default | All 19 PR checks passed before merge; all 35 post-merge checks passed on exact `main` SHA `e464e3e93b23bdcd0b5b9b50f739df0d3b2f5ad6`, including release audit, Phase 0, docs parity, live E2E, and product-journey E2E |
 | B12 | Distinguish command-started from execution-complete outcomes | MERGED | PR #321 merged to `main` as `fb913ce389107b7e342d647e6e8116b4d85a80f7`; `executionComplete` now requires every command to start, avoid timeout, and produce an exit code; schema descriptions and three focused unit regressions were added | All 19 PR checks passed on exact candidate `68b66a315409af5df1316a9764b8f284f574ece2`; all 37 post-merge checks passed on exact `main` SHA `fb913ce389107b7e342d647e6e8116b4d85a80f7` |
 | B13 | Exercise timeout behavior through the real command executor | MERGED | PR #322 merged to `main` as `74c176268e0fa06f56fb8584ee70a97ade4ed307`; a cross-platform regression runs a deliberately slow build wrapper with a one-second timeout and checks `timedOut`, missing exit code, `executionComplete`, and `allCommandsPassed` | All 19 PR checks passed on exact candidate `4e2ae59227ef83babeab82ea4c9865fd3e16dc9a`; post-merge checks on `74c176268e0fa06f56fb8584ee70a97ade4ed307` were still running at last poll |
-| B14 | Reject ambiguous duplicate metric evidence citations | IN_PROGRESS | `ChangeSpecificationEvaluator` currently indexed citations with `associateBy`, silently choosing one record when duplicate IDs supplied conflicting metric values; added a guard that returns `FAIL` for a metric referencing duplicate current-candidate citation IDs, a direct unit regression, and a benchmark vector | Await exact-candidate CI for evaluator tests, benchmark report/schema, Phase 0, full regression, Windows and live E2E; merge only if all required checks pass |
+| B14 | Reject ambiguous duplicate metric evidence citations | MERGED | Source guard and direct evaluator regression are on main baseline (commit `0997b11aaeffae67aea32120d0e9b02465cf3c88`); benchmark vector `duplicate-metric-citation-fails` and the v1.0.0 changelog record the false-acceptance guard | Keep duplicate-ID rejection covered in full tests and evaluator benchmark; do not reopen unless a regression appears |
+| B15 | Bind explicit JUnit test cases to requirement criteria | IN_PROGRESS | PR #338 adds stable selectors with delimiter escaping, bounded XXE-safe Gradle/Maven report parsing, changed-byte freshness, candidate SHA/state binding, conservative criterion statuses, receipt provenance and tests. The evaluator benchmark now includes passing, failing, skipped, duplicate, missing and stale JUnit cases. | Validate all required workflows on the final candidate SHA; record exact outcomes and merge only when required checks pass |
 
 Update each row only with verified facts. Keep this file current.
 

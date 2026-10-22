@@ -87,6 +87,36 @@ class ChangeSpecificationTest {
     }
 
     @Test
+    fun `JUnit testcase rule accepts explicit selectors and rejects other evidence IDs`() {
+        val selector = VerificationEvidenceIds.junitTestCase("com.example.PaymentTest", "rejects invalid payment")
+        val rule = CriterionEvidenceRule.ALL_BOUND_JUNIT_CASES_PASSED
+        val normalized = ChangeSpecification(
+            acceptanceCriteria = listOf("Invalid payment is rejected"),
+            evidenceBindings = listOf(CriterionEvidenceBinding("acceptance-criterion-001", listOf(selector), rule))
+        ).normalized()
+        assertEquals(selector, normalized.evidenceBindings.single().evidenceIds.single())
+        assertEquals(rule, normalized.evidenceBindings.single().rule)
+
+        assertFailsWith<IllegalArgumentException> {
+            ChangeSpecification(
+                acceptanceCriteria = listOf("Invalid payment is rejected"),
+                evidenceBindings = listOf(CriterionEvidenceBinding("acceptance-criterion-001", listOf("file.1"), rule))
+            ).normalized()
+        }
+        assertEquals(
+            "junit-test-case:com.example%23Bad#rejects%23Payment",
+            VerificationEvidenceIds.junitTestCase("com.example#Bad", "rejects#Payment")
+        )
+        assertEquals(
+            "junit-test-case:com.example%2523Bad#rejects%2523Payment",
+            VerificationEvidenceIds.junitTestCase("com.example%23Bad", "rejects%23Payment")
+        )
+        assertTrue(VerificationEvidenceIds.isJUnitTestCase(
+            VerificationEvidenceIds.junitTestCase("com.example#Bad", "rejects#Payment")
+        ))
+    }
+
+    @Test
     fun `non-default evidence rules affect canonical form`() {
         val manual = ChangeSpecification(
             requiredEvidence = listOf("Unit-test command succeeds"),
