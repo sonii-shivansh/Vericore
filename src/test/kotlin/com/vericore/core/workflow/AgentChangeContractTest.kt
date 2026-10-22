@@ -183,7 +183,7 @@ class AgentChangeContractTest {
     @Test
     fun `agent context rejects control characters and unknown source values`() {
         kotlin.test.assertFailsWith<IllegalArgumentException> {
-            AgentContext.create("cursor", sessionId = "session\\nforged", source = "cli")
+            AgentContext.create("cursor", sessionId = "session\nforged", source = "cli")
         }
         kotlin.test.assertFailsWith<IllegalArgumentException> {
             AgentContext.create("cursor", source = "untrusted-claimed-source")
