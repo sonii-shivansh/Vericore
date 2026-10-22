@@ -478,7 +478,7 @@ Create the evidence-backed preparation bundle used by the safe change workflow.
 ### Syntax
 
 ```bash
-vericore prepare <change-summary> [--path <repository>] [--output <file>] [--plan-output <file>] [--contract-output <file>] [--planned-path <path>...] [--require-behavior <text>...] [--forbid-behavior <text>...] [--protect-invariant <text>...] [--acceptance-criterion <text>...] [--required-evidence <text>...] [--criterion-evidence <criterion-id>=<evidence-id>...] [--criterion-evidence-rule <criterion-id>=<rule>...]
+vericore prepare <change-summary> [--path <repository>] [--output <file>] [--plan-output <file>] [--contract-output <file>] [--planned-path <path>...] [--agent-provider <slug>] [--agent-id <id>] [--agent-session-id <id>] [--agent-event-id <id>] [--require-behavior <text>...] [--forbid-behavior <text>...] [--protect-invariant <text>...] [--acceptance-criterion <text>...] [--required-evidence <text>...] [--criterion-evidence <criterion-id>=<evidence-id>...] [--criterion-evidence-rule <criterion-id>=<rule>...]
 ```
 
 ### Examples
@@ -504,6 +504,8 @@ output/engineering-preparation.json
 output/engineering-plan.json
 output/agent-change-contract.json
 ```
+
+Optional adapter metadata can be attached at preparation time with `--agent-provider` plus opaque `--agent-id`, `--agent-session-id`, and `--agent-event-id` values. Provider names are normalized to lowercase; IDs are trimmed and bounded. Do not put prompts, source code, access tokens, or other secrets in correlation fields. The invoking boundary records whether metadata arrived through CLI or MCP. When present, agent context is included in the contract fingerprint and carried into the verification receipt; when absent, legacy fingerprint semantics are preserved.
 
 The Agent Change Contract is persisted at preparation time. Do not replace it before `verify`. New preparations emit contract schema `3.0`, embedding a deterministic, versioned per-path candidate baseline whose digest is included in the contract fingerprint. Preparation aborts if the repository-input digest changes during preparation. The baseline covers ignored and untracked inputs as well as tracked files, subject to the documented generated-output exclusions.
 
