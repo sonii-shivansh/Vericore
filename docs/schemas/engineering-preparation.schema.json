@@ -568,21 +568,24 @@
                 "string",
                 "null"
               ],
-              "maxLength": 256
+              "maxLength": 256,
+              "minLength": 1
             },
             "sessionId": {
               "type": [
                 "string",
                 "null"
               ],
-              "maxLength": 256
+              "maxLength": 256,
+              "minLength": 1
             },
             "eventId": {
               "type": [
                 "string",
                 "null"
               ],
-              "maxLength": 256
+              "maxLength": 256,
+              "minLength": 1
             },
             "source": {
               "enum": [
