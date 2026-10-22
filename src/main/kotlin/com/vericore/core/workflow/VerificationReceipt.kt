@@ -10,7 +10,7 @@ import kotlinx.serialization.Serializable
  */
 @Serializable
 data class VerificationReceipt(
-    val schemaVersion: String = "1.4",
+    val schemaVersion: String = "1.5",
     val repository: String,
     val preparedHead: String,
     val verifiedHead: String,
@@ -34,7 +34,8 @@ data class VerificationReceipt(
     val candidateStateFileCount: Int,
     val postVerificationFileCount: Int,
     val specificationEvaluation: ChangeSpecificationEvaluation? = null,
-    val junitTestReports: List<JUnitTestReportEvidence> = emptyList()
+    val junitTestReports: List<JUnitTestReportEvidence> = emptyList(),
+    val agentContext: AgentContext? = null
 ) {
     companion object {
         fun from(result: EngineeringVerificationResult): VerificationReceipt {
@@ -63,7 +64,8 @@ data class VerificationReceipt(
                 candidateStateFileCount = result.candidateStateFileCount,
                 postVerificationFileCount = result.postVerificationFileCount,
                 specificationEvaluation = result.specificationEvaluation,
-                junitTestReports = result.junitTestReports
+                junitTestReports = result.junitTestReports,
+                agentContext = contract?.agentContext
             )
         }
     }

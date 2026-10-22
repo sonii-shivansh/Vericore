@@ -1,6 +1,7 @@
 package com.vericore.cli
 
 import com.vericore.core.planner.ChangeSpecification
+import com.vericore.core.workflow.AgentContext
 import com.vericore.core.workflow.EngineeringPreparation
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
@@ -19,6 +20,10 @@ class PrepareCommand : CliktCommand(name = "prepare", help = "Prepare an evidenc
     private val output by option("--output", help = "Preparation artifact path")
     private val planOutput by option("--plan-output", help = "Engineering plan artifact path")
     private val contractOutput by option("--contract-output", help = "Agent change contract artifact path")
+    private val agentProvider by option("--agent-provider", help = "Coding agent provider slug, e.g. cursor, claude-code, codex")
+    private val agentId by option("--agent-id", help = "Opaque stable agent identity; do not include secrets")
+    private val agentSessionId by option("--agent-session-id", help = "Opaque agent session correlation ID")
+    private val agentEventId by option("--agent-event-id", help = "Opaque caller event/correlation ID")
     private val plannedPaths by option("--planned-path", help = "Repository-relative path the agent expects to modify").multiple()
     private val requiredBehaviors by option("--require-behavior", help = "Behavior this change must provide").multiple()
     private val forbiddenBehaviors by option("--forbid-behavior", help = "Behavior this change must not introduce").multiple()
@@ -38,6 +43,13 @@ class PrepareCommand : CliktCommand(name = "prepare", help = "Prepare an evidenc
             requiredEvidence = requiredEvidence,
             evidenceBindings = parseCriterionEvidenceBindings(criterionEvidence, criterionEvidenceRules)
         )
+        val agentMetadataSupplied = listOf(agentId, agentSessionId, agentEventId).any { !it.isNullOrBlank() }
+        val agentContext = if (!agentProvider.isNullOrBlank()) {
+            AgentContext.create(agentProvider!!, agentId, agentSessionId, agentEventId, "cli")
+        } else {
+            require(!agentMetadataSupplied) { "--agent-provider is required when agent identity/session/event metadata is supplied." }
+            null
+        }
         val json = Json { prettyPrint = true; encodeDefaults = true }
         val artifactPath = output ?: root.resolve("output/engineering-preparation.json").path
         val artifact = File(artifactPath).let { if (it.isAbsolute) it else root.resolve(it.path) }
@@ -50,7 +62,7 @@ class PrepareCommand : CliktCommand(name = "prepare", help = "Prepare an evidenc
             val canonical = file.canonicalFile.toPath()
             if (canonical.startsWith(rootPath)) rootPath.relativize(canonical).toString().replace(File.separatorChar, '/') else null
         }.distinct().sorted()
-        val result = runBlocking { EngineeringPreparation.prepare(root.path, changeSummary, plannedPaths, specification, excludedPaths) }
+        val result = runBlocking { EngineeringPreparation.prepare(root.path, changeSummary, plannedPaths, specification, excludedPaths, agentContext) }
         artifact.apply { parentFile?.mkdirs() }.writeText(json.encodeToString(result))
         planFile.apply { parentFile?.mkdirs() }.writeText(json.encodeToString(result.plan))
         contractFile.apply { parentFile?.mkdirs() }.writeText(json.encodeToString(result.contract))

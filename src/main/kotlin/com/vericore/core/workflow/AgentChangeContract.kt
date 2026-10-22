@@ -21,7 +21,9 @@ data class AgentChangeContract(
     val fingerprint: String,
     val specification: ChangeSpecification = ChangeSpecification(),
     /** Missing on legacy contracts. Verification must not infer a prepare-time baseline for them. */
-    val baselineManifest: CandidateStateManifest? = null
+    val baselineManifest: CandidateStateManifest? = null,
+    /** Optional normalized identity/correlation metadata from the invoking agent adapter. */
+    val agentContext: AgentContext? = null
 ) {
     companion object {
         fun fromPlan(plan: EngineeringPlan): AgentChangeContract = fromPlan(plan, plan.repository, "")
@@ -30,7 +32,8 @@ data class AgentChangeContract(
             plan: EngineeringPlan,
             repositoryPath: String,
             preparedHead: String,
-            baselineManifest: CandidateStateManifest? = null
+            baselineManifest: CandidateStateManifest? = null,
+            agentContext: AgentContext? = null
         ): AgentChangeContract {
             val requestedRepository = repositoryPath.ifBlank { plan.repository }
             val repository = requestedRepository.takeIf { it.isNotBlank() }?.let { File(it).canonicalPath } ?: ""
@@ -41,11 +44,16 @@ data class AgentChangeContract(
             val expectations = plan.concerns.distinct().sorted()
             val specification = plan.specification.normalized()
             val changeTypes = emptyMap<String, List<String>>()
-            val schemaVersion = if (baselineManifest == null) "2.0" else "3.0"
+            val schemaVersion = when {
+                baselineManifest != null && agentContext != null -> "3.1"
+                baselineManifest != null -> "3.0"
+                agentContext != null -> "2.1"
+                else -> "2.0"
+            }
             val canonical = canonicalize(
                 schemaVersion, plan.changeSummary, repository, preparedHead, paths,
                 changeTypes, components, commands, evidence, expectations, specification,
-                baselineManifest?.digest
+                baselineManifest?.digest, agentContext
             )
             return AgentChangeContract(
                 schemaVersion = schemaVersion,
@@ -60,7 +68,8 @@ data class AgentChangeContract(
                 architectureExpectations = expectations,
                 fingerprint = sha256(canonical),
                 specification = specification,
-                baselineManifest = baselineManifest
+                baselineManifest = baselineManifest,
+                agentContext = agentContext
             )
         }
 
@@ -79,7 +88,8 @@ data class AgentChangeContract(
                 contract.evidenceIds.distinct().sorted(),
                 contract.architectureExpectations.distinct().sorted(),
                 contract.specification,
-                contract.baselineManifest?.digest
+                contract.baselineManifest?.digest,
+                contract.agentContext
             )
         )
 
@@ -95,7 +105,8 @@ data class AgentChangeContract(
             evidence: List<String>,
             expectations: List<String>,
             specification: ChangeSpecification = ChangeSpecification(),
-            baselineDigest: String? = null
+            baselineDigest: String? = null,
+            agentContext: AgentContext? = null
         ): String {
             val legacyCanonical = listOf(
                 schemaVersion,
@@ -112,8 +123,10 @@ data class AgentChangeContract(
             // Preserve historical fingerprints for legacy contracts whose specification and baseline are empty.
             val withSpecification = if (specification.isEmpty()) legacyCanonical
             else "$legacyCanonical\n---\nSPECIFICATION\n${specification.canonicalForm()}"
-            return if (baselineDigest == null) withSpecification
+            val withBaseline = if (baselineDigest == null) withSpecification
             else "$withSpecification\n---\nCANDIDATE-BASELINE\n$baselineDigest"
+            return if (agentContext == null) withBaseline
+            else "$withBaseline\n---\nAGENT-CONTEXT\n${agentContext.canonicalForm()}"
         }
 
         private fun sha256(value: String): String = MessageDigest.getInstance("SHA-256")
