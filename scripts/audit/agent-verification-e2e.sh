@@ -36,7 +36,7 @@ git add .
 git commit -qm "initial fixture"
 
 python3 - "$APP" <<'PY'
-import json, pathlib, subprocess, sys
+import json, os, pathlib, subprocess, sys
 
 app = sys.argv[1]
 root = pathlib.Path.cwd().resolve()
@@ -175,9 +175,10 @@ cli_prepare = subprocess.run(
 assert cli_prepare.returncode == 0, cli_prepare.stdout + chr(10) + cli_prepare.stderr
 cli_contract = json.loads((root/"output/agent-change-contract.json").read_text())
 assert cli_contract["schemaVersion"] == "3.1", cli_contract
+expected_cli_source = "github-action" if os.environ.get("GITHUB_ACTIONS") == "true" else "cli"
 assert cli_contract["agentContext"] == {
     "schemaVersion":"1.0","provider":"codex","agentId":"cli-agent-1",
-    "sessionId":"cli-session-1","eventId":"cli-event-1","source":"cli"
+    "sessionId":"cli-session-1","eventId":"cli-event-1","source":expected_cli_source
 }, cli_contract
 
 
