@@ -109,7 +109,7 @@ object EngineeringVerification {
         val currentHead = RepositoryState.head(root.path).orEmpty()
         val expectedContractFingerprint = AgentChangeContract.fingerprintFor(contract)
         val expectedPlanFingerprintResult = runCatching {
-            AgentChangeContract.fromPlan(plan, root.path, contract.preparedHead, contract.baselineManifest).fingerprint
+            AgentChangeContract.fromPlan(plan, root.path, contract.preparedHead, contract.baselineManifest, contract.agentContext).fingerprint
         }
         val expectedPlanFingerprint = expectedPlanFingerprintResult.getOrNull().orEmpty()
         val planSpecificationError = expectedPlanFingerprintResult.exceptionOrNull()?.message

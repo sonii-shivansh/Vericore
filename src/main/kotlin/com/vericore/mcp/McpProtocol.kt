@@ -41,9 +41,9 @@ object McpProtocol {
                     args["agentContext"]?.jsonObject?.let { context ->
                         AgentContext.create(
                             provider = requiredString(context, "provider"),
-                            agentId = context["agentId"]?.jsonPrimitive?.content,
-                            sessionId = context["sessionId"]?.jsonPrimitive?.content,
-                            eventId = context["eventId"]?.jsonPrimitive?.content,
+                            agentId = optionalContextString(context, "agentId"),
+                            sessionId = optionalContextString(context, "sessionId"),
+                            eventId = optionalContextString(context, "eventId"),
                             source = "mcp"
                         )
                     }
@@ -148,7 +148,20 @@ ${diff.take(12000)}${if (diff.length > 12000) "\n...[diff truncated]" else ""}
     private fun prIntelligence(args: JsonObject): JsonObject { val path = safeRepoPath(args); val base = args["baseRevision"]?.jsonPrimitive?.content; val head = args["headRevision"]?.jsonPrimitive?.content; require((base == null) == (head == null)) { "baseRevision and headRevision must be supplied together" }; if (base != null) require(base.length <= 256 && head!!.length <= 256) { "Git revisions are too long" }; val changeSet = if (base == null) GitChangeSetBuilder.fromWorkingTree(path) else GitChangeSetBuilder.fromRevisions(path, base, head!!); val result = runBlocking { PRIntelligenceAnalyzer.analyze(path, changeSet, ConfigLoader.loadForRepository(path)) }; return textResult(json.encodeToString(com.vericore.core.intelligence.PRIntelligenceResult.serializer(), result)) }
     private fun safeRepoPath(args: JsonObject): String { val input = args["repoPath"]?.jsonPrimitive?.content ?: error("repoPath is required"); require(!input.startsWith("http://", true) && !input.startsWith("https://", true)) { "Remote repositories are not supported" }; return sanitizePath(input) ?: error("Invalid or unsafe repository path") }
     private fun requireRepoPath(args: JsonObject): String = safeRepoPath(args)
-    private fun requiredString(args: JsonObject, key: String): String = args[key]?.jsonPrimitive?.content?.takeIf { it.isNotBlank() } ?: error("$key is required")
+    private fun requiredString(args: JsonObject, key: String): String {
+        val value = args[key] as? JsonPrimitive ?: throw IllegalArgumentException("$key is required and must be a string")
+        require(value.isString && value.content.isNotBlank()) { "$key is required and must be a non-empty string" }
+        return value.content
+    }
+
+    private fun optionalContextString(context: JsonObject, key: String): String? {
+        val value = context[key] ?: return null
+        if (value is JsonNull) return null
+        val primitive = value as? JsonPrimitive
+            ?: throw IllegalArgumentException("agentContext.$key must be a string or null")
+        require(primitive.isString) { "agentContext.$key must be a string or null" }
+        return primitive.content
+    }
     private fun changeSpecificationSchema(): JsonObject = buildJsonObject {
         put("type", JsonPrimitive("object"))
         put("description", JsonPrimitive("Explicit change constraints. These are recorded and fingerprint-bound; they are not automatically proven by their presence."))
