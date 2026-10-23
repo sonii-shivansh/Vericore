@@ -77,6 +77,7 @@ The reusable Action produces `output/pr-intelligence.json`. A separate trusted w
 ## Supported commands
 
 - analyze — deterministic repository analysis; the default.
+- prepare — persist an engineering plan and Agent Change Contract before coding. Requires `change-summary`.
 - verify — verify the persisted Agent Change Contract.
 - pr-intelligence — inspect change impact and PR risk signals.
 - architecture-contract — enforce an explicit architecture contract.
@@ -98,14 +99,21 @@ If the JSON report or Python 3 is unavailable, the action emits a warning and pr
 
 This behavior is present in the source branch. Consumers receive it only from the published action tag they choose.
 
+For `command: prepare`, the action passes `change-summary` as the required summary and `path` as the repository. Optional `agent-provider`, `agent-id`, `agent-session-id`, and `agent-event-id` inputs are forwarded as opaque correlation metadata. When preparation runs in GitHub Actions, Vericore records the trusted source as `github-action`; the source is not an input and cannot be supplied by the caller. IDs must not contain prompts, source code, credentials, or private model reasoning. Supplying an ID without `agent-provider` fails closed. The installed Vericore version must support Agent Context v1 for these options to work.
+
 ## Inputs
 
 | Input | Default | Purpose |
 |---|---|---|
-| command | analyze | Vericore command to execute |
+| command | analyze | Vericore command to execute: analyze, prepare, verify, pr-intelligence, architecture-contract |
 | path | . | Repository path |
 | version | latest | Published release tag, such as v1.0.0 |
 | args | empty | Additional command arguments |
+| change-summary | empty | Required for prepare; summary of the planned change |
+| agent-provider | empty | Optional provider slug for prepare |
+| agent-id | empty | Optional opaque agent identity |
+| agent-session-id | empty | Optional opaque session correlation ID |
+| agent-event-id | empty | Optional opaque event correlation ID |
 
 ## Security and portability
 
