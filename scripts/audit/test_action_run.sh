@@ -45,7 +45,7 @@ if bash "$ROOT/scripts/action-run.sh" >"$TMP/stdout" 2>"$TMP/stderr"; then
   echo "Expected missing provider to fail." >&2; exit 1
 fi
 [[ ! -s "$CAPTURE_ARGS" ]]
-grep -q "agent-provider is required" "$TMP/stderr"
+grep -q "agent-provider is required" "$TMP/stdout"
 VERICORE_AGENT_ID=""
 VERICORE_AGENT_SESSION_ID=""
 VERICORE_AGENT_EVENT_ID=""
@@ -54,7 +54,7 @@ if bash "$ROOT/scripts/action-run.sh" >"$TMP/stdout" 2>"$TMP/stderr"; then
   echo "Expected missing change summary to fail." >&2; exit 1
 fi
 [[ ! -s "$CAPTURE_ARGS" ]]
-grep -q "change-summary input is required" "$TMP/stderr"
+grep -q "change-summary input is required" "$TMP/stdout"
 VERICORE_CHANGE_SUMMARY="Add payment validation"
 VERICORE_AGENT_PROVIDER=""
 VERICORE_ARGS=""
