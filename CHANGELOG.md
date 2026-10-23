@@ -8,6 +8,7 @@ This file records user-visible changes by release. It follows [Keep a Changelog]
 
 ### Added
 
+- Extend the composite GitHub Action with a `prepare` command and optional agent/session/event metadata inputs. The GitHub Actions boundary records `source: github-action` in the fingerprint-bound contract and verification receipt; metadata remains optional and IDs are opaque.
 - Add optional common agent context to CLI and MCP preparation, with normalized provider slug and bounded opaque agent/session/event IDs. Context is fingerprint-bound in contract schema 3.1 and preserved in verification receipt schema 1.5; absent metadata preserves the existing contract fingerprint.
 - Bind explicit change criteria to named JUnit test cases with `ALL_BOUND_JUNIT_CASES_PASSED`. Selector encoding supports class/test names containing `#` without aborting verification or creating delimiter collisions. Only fresh conventional Gradle/Maven XML reports on a stable candidate are accepted; receipts retain report digests and execution provenance. Missing, skipped, duplicate or stale evidence cannot pass, and a named passing test does not claim semantic requirement coverage.
 - Preserve `NOT_EVALUATED` for missing or stale bound JUnit selectors even when those selector IDs are absent from the generic available-evidence inventory; direct evaluator tests and benchmark vectors exercise these real lookup paths.

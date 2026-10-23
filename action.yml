@@ -4,13 +4,33 @@ author: Shivansh Soni
 
 inputs:
   command:
-    description: Vericore command to run (analyze, verify, pr-intelligence, or architecture-contract)
+    description: Vericore command to run (analyze, prepare, verify, pr-intelligence, or architecture-contract)
     required: false
     default: analyze
   path:
     description: Repository path to inspect
     required: false
     default: .
+  change-summary:
+    description: Required when command is prepare; short description of the change being prepared
+    required: false
+    default: ""
+  agent-provider:
+    description: Optional agent provider slug for prepare, e.g. cursor, claude-code, codex
+    required: false
+    default: ""
+  agent-id:
+    description: Optional opaque agent identity; never include secrets
+    required: false
+    default: ""
+  agent-session-id:
+    description: Optional opaque session correlation ID
+    required: false
+    default: ""
+  agent-event-id:
+    description: Optional opaque event correlation ID
+    required: false
+    default: ""
   version:
     description: Vericore release tag to install, for example v1.0.0. Use latest for the newest published release.
     required: false
@@ -36,51 +56,9 @@ runs:
         VERICORE_COMMAND: ${{ inputs.command }}
         VERICORE_PATH: ${{ inputs.path }}
         VERICORE_ARGS: ${{ inputs.args }}
-      run: |
-        set -euo pipefail
-        case "$VERICORE_COMMAND" in
-          analyze|verify|pr-intelligence|architecture-contract) ;;
-          *) echo "::error::Unsupported Vericore command '$VERICORE_COMMAND'."; exit 1 ;;
-        esac
-        read -r -a extra_args <<< "$VERICORE_ARGS"
-        case "$VERICORE_COMMAND" in
-          verify)
-            report_path="${RUNNER_TEMP:-${TMPDIR:-/tmp}}/vericore-verification-${GITHUB_RUN_ID:-local}.json"
-            has_output=false
-            expect_output_value=false
-            for arg in "${extra_args[@]}"; do
-              if [[ "$expect_output_value" == true ]]; then
-                report_path="$arg"
-                expect_output_value=false
-                continue
-              fi
-              case "$arg" in
-                --output)
-                  has_output=true
-                  expect_output_value=true
-                  ;;
-                --output=*)
-                  report_path="${arg#--output=}"
-                  has_output=true
-                  ;;
-              esac
-            done
-            if [[ "$has_output" != true ]]; then
-              extra_args+=(--output "$report_path")
-            fi
-            set +e
-            vericore verify --path "$VERICORE_PATH" "${extra_args[@]}"
-            verify_status=$?
-            set -e
-            if command -v python3 >/dev/null 2>&1; then
-              python3 "$GITHUB_ACTION_PATH/scripts/action_verification_summary.py" "$report_path" "$VERICORE_PATH" ||
-                echo "::warning::Could not write Vericore verification step summary."
-            else
-              echo "::warning::Python 3 is unavailable; Vericore verification ran without a step summary."
-            fi
-            exit "$verify_status"
-            ;;
-          analyze|pr-intelligence|architecture-contract)
-            vericore "$VERICORE_COMMAND" "$VERICORE_PATH" "${extra_args[@]}"
-            ;;
-        esac
+        VERICORE_CHANGE_SUMMARY: ${{ inputs.change-summary }}
+        VERICORE_AGENT_PROVIDER: ${{ inputs.agent-provider }}
+        VERICORE_AGENT_ID: ${{ inputs.agent-id }}
+        VERICORE_AGENT_SESSION_ID: ${{ inputs.agent-session-id }}
+        VERICORE_AGENT_EVENT_ID: ${{ inputs.agent-event-id }}
+      run: bash "${GITHUB_ACTION_PATH}/scripts/action-run.sh"
