@@ -323,7 +323,9 @@
         "schemaVersion": {
           "enum": [
             "2.0",
-            "3.0"
+            "2.1",
+            "3.0",
+            "3.1"
           ]
         },
         "changeSummary": {
@@ -541,7 +543,61 @@
             }
           },
           "additionalProperties": false,
-          "description": "Prepare-time deterministic per-path repository-input manifest. Required and digest-bound for schema 3.0; absent on legacy schema 2.0 contracts."
+          "description": "Prepare-time deterministic per-path repository-input manifest. Required and digest-bound for schema 3.0/3.1; absent on legacy schema 2.0/2.1 contracts."
+        },
+        "agentContext": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "required": [
+            "schemaVersion",
+            "provider",
+            "source"
+          ],
+          "properties": {
+            "schemaVersion": {
+              "const": "1.0"
+            },
+            "provider": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+            },
+            "agentId": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 256,
+              "minLength": 1
+            },
+            "sessionId": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 256,
+              "minLength": 1
+            },
+            "eventId": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 256,
+              "minLength": 1
+            },
+            "source": {
+              "enum": [
+                "cli",
+                "mcp",
+                "github-action",
+                "rest",
+                "other"
+              ]
+            }
+          },
+          "additionalProperties": false
         }
       },
       "additionalProperties": false,

@@ -243,3 +243,19 @@ Modern MCP lifecycle behavior is intentionally deferred until the server can imp
 - [Change Safety](CHANGE_SAFETY.md) — persisted contract semantics
 - [API](API.md) — local REST integration
 - [Data & Privacy](DATA_PRIVACY.md) — data handling and AI boundaries
+
+
+## Common agent context
+
+The `vericore_prepare_change` MCP tool accepts an optional `agentContext` object:
+
+```json
+{
+  "provider": "cursor",
+  "agentId": "team-agent-7",
+  "sessionId": "session-opaque-123",
+  "eventId": "turn-opaque-456"
+}
+```
+
+The MCP boundary records `source: "mcp"`; callers cannot self-assert a different transport source. Equivalent CLI options are `--agent-provider`, `--agent-id`, `--agent-session-id`, and `--agent-event-id`. These are opaque identifiers only—never put prompts, source text, credentials, or private model reasoning in them. Context is optional for backward compatibility; when supplied it is fingerprint-bound in the contract and included in the verification receipt. Provider values are extensible lowercase slugs, so adding a new agent does not require a new verification engine.

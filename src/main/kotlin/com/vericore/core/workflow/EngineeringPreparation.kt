@@ -45,7 +45,8 @@ object EngineeringPreparation {
         changeSummary: String,
         plannedPaths: List<String> = emptyList(),
         specification: ChangeSpecification = ChangeSpecification(),
-        excludedPaths: List<String> = emptyList()
+        excludedPaths: List<String> = emptyList(),
+        agentContext: AgentContext? = null
     ): EngineeringPreparationResult {
         val root = File(repoPath).canonicalFile
         require(root.isDirectory) { "Repository path is not a directory: $repoPath" }
@@ -99,7 +100,7 @@ object EngineeringPreparation {
         require(preparedBaseline.digest == baselineAfterAnalysis.digest) {
             "Repository candidate inputs changed during prepare; discard these artifacts and run prepare again."
         }
-        val contract = AgentChangeContract.fromPlan(initialPlan, root.path, preparedHead, preparedBaseline)
+        val contract = AgentChangeContract.fromPlan(initialPlan, root.path, preparedHead, preparedBaseline, agentContext)
         val plan = initialPlan.copy(contractFingerprint = contract.fingerprint)
         val provenance = DecisionProvenance.capture(
             repoPath = root.path,

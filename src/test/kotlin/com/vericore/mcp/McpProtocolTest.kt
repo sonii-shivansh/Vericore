@@ -32,6 +32,9 @@ class McpProtocolTest {
         assertTrue(result.contains("requiredEvidence"))
         assertTrue(result.contains("evidenceBindings"))
         assertTrue(result.contains("ALL_BOUND_COMMANDS_SUCCEEDED"))
+        assertTrue(result.contains("agentContext"))
+        assertTrue(result.contains("sessionId"))
+        assertTrue(result.contains("github-copilot"))
         assertTrue(!result.contains("codecontext_"))
     }
 

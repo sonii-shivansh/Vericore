@@ -20,6 +20,7 @@ import com.vericore.core.planner.ChangeSpecification
 import com.vericore.core.planner.EngineeringPlan
 import com.vericore.core.scanner.RepositoryScanner
 import com.vericore.core.workflow.AgentChangeContract
+import com.vericore.core.workflow.AgentContext
 import com.vericore.core.workflow.ChangeSafetyAnalyzer
 import com.vericore.core.workflow.EngineeringPreparation
 import com.vericore.core.workflow.EngineeringVerification
@@ -42,10 +43,11 @@ object EngineeringContextGateway {
         repoPath: String,
         changeSummary: String,
         plannedPaths: List<String> = emptyList(),
-        specification: ChangeSpecification = ChangeSpecification()
+        specification: ChangeSpecification = ChangeSpecification(),
+        agentContext: AgentContext? = null
     ): JsonObject {
         val root = repository(repoPath)
-        val result = runBlocking { EngineeringPreparation.prepare(root.path, changeSummary, plannedPaths, specification) }
+        val result = runBlocking { EngineeringPreparation.prepare(root.path, changeSummary, plannedPaths, specification, agentContext = agentContext) }
         val output = root.resolve("output").apply { mkdirs() }
         output.resolve("engineering-preparation.json").writeText(json.encodeToString(com.vericore.core.workflow.EngineeringPreparationResult.serializer(), result))
         output.resolve("engineering-plan.json").writeText(json.encodeToString(EngineeringPlan.serializer(), result.plan))

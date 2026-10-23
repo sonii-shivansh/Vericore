@@ -98,7 +98,7 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
             if (contract.repository != root.path) add("The contract belongs to a different repository: ${contract.repository}")
             if (plan.contractFingerprint != contract.fingerprint) add("The engineering plan is not bound to the persisted contract fingerprint.")
             val expectedPlanFingerprint = try {
-                AgentChangeContract.fromPlan(plan, root.path, contract.preparedHead, contract.baselineManifest).fingerprint
+                AgentChangeContract.fromPlan(plan, root.path, contract.preparedHead, contract.baselineManifest, contract.agentContext).fingerprint
             } catch (error: IllegalArgumentException) {
                 add("The supplied plan contains an invalid structured specification: ${error.message ?: "validation failed"}")
                 ""

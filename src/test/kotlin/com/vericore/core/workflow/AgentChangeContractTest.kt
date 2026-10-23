@@ -158,6 +158,39 @@ class AgentChangeContractTest {
     }
 
     @Test
+    fun `agent context is normalized versioned and bound to contract fingerprint`() {
+        val root = java.nio.file.Files.createTempDirectory("agent-context")
+        try {
+            val baseline = CandidateStateSnapshotter.captureManifest(root.toFile())
+            val context = AgentContext.create(" Cursor ", " user-42 ", " session-abc ", " event-123 ", "cli")
+            assertEquals("cursor", context.provider)
+            assertEquals("user-42", context.agentId)
+            assertEquals("session-abc", context.sessionId)
+            assertEquals("event-123", context.eventId)
+            val base = AgentChangeContract.fromPlan(plan("src/App.kt", root.toFile().canonicalPath), root.toFile().canonicalPath, "prepared-head", baseline)
+            val withContext = AgentChangeContract.fromPlan(plan("src/App.kt", root.toFile().canonicalPath), root.toFile().canonicalPath, "prepared-head", baseline, context)
+            assertEquals("3.0", base.schemaVersion)
+            assertEquals("3.1", withContext.schemaVersion)
+            assertEquals(context, withContext.agentContext)
+            assertEquals(withContext.fingerprint, AgentChangeContract.fingerprintFor(withContext))
+            assertNotEquals(base.fingerprint, withContext.fingerprint)
+            assertNotEquals(withContext.fingerprint, AgentChangeContract.fingerprintFor(withContext.copy(agentContext = context.copy(sessionId = "different-session"))))
+        } finally {
+            root.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `agent context rejects control characters and unknown source values`() {
+        kotlin.test.assertFailsWith<IllegalArgumentException> {
+            AgentContext.create("cursor", sessionId = "session\nforged", source = "cli")
+        }
+        kotlin.test.assertFailsWith<IllegalArgumentException> {
+            AgentContext.create("cursor", source = "untrusted-claimed-source")
+        }
+    }
+
+    @Test
     fun `fingerprint is independent of change type map insertion order`() {
         val base = AgentChangeContract.fromPlan(plan("src/App.kt"))
         val first = base.copy(expectedChangeTypes = linkedMapOf("src/App.kt" to listOf("MODIFIED"), "src/Other.kt" to listOf("ADDED")))

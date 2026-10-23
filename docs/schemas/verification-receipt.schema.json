@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "urn:vericore:schema:verification-receipt-v1.4",
+  "$id": "urn:vericore:schema:verification-receipt-v1.5",
   "title": "Vericore Verification Receipt",
   "type": "object",
   "required": [
@@ -26,11 +26,12 @@
     "postVerificationFileCount",
     "preparedBaselineDigest",
     "baselineManifestValid",
-    "unplannedBaselineDriftPaths"
+    "unplannedBaselineDriftPaths",
+    "agentContext"
   ],
   "properties": {
     "schemaVersion": {
-      "const": "1.4"
+      "const": "1.5"
     },
     "repository": {
       "type": "string",
@@ -300,29 +301,105 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["schemaVersion", "parserVersion", "candidateSha", "candidateStateDigest", "executionId", "reportSha256", "status", "tests", "passed", "failed", "skipped", "cases", "reportPath"],
+        "required": [
+          "schemaVersion",
+          "parserVersion",
+          "candidateSha",
+          "candidateStateDigest",
+          "executionId",
+          "reportSha256",
+          "status",
+          "tests",
+          "passed",
+          "failed",
+          "skipped",
+          "cases",
+          "reportPath"
+        ],
         "properties": {
-          "schemaVersion": { "const": "1.0" },
-          "parserVersion": { "type": "string", "minLength": 1 },
-          "candidateSha": { "type": "string", "pattern": "^[a-f0-9]{40}$" },
-          "candidateStateDigest": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
-          "executionId": { "type": "string", "minLength": 1, "maxLength": 256 },
-          "reportPath": { "type": ["string", "null"], "maxLength": 1024 },
-          "reportSha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
-          "status": { "enum": ["ALL_PASSED", "FAILED", "NO_TESTS", "SKIPPED_ONLY", "INCOMPLETE"] },
-          "tests": { "type": "integer", "minimum": 0 },
-          "passed": { "type": "integer", "minimum": 0 },
-          "failed": { "type": "integer", "minimum": 0 },
-          "skipped": { "type": "integer", "minimum": 0 },
+          "schemaVersion": {
+            "const": "1.0"
+          },
+          "parserVersion": {
+            "type": "string",
+            "minLength": 1
+          },
+          "candidateSha": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{40}$"
+          },
+          "candidateStateDigest": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "executionId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "reportPath": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 1024
+          },
+          "reportSha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "status": {
+            "enum": [
+              "ALL_PASSED",
+              "FAILED",
+              "NO_TESTS",
+              "SKIPPED_ONLY",
+              "INCOMPLETE"
+            ]
+          },
+          "tests": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "passed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "skipped": {
+            "type": "integer",
+            "minimum": 0
+          },
           "cases": {
             "type": "array",
             "items": {
               "type": "object",
-              "required": ["className", "name", "status"],
+              "required": [
+                "className",
+                "name",
+                "status"
+              ],
               "properties": {
-                "className": { "type": ["string", "null"] },
-                "name": { "type": "string", "minLength": 1 },
-                "status": { "enum": ["PASSED", "FAILED", "SKIPPED"] }
+                "className": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "name": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "status": {
+                  "enum": [
+                    "PASSED",
+                    "FAILED",
+                    "SKIPPED"
+                  ]
+                }
               },
               "additionalProperties": false
             }
@@ -346,6 +423,57 @@
       "items": {
         "type": "string"
       }
+    },
+    "agentContext": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "required": [
+        "schemaVersion",
+        "provider",
+        "source"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "1.0"
+        },
+        "provider": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+        },
+        "agentId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 256
+        },
+        "sessionId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 256
+        },
+        "eventId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 256
+        },
+        "source": {
+          "enum": [
+            "cli",
+            "mcp",
+            "github-action",
+            "rest",
+            "other"
+          ]
+        }
+      },
+      "additionalProperties": false
     }
   },
   "additionalProperties": false
