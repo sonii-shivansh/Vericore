@@ -252,7 +252,7 @@ jobs:
           responses=[json.loads(line) for line in Path('output/mcp-contract.jsonl').read_text().splitlines() if line.strip()]
           response=next(r for r in responses if r.get('id')==2)
           result=response.get('result')
-          assert result and result.get('isError') is False
+          assert result and result.get('isError') is False, response
           returned=json.loads(''.join(x.get('text','') for x in result.get('content',[])))
           persisted=json.loads(Path('output/agent-change-contract.json').read_text())
           assert returned==persisted
@@ -367,4 +367,5 @@ jobs:
             ${{ runner.temp }}/mismatched-plan.log
             ${{ runner.temp }}/stale-head.log
             ${{ runner.temp }}/unexpected-change.log
+            ${{ runner.temp }}/mcp-contract-stderr.log
           if-no-files-found: warn
