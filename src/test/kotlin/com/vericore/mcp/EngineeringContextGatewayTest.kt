@@ -100,6 +100,8 @@ class EngineeringContextGatewayTest {
             file.writeText(Json { encodeDefaults = true }.encodeToString(AgentChangeContract.serializer(), contract))
 
             val returned = EngineeringContextGateway.changeContract(root.path)
+            val persistedJson = Json.parseToJsonElement(file.readText()).jsonObject
+            assertEquals(persistedJson, returned, "MCP gateway must return the persisted JSON object exactly")
             val decoded = Json.decodeFromJsonElement(AgentChangeContract.serializer(), returned)
             assertEquals(contract, decoded)
         } finally { root.deleteRecursively() }
