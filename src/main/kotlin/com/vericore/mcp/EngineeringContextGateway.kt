@@ -59,8 +59,10 @@ object EngineeringContextGateway {
         val root = repository(repoPath)
         val contractFile = root.resolve("output/agent-change-contract.json")
         require(contractFile.isFile) { "Immutable agent change contract not found: ${contractFile.path}. Run prepare first." }
-        val contract = json.decodeFromString<AgentChangeContract>(contractFile.readText())
-        return json.encodeToJsonElement(AgentChangeContract.serializer(), contract).jsonObject
+        // Preserve the persisted JSON exactly, including explicit nulls and future fields.
+        // Decoding/re-encoding with this gateway's explicitNulls=false config changes the
+        // wire representation and breaks callers that compare the contract artifact.
+        return Json.parseToJsonElement(contractFile.readText()).jsonObject
     }
     fun evidence(repoPath: String, changeSummary: String): JsonObject { val result = runBlocking { EngineeringPreparation.prepare(repository(repoPath).path, changeSummary) }; return json.encodeToJsonElement(com.vericore.core.ai.GroundedEvidence.serializer(), result.evidence).jsonObject }
     fun changeSafety(repoPath: String, plan: JsonObject): JsonObject {
