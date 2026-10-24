@@ -245,7 +245,7 @@ jobs:
         working-directory: ${{ runner.temp }}/target
         run: |
           CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
-          printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"release-gate","version":"1.0"}}}' '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"vericore_get_change_contract","arguments":{"repoPath":"."}}}' | "$CLI" mcp > output/mcp-contract.jsonl
+          printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"release-gate","version":"1.0"}}}' '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"vericore_get_change_contract","arguments":{"repoPath":"."}}}' | "$CLI" mcp > output/mcp-contract.jsonl 2> "$RUNNER_TEMP/mcp-contract-stderr.log"
           python3 - <<'PY'
           import json
           from pathlib import Path
