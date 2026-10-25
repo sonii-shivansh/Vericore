@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:vericore:schema:agent-workflow-envelope-v1.0",
+  "title": "Vericore Agent Workflow Envelope",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "eventType",
+    "repository",
+    "contractFingerprint",
+    "preparedHead",
+    "plannedPaths",
+    "changedPaths"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0"
+    },
+    "eventType": {
+      "enum": [
+        "change.prepared",
+        "change.verified"
+      ]
+    },
+    "repository": {
+      "type": "string",
+      "minLength": 1
+    },
+    "contractFingerprint": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "preparedHead": {
+      "type": "string"
+    },
+    "plannedPaths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "changedPaths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "agentContext": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Optional provenance/correlation metadata; never an authorization decision."
+    },
+    "eventId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Must match agentContext.eventId when present."
+    },
+    "observedHead": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "status": {
+      "enum": [
+        "PASS",
+        "REVIEW_REQUIRED",
+        "FAIL",
+        null
+      ]
+    },
+    "receiptSchemaVersion": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "eventType": {
+            "const": "change.prepared"
+          }
+        },
+        "required": [
+          "eventType"
+        ]
+      },
+      "then": {
+        "properties": {
+          "changedPaths": {
+            "maxItems": 0
+          },
+          "status": {
+            "type": "null"
+          },
+          "observedHead": {
+            "type": "null"
+          },
+          "receiptSchemaVersion": {
+            "type": "null"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "eventType": {
+            "const": "change.verified"
+          }
+        },
+        "required": [
+          "eventType"
+        ]
+      },
+      "then": {
+        "properties": {
+          "status": {
+            "enum": [
+              "PASS",
+              "REVIEW_REQUIRED",
+              "FAIL"
+            ]
+          },
+          "receiptSchemaVersion": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}
