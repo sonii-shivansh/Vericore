@@ -50,7 +50,55 @@
         "object",
         "null"
       ],
-      "description": "Optional provenance/correlation metadata; never an authorization decision."
+      "description": "Optional provenance/correlation metadata; never an authorization decision.",
+      "required": [
+        "schemaVersion",
+        "provider",
+        "source"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "1.0"
+        },
+        "provider": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"
+        },
+        "agentId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "sessionId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "eventId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "source": {
+          "enum": [
+            "cli",
+            "mcp",
+            "github-action",
+            "rest",
+            "other"
+          ]
+        }
+      },
+      "additionalProperties": false
     },
     "eventId": {
       "type": [
