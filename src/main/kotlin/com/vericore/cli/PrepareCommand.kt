@@ -45,7 +45,7 @@ class PrepareCommand : CliktCommand(name = "prepare", help = "Prepare an evidenc
         )
         val agentMetadataSupplied = listOf(agentId, agentSessionId, agentEventId).any { !it.isNullOrBlank() }
         val agentContext = if (!agentProvider.isNullOrBlank()) {
-            AgentContext.create(agentProvider!!, agentId, agentSessionId, agentEventId, "cli")
+            AgentContext.create(agentProvider!!, agentId, agentSessionId, agentEventId, if (System.getenv("GITHUB_ACTIONS") == "true") "github-action" else "cli")
         } else {
             require(!agentMetadataSupplied) { "--agent-provider is required when agent identity/session/event metadata is supplied." }
             null
