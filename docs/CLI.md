@@ -501,6 +501,7 @@ vericore prepare "add payment validation" \
 
 ```text
 output/engineering-preparation.json
+output/agent-workflow-envelope.json
 output/engineering-plan.json
 output/agent-change-contract.json
 ```
@@ -551,6 +552,8 @@ A successful or review-required full `vericore verify` run also writes:
 ```text
 output/verification-receipt.json
 ```
+
+The shared `output/agent-workflow-envelope.json` is schema `1.0` and represents the latest lifecycle state: `change.prepared` after `prepare`, or `change.verified` after full `verify`. It carries the contract fingerprint, repository, prepared/observed HEAD, planned/changed paths, result status when verified, and optional agent correlation metadata. It is a summary for integrations, not an append-only event log or an authorization decision.
 
 The receipt (schema `1.5`) is derived from the same verification result. It records the prepared and verified repository state, contract fingerprint, prepare-time baseline digest and validity, any unplanned baseline drift paths, changed/planned/unexpected paths, verification commands/results, deterministic safety reasons and verification reasons, candidate-state digests captured at analysis start, command start, and command completion, optional per-criterion specification evaluation, and parsed JUnit report paths and digests, parser versions, execution IDs, and test-case outcomes. `candidateStateStable` is true only when the repository-input digest remained identical across all three points. If relevant repository files change while analysis or verification commands are running, verification fails closed. When a non-empty specification has criteria that are not yet backed by criterion-specific evaluators, those criteria are explicitly marked `NOT_EVALUATED` and the overall status is at least `REVIEW_REQUIRED`. The receipt is an audit artifact, not a second verification decision.
 
