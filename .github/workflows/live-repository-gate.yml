@@ -245,14 +245,14 @@ jobs:
         working-directory: ${{ runner.temp }}/target
         run: |
           CLI="$GITHUB_WORKSPACE/build/install/vericore/bin/vericore"
-          printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"release-gate","version":"1.0"}}}' '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"vericore_get_change_contract","arguments":{"repoPath":"."}}}' | "$CLI" mcp > output/mcp-contract.jsonl
+          printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"release-gate","version":"1.0"}}}' '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"vericore_get_change_contract","arguments":{"repoPath":"."}}}' | "$CLI" mcp > output/mcp-contract.jsonl 2> "$RUNNER_TEMP/mcp-contract-stderr.log"
           python3 - <<'PY'
           import json
           from pathlib import Path
           responses=[json.loads(line) for line in Path('output/mcp-contract.jsonl').read_text().splitlines() if line.strip()]
           response=next(r for r in responses if r.get('id')==2)
           result=response.get('result')
-          assert result and result.get('isError') is False
+          assert result and result.get('isError') is False, response
           returned=json.loads(''.join(x.get('text','') for x in result.get('content',[])))
           persisted=json.loads(Path('output/agent-change-contract.json').read_text())
           assert returned==persisted
@@ -367,4 +367,5 @@ jobs:
             ${{ runner.temp }}/mismatched-plan.log
             ${{ runner.temp }}/stale-head.log
             ${{ runner.temp }}/unexpected-change.log
+            ${{ runner.temp }}/mcp-contract-stderr.log
           if-no-files-found: warn
