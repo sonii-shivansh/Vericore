@@ -207,7 +207,7 @@ The contract binds repository identity and prepared Git `HEAD` to planned paths,
 
 These operations have intentionally different responsibilities:
 
-- `vericore_prepare_change` **creates/persists** the change contract.
+- `vericore_prepare_change` **creates/persists** the change contract and writes `output/agent-workflow-envelope.json` with event type `change.prepared`. MCP verification writes the same envelope path with event type `change.verified`, derived from the verification receipt. This file is a latest-state summary, not an append-only event log or an authorization decision.
 - `vericore_get_change_contract` **retrieves** the persisted `output/agent-change-contract.json`.
 - `vericore_verify_change` verifies the persisted contract and does not silently generate a replacement.
 
