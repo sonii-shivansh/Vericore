@@ -137,7 +137,7 @@ assert receipt["schemaVersion"] == "1.5", receipt
 assert receipt["agentContext"] == prepared["contract"]["agentContext"], receipt
 cli_verified_envelope = json.loads((root/"output/agent-workflow-envelope.json").read_text())
 assert cli_verified_envelope["eventType"] == "change.verified", cli_verified_envelope
-assert cli_verified_envelope["eventId"] == "cli-event-1", cli_verified_envelope
+assert cli_verified_envelope["eventId"] == "event-e2e-1", cli_verified_envelope
 assert receipt["preparedBaselineDigest"] and len(receipt["preparedBaselineDigest"]) == 64, receipt
 assert receipt["baselineManifestValid"] is True, receipt
 assert receipt["unplannedBaselineDriftPaths"] == [], receipt
@@ -187,6 +187,10 @@ cli_prepare = subprocess.run(
 assert cli_prepare.returncode == 0, cli_prepare.stdout + chr(10) + cli_prepare.stderr
 cli_contract = json.loads((root/"output/agent-change-contract.json").read_text())
 assert cli_contract["schemaVersion"] == "3.1", cli_contract
+cli_prepared_envelope = json.loads((root/"output/agent-workflow-envelope.json").read_text())
+assert cli_prepared_envelope["eventType"] == "change.prepared", cli_prepared_envelope
+assert cli_prepared_envelope["eventId"] == "cli-event-1", cli_prepared_envelope
+assert cli_prepared_envelope["contractFingerprint"] == cli_contract["fingerprint"], cli_prepared_envelope
 expected_cli_source = "github-action" if os.environ.get("GITHUB_ACTIONS") == "true" else "cli"
 assert cli_contract["agentContext"] == {
     "schemaVersion":"1.0","provider":"codex","agentId":"cli-agent-1",
