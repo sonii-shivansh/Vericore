@@ -21,6 +21,8 @@ import com.vericore.core.planner.EngineeringPlan
 import com.vericore.core.scanner.RepositoryScanner
 import com.vericore.core.workflow.AgentChangeContract
 import com.vericore.core.workflow.AgentContext
+import com.vericore.core.workflow.AgentWorkflowEnvelope
+import com.vericore.core.workflow.VerificationReceipt
 import com.vericore.core.workflow.ChangeSafetyAnalyzer
 import com.vericore.core.workflow.EngineeringPreparation
 import com.vericore.core.workflow.EngineeringVerification
@@ -52,6 +54,7 @@ object EngineeringContextGateway {
         output.resolve("engineering-preparation.json").writeText(json.encodeToString(com.vericore.core.workflow.EngineeringPreparationResult.serializer(), result))
         output.resolve("engineering-plan.json").writeText(json.encodeToString(EngineeringPlan.serializer(), result.plan))
         output.resolve("agent-change-contract.json").writeText(json.encodeToString(AgentChangeContract.serializer(), result.contract))
+        output.resolve("agent-workflow-envelope.json").writeText(json.encodeToString(AgentWorkflowEnvelope.serializer(), AgentWorkflowEnvelope.prepared(result.contract)))
         return json.encodeToJsonElement(com.vericore.core.workflow.EngineeringPreparationResult.serializer(), result).jsonObject
     }
     /** Returns the exact persisted contract created by prepare; it never creates or reconstructs one. */
@@ -79,6 +82,10 @@ object EngineeringContextGateway {
         require(contractFile.isFile) { "Immutable agent change contract is required; run prepare first." }
         val persistedContract = json.decodeFromString<AgentChangeContract>(contractFile.readText())
         val result = runBlocking { EngineeringVerification.verify(root.path, engineeringPlan, persistedContract) }
+        val receipt = VerificationReceipt.from(result)
+        val output = root.resolve("output").apply { mkdirs() }
+        output.resolve("verification-receipt.json").writeText(json.encodeToString(VerificationReceipt.serializer(), receipt))
+        output.resolve("agent-workflow-envelope.json").writeText(json.encodeToString(AgentWorkflowEnvelope.serializer(), AgentWorkflowEnvelope.verified(receipt)))
         return json.encodeToJsonElement(com.vericore.core.workflow.EngineeringVerificationResult.serializer(), result).jsonObject
     }
     private fun repository(path: String): File { require(!path.startsWith("http://", true) && !path.startsWith("https://", true)) { "Remote repositories are not supported" }; val root = File(path).canonicalFile; require(root.isDirectory) { "Repository path is not a directory: $path" }; return root }

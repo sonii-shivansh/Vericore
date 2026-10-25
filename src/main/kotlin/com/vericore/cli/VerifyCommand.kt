@@ -13,6 +13,7 @@ import com.vericore.core.workflow.EngineeringVerification
 import com.vericore.core.workflow.RepositoryState
 import com.vericore.core.workflow.CandidateStateSnapshotter
 import com.vericore.core.workflow.VerificationReceipt
+import com.vericore.core.workflow.AgentWorkflowEnvelope
 import com.vericore.core.workflow.ChangeSpecificationEvaluation
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.default
@@ -65,6 +66,10 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
         root.resolve("output/verification-receipt.json").apply {
             parentFile?.mkdirs()
             writeText(json.encodeToString(receipt))
+        }
+        root.resolve("output/agent-workflow-envelope.json").apply {
+            parentFile?.mkdirs()
+            writeText(json.encodeToString(AgentWorkflowEnvelope.verified(receipt)))
         }
         echo("Verification receipt: ${root.resolve("output/verification-receipt.json").path}")
         echo("Status: ${result.status}")

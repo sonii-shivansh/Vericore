@@ -2,6 +2,7 @@ package com.vericore.cli
 
 import com.vericore.core.planner.ChangeSpecification
 import com.vericore.core.workflow.AgentContext
+import com.vericore.core.workflow.AgentWorkflowEnvelope
 import com.vericore.core.workflow.EngineeringPreparation
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
@@ -66,6 +67,8 @@ class PrepareCommand : CliktCommand(name = "prepare", help = "Prepare an evidenc
         artifact.apply { parentFile?.mkdirs() }.writeText(json.encodeToString(result))
         planFile.apply { parentFile?.mkdirs() }.writeText(json.encodeToString(result.plan))
         contractFile.apply { parentFile?.mkdirs() }.writeText(json.encodeToString(result.contract))
+        root.resolve("output/agent-workflow-envelope.json").apply { parentFile?.mkdirs() }
+            .writeText(json.encodeToString(AgentWorkflowEnvelope.prepared(result.contract)))
         echo("Engineering context: ${artifact.path}")
         echo("Engineering plan: ${planFile.path}")
         echo("Agent change contract: ${contractFile.path}")

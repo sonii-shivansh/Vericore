@@ -83,6 +83,11 @@ assert prepared["plan"]["specification"]["requiredBehaviors"] == ["Return the up
 assert prepared["plan"]["specification"] == prepared["contract"]["specification"]
 assert (root/"output/agent-change-contract.json").is_file()
 assert (root/"output/engineering-plan.json").is_file()
+prepared_envelope = json.loads((root/"output/agent-workflow-envelope.json").read_text())
+assert prepared_envelope["schemaVersion"] == "1.0", prepared_envelope
+assert prepared_envelope["eventType"] == "change.prepared", prepared_envelope
+assert prepared_envelope["contractFingerprint"] == prepared["contract"]["fingerprint"], prepared_envelope
+assert prepared_envelope["eventId"] == "event-e2e-1", prepared_envelope
 
 plan = prepared["plan"]
 (root/"src/main/kotlin/Target.kt").write_text(chr(10).join(["class Target {", "    fun value(): String = \"after\"", "}"]) + chr(10))
@@ -107,6 +112,10 @@ verify_result = next(r["result"] for r in verify if r.get("id")==5)
 assert verify_result["isError"] is False, verify_result
 verification = json.loads(next(x["text"] for x in verify_result["content"]))
 assert verification["status"] == "REVIEW_REQUIRED", verification
+verified_envelope = json.loads((root/"output/agent-workflow-envelope.json").read_text())
+assert verified_envelope["eventType"] == "change.verified", verified_envelope
+assert verified_envelope["status"] == "REVIEW_REQUIRED", verified_envelope
+assert verified_envelope["contractFingerprint"] == prepared["contract"]["fingerprint"], verified_envelope
 evaluation = verification["specificationEvaluation"]
 assert evaluation["status"] == "NOT_EVALUATED", evaluation
 assert evaluation["notEvaluatedCount"] == 4 and evaluation["evaluatedCount"] == 1, evaluation
@@ -126,6 +135,9 @@ assert cli_verify.returncode == 0, cli_verify.stdout + chr(10) + cli_verify.stde
 receipt = json.loads((root/"output/verification-receipt.json").read_text())
 assert receipt["schemaVersion"] == "1.5", receipt
 assert receipt["agentContext"] == prepared["contract"]["agentContext"], receipt
+cli_verified_envelope = json.loads((root/"output/agent-workflow-envelope.json").read_text())
+assert cli_verified_envelope["eventType"] == "change.verified", cli_verified_envelope
+assert cli_verified_envelope["eventId"] == "cli-event-1", cli_verified_envelope
 assert receipt["preparedBaselineDigest"] and len(receipt["preparedBaselineDigest"]) == 64, receipt
 assert receipt["baselineManifestValid"] is True, receipt
 assert receipt["unplannedBaselineDriftPaths"] == [], receipt
