@@ -4,7 +4,7 @@ This file records user-visible changes by release. It follows [Keep a Changelog]
 
 > Releases `0.1.0` through `0.6.0` were published under the project's former name. `0.7.0` is the first release line with Vericore as the canonical product identity.
 
-## [Unreleased]
+## [1.0.2] — 2026-11-03
 
 ### Added
 
