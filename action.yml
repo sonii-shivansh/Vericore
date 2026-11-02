@@ -1,6 +1,10 @@
 name: Vericore AI Verification
-description: Run Vericore repository verification and intelligence commands in GitHub Actions
+description: Verify AI-generated code changes with evidence-grounded repository checks
 author: Shivansh Soni
+
+branding:
+  icon: shield
+  color: blue
 
 inputs:
   command:
