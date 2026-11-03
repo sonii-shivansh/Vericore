@@ -17,12 +17,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: sonii-shivansh/Vericore@v1.0.0
+      - uses: sonii-shivansh/Vericore@v1.0.1
         with:
           command: analyze
 ~~~
 
-The examples target `v1.0.0`. Use that tag only after it appears on the [GitHub Releases page](https://github.com/sonii-shivansh/Vericore/releases); until publication, use the latest available published tag. For stricter supply-chain controls, pin the action to a reviewed immutable commit SHA.
+The examples target `v1.0.1`. Use that tag only after it appears on the [GitHub Releases page](https://github.com/sonii-shivansh/Vericore/releases); until publication, use the latest available published tag. For stricter supply-chain controls, pin the action to a reviewed immutable commit SHA.
 
 ## PR review automation
 
@@ -66,7 +66,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - uses: sonii-shivansh/Vericore@v1.0.0
+      - uses: sonii-shivansh/Vericore@v1.0.1
         with:
           command: pr-intelligence
           args: --base ${{ github.event.pull_request.base.sha }} --head ${{ github.event.pull_request.head.sha }} --json
@@ -85,7 +85,7 @@ The reusable Action produces `output/pr-intelligence.json`. A separate trusted w
 Additional command arguments can be supplied with args:
 
 ~~~yaml
-- uses: sonii-shivansh/Vericore@v1.0.0
+- uses: sonii-shivansh/Vericore@v1.0.1
   with:
     command: verify
     args: --contract-only
@@ -107,7 +107,7 @@ For `command: prepare`, the action passes `change-summary` as the required summa
 |---|---|---|
 | command | analyze | Vericore command to execute: analyze, prepare, verify, pr-intelligence, architecture-contract |
 | path | . | Repository path |
-| version | latest | Published release tag, such as v1.0.0 |
+| version | latest | Published release tag, such as v1.0.1 |
 | args | empty | Additional command arguments |
 | change-summary | empty | Required for prepare; summary of the planned change |
 | agent-provider | empty | Optional provider slug for prepare |
