@@ -3,6 +3,7 @@
 build/
 !gradle/wrapper/gradle-wrapper.jar
 gradle-app.setting
+.gradletasknamecache
 
 # IntelliJ IDEA
 .idea/
@@ -25,16 +26,49 @@ bin/
 .DS_Store
 .AppleDouble
 .LSOverride
+._*
+Icon?
 
 # Windows
 Thumbs.db
 ehthumbs.db
 Desktop.ini
+$RECYCLE.BIN/
 
-# Application Output
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+venv/
+.venv/
+env/
+ENV/
+
+# JVM Dumps & Diagnostics
+hs_err_pid*.log
+replay_pid*.log
+core.*
+
+# Temporary and Editor Backup Files
+*.swp
+*.swo
+*~
+*.bak
+*.tmp
+*.temp
+.directory
+
+# Application Output & Local Verification Artifacts
 /output/
 *.log
 temp/
+/scratch/
 .codecontext/cache/
 .vericore/cache/
 .vericore/
@@ -42,6 +76,11 @@ test_output*.txt
 /output.txt
 build-error.log
 build_log.txt
+verification-result*.json
+vericore-prep*.json
+vericore-plan*.json
+vericore-contract*.json
+vericore-receipt*.json
 
 # Kotlin
 *.class
@@ -49,8 +88,15 @@ build_log.txt
 !gradle-wrapper.jar
 *.kotlin_module
 
-# Sensitive Data
+# Sensitive Data & Environment
 local.properties
 secrets.properties
 .codecontext.json
 .vericore.json
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+*.p12
+*.pfx
