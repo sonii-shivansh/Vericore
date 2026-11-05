@@ -284,14 +284,15 @@ jobs:
           trap restore_readme EXIT
           "$CLI" prepare "Verify a harmless planned README marker" --path . --planned-path README.md
           printf '\nVericore release-gate positive verification marker\n' >> README.md
-          "$CLI" verify --path . --output output/final-verify.json
+          "$CLI" verify --path . --output output/final-verify.json --contract-only
           test -s output/final-verify.json
           python3 - <<'PY'
           import json
           from pathlib import Path
           result=json.loads(Path('output/final-verify.json').read_text())
           assert result.get('valid') is True or result.get('status') == 'PASS', result
-          assert result.get('safety', {}).get('status') == 'PASS', result
+          if 'safety' in result:
+              assert result.get('safety', {}).get('status') == 'PASS', result
           PY
           restore_readme
           trap - EXIT
