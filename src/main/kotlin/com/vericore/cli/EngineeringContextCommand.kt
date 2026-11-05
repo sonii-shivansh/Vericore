@@ -11,6 +11,7 @@ import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import java.io.File
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 
 class EngineeringContextSnapshotCommand : CliktCommand(name = "context-snapshot", help = "Create a deterministic repository engineering-context snapshot") {
     private val path by argument("path", help = "Repository path")
@@ -71,9 +72,9 @@ class EngineeringContextDiffCommand : CliktCommand(name = "context-diff", help =
     private val output by option("--output", help = "Optional path to save diff JSON artifact")
 
     override fun run() {
-        val json = Json { ignoreUnknownKeys = false }
-        val baseline = json.decodeFromString(EngineeringContextSnapshot.serializer(), File(before).readText())
-        val current = json.decodeFromString(EngineeringContextSnapshot.serializer(), File(after).readText())
+        val json = Json { ignoreUnknownKeys = true }
+        val baseline = decodeSnapshot(File(before), json)
+        val current = decodeSnapshot(File(after), json)
         val diff = EngineeringContextEngine.diff(baseline, current)
 
         val defaultOutput = diffOutputPath()
@@ -120,6 +121,20 @@ class EngineeringContextDiffCommand : CliktCommand(name = "context-diff", help =
         }
 
         echo(renderEngineeringContextDiffSummary(diff, defaultOutput.absolutePath))
+    }
+
+    private fun decodeSnapshot(file: File, json: Json): EngineeringContextSnapshot {
+        val text = file.readText()
+        return try {
+            json.decodeFromString(EngineeringContextSnapshot.serializer(), text)
+        } catch (e: Exception) {
+            val root = json.parseToJsonElement(text)
+            if (root is JsonObject && root.containsKey("data")) {
+                json.decodeFromJsonElement(EngineeringContextSnapshot.serializer(), root["data"]!!)
+            } else {
+                throw e
+            }
+        }
     }
 }
 
