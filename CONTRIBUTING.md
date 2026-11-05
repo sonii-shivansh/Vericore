@@ -15,7 +15,7 @@ Vericore is open to community contributions under the MIT License. See [DCO.md](
 
 Requirements:
 
-- JDK 21+
+- JDK 25+
 - Git
 - Kotlin-capable editor
 

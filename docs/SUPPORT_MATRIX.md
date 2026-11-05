@@ -17,13 +17,19 @@ This matrix separates implemented interfaces from platforms and behaviors exerci
 
 | Interface | Status | Trust boundary |
 |---|---|---|
-| CLI | Implemented | Runs with the invoking user's filesystem permissions |
+| CLI | Implemented | Runs with the invoking user's filesystem permissions; requires Java 25 LTS or newer |
 | MCP over stdio | Implemented and exercised by MCP audits and prepare/verify E2E | Assumes the local MCP client is trusted; does not itself sandbox agent or build processes |
 | Local REST server | Implemented; health/readiness and API audit workflows exist | Local/internal use; no built-in authentication, authorization, tenant isolation, or deployment TLS |
 | GitHub Action | Implemented; composite action and clean-runner audit exist | Release downloads are checksum-verified; unsupported action commands/runners fail closed |
 | Installers | Linux x64, macOS x64, macOS arm64, Windows x64 | Installer/platform workflows cover these targets; final candidate artifacts still require release-candidate verification |
 | Native adapters for every named coding agent | Not yet complete as a common adapter layer | Phase 2 roadmap; MCP is currently the common integration boundary |
 | GitLab app, IDE marketplace integrations, hosted multi-tenant service | Not implemented as complete supported products | Later roadmap work; do not infer support from the existence of CLI/MCP/REST |
+
+## Runtime environment
+
+- **Minimum supported runtime:** Java 25 LTS or newer. Older JVM runtimes (such as Java 21) fail at startup with an explicit version requirement error.
+- **Official build baseline:** Java 25 LTS, Gradle 9.7.1+, Kotlin 2.3.0+.
+- **Bytecode target:** JVM 25 (class file major version 69).
 
 ## Security and verification boundaries
 

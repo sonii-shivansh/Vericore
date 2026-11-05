@@ -4,6 +4,17 @@ This file records user-visible changes by release. It follows [Keep a Changelog]
 
 > Releases `0.1.0` through `0.6.0` were published under the project's former name. `0.7.0` is the first release line with Vericore as the canonical product identity.
 
+## [Unreleased]
+
+### Changed
+
+- Upgrade minimum required Java runtime and official build baseline from Java 21 to Java 25 LTS.
+- Upgrade Kotlin compiler and Gradle plugin to Kotlin 2.3.0 supporting JVM target 25 bytecode generation.
+- Upgrade Gradle wrapper to Gradle 9.7.1 supporting Java 25.
+- Align Java and Kotlin compilation targets to JVM 25 / class file major version 69.
+- Enforce runtime Java 25 requirement in CLI launcher scripts and distribution entry points with explicit, actionable failure diagnostics when launched on outdated runtimes (e.g. Java 21).
+- Update CI/CD GitHub Actions workflows, documentation, and development guides to Java 25 baseline.
+
 ## [1.0.2] — 2026-11-03
 
 ### Added

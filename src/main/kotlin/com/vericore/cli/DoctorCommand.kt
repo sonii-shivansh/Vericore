@@ -44,8 +44,8 @@ class DoctorCommand : CliktCommand(
         val javaMajor = Runtime.version().feature()
         check(
             "Java runtime",
-            javaMajor >= 21,
-            "Java $javaMajor${if (javaMajor >= 21) " (supported)" else " (requires 21+)"}"
+            javaMajor >= 25,
+            "Java $javaMajor${if (javaMajor >= 25) " (supported)" else " (requires 25+)"}"
         )
 
         val root = File(path).canonicalFile

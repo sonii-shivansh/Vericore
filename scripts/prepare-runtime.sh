@@ -61,7 +61,7 @@ for jar in "${JARS[@]}"; do
 done
 
 MODULES="$($JDEPS \
-  --multi-release 21 \
+  --multi-release 25 \
   --ignore-missing-deps \
   --print-module-deps \
   --recursive \

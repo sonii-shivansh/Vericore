@@ -81,7 +81,7 @@ The local MCP and REST interfaces are for trusted local/internal use; they are n
 
 ## Build from source
 
-Requires JDK 21+ and Git.
+Requires JDK 25+ and Git.
 
 ```bash
 git clone https://github.com/sonii-shivansh/Vericore.git

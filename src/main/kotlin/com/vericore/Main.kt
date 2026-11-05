@@ -33,6 +33,22 @@ import com.github.ajalt.clikt.core.subcommands
 import kotlin.system.exitProcess
 
 fun main(args: Array<String>) {
+    val javaMajor = Runtime.version().feature()
+    if (javaMajor < 25) {
+        System.err.println(
+            """
+            VERICORE JAVA VERSION REQUIREMENT
+
+            Installed Java version: $javaMajor
+            Required Java version: 25 or newer
+
+            Vericore cannot start because your Java runtime is outdated.
+
+            Please install JDK 25 or newer and try again.
+            """.trimIndent()
+        )
+        exitProcess(1)
+    }
     try {
         MainCommand()
             .subcommands(
