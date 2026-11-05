@@ -77,7 +77,7 @@ class EngineeringContextDiffCommand : CliktCommand(name = "context-diff", help =
         val current = decodeSnapshot(File(after), json)
         val diff = EngineeringContextEngine.diff(baseline, current)
 
-        val defaultOutput = diffOutputPath()
+        val defaultOutput = diffOutputPath(File(before))
         defaultOutput.parentFile.mkdirs()
         defaultOutput.writeText(EngineeringContextEngine.encode(diff))
 
@@ -185,4 +185,10 @@ internal fun renderEngineeringContextDiffSummary(
     )
 }
 
-private fun diffOutputPath(): File = File("output/engineering-context-diff.json")
+private fun diffOutputPath(beforeFile: File? = null): File {
+    val parent = beforeFile?.canonicalFile?.parentFile
+    if (parent != null && parent.isDirectory && parent.name == "output") {
+        return parent.resolve("engineering-context-diff.json")
+    }
+    return File("output/engineering-context-diff.json")
+}

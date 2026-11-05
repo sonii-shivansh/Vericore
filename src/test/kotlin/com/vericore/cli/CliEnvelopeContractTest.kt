@@ -114,6 +114,11 @@ class CliEnvelopeContractTest {
         }
         assertTrue(exXml.message?.contains("Unsupported output format: 'xml'") == true)
 
+        val exXmlWithJson = org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
+            OutputFormat.resolve("xml", jsonFlag = true)
+        }
+        assertTrue(exXmlWithJson.message?.contains("Unsupported output format: 'xml'") == true)
+
         val exInvalid = org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
             OutputFormat.resolve("invalid")
         }
@@ -123,6 +128,14 @@ class CliEnvelopeContractTest {
             OutputFormat.resolve("human", jsonFlag = true)
         }
         assertTrue(exConflict.message?.contains("Conflicting output format options") == true)
+    }
+
+    @Test
+    fun `mcp-config command validates output format and rejects invalid formats`() {
+        val ex = org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
+            McpConfigCommand().test(listOf("--format", "xml"))
+        }
+        assertTrue(ex.message?.contains("Unsupported output format: 'xml'") == true)
     }
 
     @Test

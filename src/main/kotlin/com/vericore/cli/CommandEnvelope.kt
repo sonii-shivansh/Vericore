@@ -15,12 +15,14 @@ enum class OutputFormat {
     companion object {
         fun resolve(format: String?, jsonFlag: Boolean = false): OutputFormat {
             val normalized = format?.trim()?.lowercase()
+            if (normalized != null && normalized.isNotEmpty() && normalized != "human" && normalized != "json") {
+                throw IllegalArgumentException("Unsupported output format: '$format'. Supported formats: human, json")
+            }
             if (jsonFlag && normalized == "human") {
                 throw IllegalArgumentException("Conflicting output format options: cannot specify both --json and --format human")
             }
             if (jsonFlag || normalized == "json") return JSON
-            if (normalized == null || normalized == "human" || normalized.isEmpty()) return HUMAN
-            throw IllegalArgumentException("Unsupported output format: '$format'. Supported formats: human, json")
+            return HUMAN
         }
     }
 }

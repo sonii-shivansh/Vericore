@@ -18,6 +18,7 @@ class McpConfigCommand(private val workingDirectory: File = File(".")) : CliktCo
     private val jsonOutput by option("--json", help = "Write config as JSON").flag()
 
     override fun run() {
+        OutputFormat.resolve(format, jsonOutput)
         val config = """
             {
               "mcpServers": {
