@@ -36,7 +36,7 @@ Paste sanitized output here
 
 - **Vericore version:** [paste the output of `vericore --version`]
 - **OS:** [e.g., Windows 11, macOS 14, Ubuntu 24.04]
-- **JDK version:** [e.g., JDK 21]
+- **JDK version:** [e.g., JDK 25]
 - **Repository size:** [e.g., 100 files, 10k LOC]
 
 ## 📝 Additional Context

@@ -10,7 +10,7 @@ For the complete command contract, use [CLI Reference](CLI.md). It is the single
 
 ### Prerequisites
 
-- JDK 21+
+- JDK 25+
 - Git
 - Kotlin-capable editor
 - Bash, PowerShell, or another shell supported by the Gradle wrapper

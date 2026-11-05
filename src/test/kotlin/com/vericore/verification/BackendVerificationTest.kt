@@ -14,7 +14,7 @@ class BackendVerificationTest {
 
     @Test
     fun `verify backend scanner parser and graph on isolated fixture`() {
-        val rootDir = createTempDir(prefix = "vericore-backend-fixture-")
+        val rootDir = kotlin.io.path.createTempDirectory("vericore-backend-fixture-").toFile()
         try {
             val sourceFile = File(rootDir, "Source.kt").apply {
                 writeText(

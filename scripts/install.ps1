@@ -5,6 +5,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+$ProgressPreference = 'SilentlyContinue'
 
 function Fail([string]$Message) {
     throw "Vericore installer error: $Message"
@@ -197,14 +198,19 @@ try {
         Fail "Installed CLI verification failed. Reported version: $cliVersion"
     }
 
-    $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
-    $pathEntries = @()
-    if (-not [string]::IsNullOrWhiteSpace($userPath)) {
-        $pathEntries = $userPath -split ';' | Where-Object { $_ }
-    }
-    if ($pathEntries -notcontains $binDir) {
-        $newPath = (($pathEntries + $binDir) | Select-Object -Unique) -join ';'
-        [Environment]::SetEnvironmentVariable('Path', $newPath, 'User')
+    try {
+        $userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
+        $pathEntries = @()
+        if (-not [string]::IsNullOrWhiteSpace($userPath)) {
+            $pathEntries = $userPath -split ';' | Where-Object { $_ }
+        }
+        if ($pathEntries -notcontains $binDir) {
+            $newPath = (($pathEntries + $binDir) | Select-Object -Unique) -join ';'
+            [Environment]::SetEnvironmentVariable('Path', $newPath, 'User')
+        }
+    } catch {
+        Write-Warning "Could not update user PATH environment variable: $($_.Exception.Message)"
+        Write-Host "Add `"$binDir`" to your PATH manually."
     }
 
     $installComplete = $true

@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 180
     env:
-      JAVA_VERSION: "21"
+      JAVA_VERSION: "25"
       TARGET_REPOSITORY: google/kotlin
       TARGET_REF: master
       RUN_AI: "false"

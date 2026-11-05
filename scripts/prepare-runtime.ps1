@@ -7,7 +7,7 @@ $ErrorActionPreference = 'Stop'
 $AppHome = (Resolve-Path $DistDir).Path
 $JdkHome = $env:JAVA_HOME
 if ([string]::IsNullOrWhiteSpace($JdkHome)) {
-    throw 'A JDK with jdeps.exe and jlink.exe is required. Set JAVA_HOME to JDK 21.'
+    throw 'A JDK with jdeps.exe and jlink.exe is required. Set JAVA_HOME to JDK 25.'
 }
 
 $Jdeps = Join-Path $JdkHome 'bin\jdeps.exe'
@@ -34,7 +34,7 @@ if ([string]::IsNullOrWhiteSpace($dependencyClassPath)) {
 }
 
 $jdepsArgs = @(
-    '--multi-release', '21',
+    '--multi-release', '25',
     '--ignore-missing-deps',
     '--print-module-deps',
     '--recursive',

@@ -14,7 +14,7 @@ curl -fsSL https://raw.githubusercontent.com/sonii-shivansh/Vericore/main/script
 irm https://raw.githubusercontent.com/sonii-shivansh/Vericore/main/scripts/install.ps1 | iex
 ```
 
-The installer selects the latest published release and checks its SHA-256 checksum. Release archives include a Java runtime.
+The installer selects the latest published release and checks its SHA-256 checksum. Release archives include a bundled Java 25 runtime; building or running from source requires JDK 25+.
 
 Check that Vericore is ready:
 ```bash

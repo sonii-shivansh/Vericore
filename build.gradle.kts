@@ -1,8 +1,8 @@
 import org.gradle.jvm.application.tasks.CreateStartScripts
 
 plugins {
-    kotlin("jvm") version "2.1.0"
-    kotlin("plugin.serialization") version "2.1.0"
+    kotlin("jvm") version "2.3.0"
+    kotlin("plugin.serialization") version "2.3.0"
     application
 }
 
@@ -39,15 +39,30 @@ dependencies {
 
 application {
     mainClass.set("com.vericore.MainKt")
+    applicationDefaultJvmArgs = listOf("--enable-native-access=ALL-UNNAMED")
+}
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(25))
+    }
+}
+
+tasks.withType<JavaCompile>().configureEach {
+    options.release.set(25)
+}
+
+kotlin {
+    jvmToolchain(25)
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_25)
+    }
 }
 
 tasks.test {
     useJUnitPlatform()
     workingDir(project.projectDir)
-}
-
-kotlin {
-    jvmToolchain(21)
+    jvmArgs("--enable-native-access=ALL-UNNAMED")
 }
 
 tasks.jar {
@@ -56,19 +71,81 @@ tasks.jar {
     }
 }
 
-// Keep the generated Windows launcher classpath compact. A wildcard classpath
-// avoids Windows command-line length failures when the distribution contains
-// many runtime dependencies.
+// Keep the generated Windows launcher classpath compact and enforce runtime Java requirements.
 tasks.withType<CreateStartScripts>().configureEach {
     doLast {
-        val script = windowsScript
-        val lines = script.readLines()
-        val classpathIndex = lines.indexOfFirst { it.startsWith("set CLASSPATH=") }
-        require(classpathIndex >= 0) {
-            "Expected Gradle Windows start script to contain a CLASSPATH declaration: $script"
+        val winScript = windowsScript
+        val winLines = winScript.readLines().toMutableList()
+        val winClasspathIndex = winLines.indexOfFirst { it.startsWith("set CLASSPATH=") }
+        require(winClasspathIndex >= 0) {
+            "Expected Gradle Windows start script to contain a CLASSPATH declaration: $winScript"
         }
-        val updatedLines = lines.toMutableList()
-        updatedLines[classpathIndex] = "set CLASSPATH=%APP_HOME%\\lib\\*"
-        script.writeText(updatedLines.joinToString(System.lineSeparator()))
+        winLines[winClasspathIndex] = "set CLASSPATH=%APP_HOME%\\lib\\*"
+
+        val winExecuteIndex = winLines.indexOfFirst { it.trim() == ":execute" }
+        require(winExecuteIndex >= 0) {
+            "Expected Gradle Windows start script to contain :execute label: $winScript"
+        }
+        val winJavaCheck = listOf(
+            "@rem Check Java version requirement: Java 25 or newer",
+            "set VERICORE_JAVA_MAJOR=",
+            "for /f \"tokens=3\" %%g in ('\"%JAVA_EXE%\" -version 2^>^&1') do (",
+            "    if not defined VERICORE_JAVA_MAJOR (",
+            "        for /f \"tokens=1,2 delims=.- \" %%a in (\"%%~g\") do (",
+            "            if \"%%a\"==\"1\" (set VERICORE_JAVA_MAJOR=%%b) else (set VERICORE_JAVA_MAJOR=%%a)",
+            "        )",
+            "    )",
+            ")",
+            "if not defined VERICORE_JAVA_MAJOR goto skipJavaCheck",
+            "if %VERICORE_JAVA_MAJOR% lss 25 goto javaOutdated",
+            "goto skipJavaCheck",
+            "",
+            ":javaOutdated",
+            "echo VERICORE JAVA VERSION REQUIREMENT 1>&2",
+            "echo. 1>&2",
+            "echo Installed Java version: %VERICORE_JAVA_MAJOR% 1>&2",
+            "echo Required Java version: 25 or newer 1>&2",
+            "echo. 1>&2",
+            "echo Vericore cannot start because your Java runtime is outdated. 1>&2",
+            "echo. 1>&2",
+            "echo Please install JDK 25 or newer and try again. 1>&2",
+            "exit /b 1",
+            "",
+            ":skipJavaCheck"
+        )
+        winLines.addAll(winExecuteIndex + 1, winJavaCheck)
+        winScript.writeText(winLines.joinToString("\r\n"))
+
+        val uScript = unixScript
+        val uLines = uScript.readLines().toMutableList()
+        val uAfterJavaCmd = uLines.indexOfFirst { it.trim() == "# Increase the maximum file descriptors if we can." }
+        require(uAfterJavaCmd >= 0) {
+            "Expected Gradle Unix start script to contain descriptor limit section: $uScript"
+        }
+        val uJavaCheck = listOf(
+            "# Check Java version requirement: Java 25 or newer",
+            "VERICORE_JAVA_RAW=\"$(\"\$JAVACMD\" -version 2>&1 | awk -F'\"' '/version/ {print \$2; exit}')\"",
+            "VERICORE_JAVA_MAJOR=\"\${VERICORE_JAVA_RAW%%.*}\"",
+            "if [ \"\$VERICORE_JAVA_MAJOR\" = \"1\" ]; then",
+            "    VERICORE_JAVA_MAJOR=\"\${VERICORE_JAVA_RAW#1.}\"",
+            "    VERICORE_JAVA_MAJOR=\"\${VERICORE_JAVA_MAJOR%%.*}\"",
+            "fi",
+            "if [ -n \"\$VERICORE_JAVA_MAJOR\" ] && [ \"\$VERICORE_JAVA_MAJOR\" -lt 25 ] 2>/dev/null; then",
+            "    cat >&2 <<EOF",
+            "VERICORE JAVA VERSION REQUIREMENT",
+            "",
+            "Installed Java version: \$VERICORE_JAVA_MAJOR",
+            "Required Java version: 25 or newer",
+            "",
+            "Vericore cannot start because your Java runtime is outdated.",
+            "",
+            "Please install JDK 25 or newer and try again.",
+            "EOF",
+            "    exit 1",
+            "fi",
+            ""
+        )
+        uLines.addAll(uAfterJavaCmd, uJavaCheck)
+        uScript.writeText(uLines.joinToString("\n"))
     }
 }

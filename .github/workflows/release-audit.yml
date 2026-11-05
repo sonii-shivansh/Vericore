@@ -24,9 +24,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
         with: { fetch-depth: 0 }
-      - name: Set up JDK 21
+      - name: Set up JDK 25
         uses: actions/setup-java@v6
-        with: { java-version: '21', distribution: temurin, cache: gradle }
+        with: { java-version: '25', distribution: temurin, cache: gradle }
       - name: Build and test
         env:
           GITHUB_SHA: ${{ github.sha }}
@@ -231,10 +231,10 @@ jobs:
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - name: Set up JDK 21
+      - name: Set up JDK 25
         uses: actions/setup-java@v6
         with:
-          java-version: "21"
+          java-version: "25"
           distribution: "temurin"
           cache: "gradle"
       - name: Resolve exact candidate version

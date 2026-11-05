@@ -722,7 +722,7 @@ vericore doctor [--path <directory>]
 ### What it checks
 
 - Vericore version;
-- Java runtime (21+ required);
+- Java runtime (25+ required);
 - diagnostic path exists;
 - Git repository context when the diagnostic path is a repository;
 - effective AI provider configuration;

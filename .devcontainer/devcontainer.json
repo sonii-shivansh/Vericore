@@ -1,6 +1,6 @@
 {
   "name": "Vericore 0.8.2 Release Lab",
-  "image": "mcr.microsoft.com/devcontainers/java:1-21-bookworm",
+  "image": "mcr.microsoft.com/devcontainers/java:1-25-bookworm",
   "features": {
     "ghcr.io/devcontainers/features/git:1": {}
   },
