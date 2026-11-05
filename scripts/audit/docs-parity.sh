@@ -9,7 +9,8 @@ CLI_DOC="docs/CLI.md"
 
 help_output="$("$APP" --help)"
 
-python3 - "$CLI_DOC" "$help_output" <<'PY'
+PYTHON_BIN="$(command -v python3 2>/dev/null || command -v python)"
+"$PYTHON_BIN" - "$CLI_DOC" "$help_output" <<'PY'
 import re
 import sys
 

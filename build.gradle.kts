@@ -109,7 +109,7 @@ tasks.withType<CreateStartScripts>().configureEach {
             "echo Vericore cannot start because your Java runtime is outdated. 1>&2",
             "echo. 1>&2",
             "echo Please install JDK 25 or newer and try again. 1>&2",
-            "\"%COMSPEC%\" /c exit 1",
+            "exit /b 1",
             "",
             ":skipJavaCheck"
         )

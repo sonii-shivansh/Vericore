@@ -66,6 +66,11 @@ case "$(uname -s)/$(uname -m)" in
   Linux/x86_64|Linux/amd64) TEST_ASSET="linux-x64" ;;
   Darwin/x86_64|Darwin/amd64) TEST_ASSET="macos-x64" ;;
   Darwin/arm64|Darwin/aarch64) TEST_ASSET="macos-arm64" ;;
+  MINGW*|MSYS*|CYGWIN*)
+    echo "Notice: Unix installer live execution requires Linux or macOS. On Windows, run scripts/test-installers.ps1."
+    echo "Static installer contracts passed."
+    exit 0
+    ;;
   *) fail "Unsupported installer test host: $(uname -s)/$(uname -m)" ;;
 esac
 ARCHIVE_NAME="vericore-0.9.0-${TEST_ASSET}.tar.gz"
