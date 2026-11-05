@@ -20,7 +20,7 @@ class PRIntelligenceCommand : CliktCommand(
     private val path by argument("path", help = "Local Git repository path")
     private val base by option("--base", help = "Base Git revision; pair with --head")
     private val head by option("--head", help = "Head Git revision; pair with --base")
-    private val format by option("--format", help = "Output format (human, json)").default("human")
+    private val format by option("--format", help = "Output format (human, json)")
     private val jsonOutput by option("--json", help = "Write machine-readable JSON to stdout (alias for --format json)").flag()
     private val output by option("--output", help = "Optional path to save pr-intelligence JSON artifact")
 
@@ -42,18 +42,11 @@ class PRIntelligenceCommand : CliktCommand(
         defaultOutput.parentFile.mkdirs()
         defaultOutput.writeText(JsonEnvelope.json.encodeToString(result))
 
-        if (output != null) {
-            val dest = File(output!!).let { if (it.isAbsolute) it else File(path).canonicalFile.resolve(it.path) }
-            dest.parentFile?.mkdirs()
-            dest.writeText(JsonEnvelope.json.encodeToString(result))
-        }
-
         val outFormat = OutputFormat.resolve(format, jsonOutput)
         val noChanges = result.changeSummary.filesChanged == 0
         val status = when {
             noChanges -> CommandStatus.NO_CHANGES
-            result.aggregateSeverity.name == "CRITICAL" -> CommandStatus.FAIL
-            result.aggregateSeverity.name == "HIGH" -> CommandStatus.WARNING
+            result.aggregateSeverity.name == "CRITICAL" || result.aggregateSeverity.name == "HIGH" -> CommandStatus.REVIEW_REQUIRED
             else -> CommandStatus.PASS
         }
 
@@ -79,8 +72,20 @@ class PRIntelligenceCommand : CliktCommand(
                 ),
                 execution = ExecutionInfo(exitCode = 0)
             )
-            echo(JsonEnvelope.encode(envelope))
+            val jsonText = JsonEnvelope.encode(envelope)
+            if (output != null) {
+                val dest = File(output!!).let { if (it.isAbsolute) it else File(path).canonicalFile.resolve(it.path) }
+                dest.parentFile?.mkdirs()
+                dest.writeText(jsonText)
+            }
+            echo(jsonText)
             return
+        }
+
+        if (output != null) {
+            val dest = File(output!!).let { if (it.isAbsolute) it else File(path).canonicalFile.resolve(it.path) }
+            dest.parentFile?.mkdirs()
+            dest.writeText(JsonEnvelope.json.encodeToString(result))
         }
 
         echo(renderPRIntelligenceSummary(result, defaultOutput.path))

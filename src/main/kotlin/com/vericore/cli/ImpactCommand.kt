@@ -26,7 +26,7 @@ class ImpactCommand : CliktCommand(
 ) {
     private val path by argument("path", help = "Repository path")
     private val changed by argument("changed", help = "Changed file path(s) relative to the repository").multiple(required = true)
-    private val format by option("--format", help = "Output format (human, json)").default("human")
+    private val format by option("--format", help = "Output format (human, json)")
     private val jsonOutput by option("--json", help = "Write machine-readable impact JSON to stdout (alias for --format json)").flag()
     private val output by option("--output", help = "Optional path to save impact JSON artifact")
 
@@ -73,12 +73,6 @@ class ImpactCommand : CliktCommand(
         defaultOutput.parentFile.mkdirs()
         defaultOutput.writeText(JsonEnvelope.json.encodeToString(result))
 
-        if (output != null) {
-            val dest = File(output!!).let { if (it.isAbsolute) it else File(path).canonicalFile.resolve(it.path) }
-            dest.parentFile?.mkdirs()
-            dest.writeText(JsonEnvelope.json.encodeToString(result))
-        }
-
         val outFormat = OutputFormat.resolve(format, jsonOutput)
         val testCandidateNodes = result.nodes.filter { it.relationship == ImpactRelationship.TEST_CANDIDATE }
 
@@ -93,7 +87,7 @@ class ImpactCommand : CliktCommand(
                 findings = testCandidateNodes.map { node ->
                     EnvelopeFinding(
                         level = "INFO",
-                        message = "Test candidate for changed dependencies",
+                        message = node.reasons.firstOrNull() ?: "Test candidate for changed dependencies",
                         ruleId = "TEST_CANDIDATE",
                         path = repositoryRelativePath(node.path, root)
                     )
@@ -102,7 +96,7 @@ class ImpactCommand : CliktCommand(
                     EnvelopeRecommendation(
                         priority = "HIGH",
                         title = "Execute impact-detected test candidate",
-                        action = "Run tests in ${repositoryRelativePath(node.path, root)}",
+                        action = "Run tests in ${repositoryRelativePath(node.path, root)} (${node.reasons.firstOrNull() ?: "test candidate"})",
                         evidencePaths = listOf(repositoryRelativePath(node.path, root))
                     )
                 },
@@ -111,8 +105,20 @@ class ImpactCommand : CliktCommand(
                 ),
                 execution = ExecutionInfo(exitCode = 0)
             )
-            echo(JsonEnvelope.encode(envelope))
+            val jsonText = JsonEnvelope.encode(envelope)
+            if (output != null) {
+                val dest = File(output!!).let { if (it.isAbsolute) it else File(path).canonicalFile.resolve(it.path) }
+                dest.parentFile?.mkdirs()
+                dest.writeText(jsonText)
+            }
+            echo(jsonText)
             return
+        }
+
+        if (output != null) {
+            val dest = File(output!!).let { if (it.isAbsolute) it else File(path).canonicalFile.resolve(it.path) }
+            dest.parentFile?.mkdirs()
+            dest.writeText(JsonEnvelope.json.encodeToString(result))
         }
 
         echo(renderImpactSummary(result, root, defaultOutput.path))
@@ -144,7 +150,11 @@ internal fun renderImpactSummary(
             add(
                 HumanCommandOutput.section(
                     "Test candidates (${testCandidates.size})",
-                    *testCandidates.map { repositoryRelativePath(it.path, root) }.toTypedArray()
+                    *testCandidates.map {
+                        val relPath = repositoryRelativePath(it.path, root)
+                        val reason = it.reasons.firstOrNull() ?: "likely test coverage candidate"
+                        "$relPath — $reason"
+                    }.toTypedArray()
                 )
             )
         }

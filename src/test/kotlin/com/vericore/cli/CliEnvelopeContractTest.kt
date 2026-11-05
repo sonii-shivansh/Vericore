@@ -99,4 +99,61 @@ class CliEnvelopeContractTest {
             tempDir.deleteRecursively()
         }
     }
+
+    @Test
+    fun `output format resolve accepts valid formats and rejects invalid or conflicting values`() {
+        assertEquals(OutputFormat.HUMAN, OutputFormat.resolve("human"))
+        assertEquals(OutputFormat.HUMAN, OutputFormat.resolve(null))
+        assertEquals(OutputFormat.HUMAN, OutputFormat.resolve(""))
+        assertEquals(OutputFormat.JSON, OutputFormat.resolve("json"))
+        assertEquals(OutputFormat.JSON, OutputFormat.resolve("JSON"))
+        assertEquals(OutputFormat.JSON, OutputFormat.resolve(null, jsonFlag = true))
+
+        val exXml = org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
+            OutputFormat.resolve("xml")
+        }
+        assertTrue(exXml.message?.contains("Unsupported output format: 'xml'") == true)
+
+        val exInvalid = org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
+            OutputFormat.resolve("invalid")
+        }
+        assertTrue(exInvalid.message?.contains("Unsupported output format: 'invalid'") == true)
+
+        val exConflict = org.junit.jupiter.api.assertThrows<IllegalArgumentException> {
+            OutputFormat.resolve("human", jsonFlag = true)
+        }
+        assertTrue(exConflict.message?.contains("Conflicting output format options") == true)
+    }
+
+    @Test
+    fun `error handler emits structured json error when json is requested and post-parsing error occurs`() {
+        JsonEnvelope.reset()
+        val originalOut = System.out
+        val originalErr = System.err
+        val outStream = java.io.ByteArrayOutputStream()
+        val errStream = java.io.ByteArrayOutputStream()
+        try {
+            System.setOut(java.io.PrintStream(outStream))
+            System.setErr(java.io.PrintStream(errStream))
+
+            val ex = com.vericore.core.exceptions.ValidationException("Contract validation failed")
+            val exitCode = ErrorHandler.handle(ex, arrayOf("architecture-contract", "--format", "json"))
+
+            assertEquals(1, exitCode)
+            val stdoutText = outStream.toString().trim()
+            val parsed = json.parseToJsonElement(stdoutText).jsonObject
+            assertEquals("1.0", parsed["schemaVersion"]?.jsonPrimitive?.content)
+            assertEquals("architecture-contract", parsed["command"]?.jsonPrimitive?.content)
+            assertEquals("FAIL", parsed["status"]?.jsonPrimitive?.content)
+            assertEquals("Contract validation failed", parsed["summary"]?.jsonPrimitive?.content)
+            assertEquals("1", parsed["execution"]?.jsonObject?.get("exitCode")?.jsonPrimitive?.content)
+
+            val stderrText = errStream.toString()
+            assertTrue(stderrText.contains("Contract validation failed"))
+        } finally {
+            System.setOut(originalOut)
+            System.setErr(originalErr)
+            JsonEnvelope.reset()
+        }
+    }
 }

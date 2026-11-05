@@ -11,7 +11,7 @@ import java.io.File
 class InitCommand : CliktCommand(name = "init", help = "Initialize Vericore for a repository") {
     private val path by option("--path", help = "Repository path (default: current directory)").default(".")
     private val force by option("--force", help = "Replace an existing Vericore project configuration").flag()
-    private val format by option("--format", help = "Output format (human, json)").default("human")
+    private val format by option("--format", help = "Output format (human, json)")
     private val jsonOutput by option("--json", help = "Write the product result as JSON").flag()
     private val output by option("--output", help = "Optional path to save JSON output")
 

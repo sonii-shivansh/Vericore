@@ -34,7 +34,7 @@ class PrepareCommand : CliktCommand(name = "prepare", help = "Prepare an evidenc
     private val requiredEvidence by option("--required-evidence", help = "Evidence that must be supplied/reviewed for acceptance").multiple()
     private val criterionEvidence by option("--criterion-evidence", help = "Bind a criterion to evidence, a verification-command-NNN ID, or junit-test-case:<class>#<name> as <criterion-id>=<evidence-id>; repeatable").multiple()
     private val criterionEvidenceRules by option("--criterion-evidence-rule", help = "Set a criterion evidence rule (ALL_BOUND_COMMANDS_SUCCEEDED or ALL_BOUND_JUNIT_CASES_PASSED) as <criterion-id>=<rule>; repeatable").multiple()
-    private val format by option("--format", help = "Output format (human, json)").default("human")
+    private val format by option("--format", help = "Output format (human, json)")
     private val jsonOutput by option("--json", help = "Write machine-readable preparation JSON to stdout (alias for --format json)").flag()
 
     override fun run() {
@@ -54,19 +54,20 @@ class PrepareCommand : CliktCommand(name = "prepare", help = "Prepare an evidenc
             require(!agentMetadataSupplied) { "--agent-provider is required when agent identity/session/event metadata is supplied." }
             null
         }
-        val artifactPath = output ?: root.resolve("output/engineering-preparation.json").path
+        val defaultArtifact = root.resolve("output/engineering-preparation.json")
+        val artifactPath = output ?: defaultArtifact.path
         val artifact = File(artifactPath).let { if (it.isAbsolute) it else root.resolve(it.path) }
         val planPath = planOutput ?: root.resolve("output/engineering-plan.json").path
         val planFile = File(planPath).let { if (it.isAbsolute) it else root.resolve(it.path) }
         val contractPath = contractOutput ?: root.resolve("output/agent-change-contract.json").path
         val contractFile = File(contractPath).let { if (it.isAbsolute) it else root.resolve(it.path) }
         val rootPath = root.toPath()
-        val excludedPaths = listOf(artifact, planFile, contractFile).mapNotNull { file ->
+        val excludedPaths = listOf(artifact, planFile, contractFile, defaultArtifact).mapNotNull { file ->
             val canonical = file.canonicalFile.toPath()
             if (canonical.startsWith(rootPath)) rootPath.relativize(canonical).toString().replace(File.separatorChar, '/') else null
         }.distinct().sorted()
         val result = runBlocking { EngineeringPreparation.prepare(root.path, changeSummary, plannedPaths, specification, excludedPaths, agentContext) }
-        artifact.apply { parentFile?.mkdirs() }.writeText(JsonEnvelope.json.encodeToString(result))
+        defaultArtifact.apply { parentFile?.mkdirs() }.writeText(JsonEnvelope.json.encodeToString(result))
         planFile.apply { parentFile?.mkdirs() }.writeText(JsonEnvelope.json.encodeToString(result.plan))
         contractFile.apply { parentFile?.mkdirs() }.writeText(JsonEnvelope.json.encodeToString(result.contract))
 
@@ -87,14 +88,22 @@ class PrepareCommand : CliktCommand(name = "prepare", help = "Prepare an evidenc
                     )
                 },
                 artifacts = listOf(
-                    EnvelopeArtifact("preparation", artifact.path),
+                    EnvelopeArtifact("preparation", defaultArtifact.path),
                     EnvelopeArtifact("plan", planFile.path),
                     EnvelopeArtifact("contract", contractFile.path)
                 ),
                 execution = ExecutionInfo(exitCode = 0)
             )
-            echo(JsonEnvelope.encode(envelope))
+            val jsonText = JsonEnvelope.encode(envelope)
+            if (output != null) {
+                artifact.apply { parentFile?.mkdirs() }.writeText(jsonText)
+            }
+            echo(jsonText)
             return
+        }
+
+        if (output != null && artifact != defaultArtifact) {
+            artifact.apply { parentFile?.mkdirs() }.writeText(JsonEnvelope.json.encodeToString(result))
         }
 
         echo(renderPrepareSummary(result, root, artifact.path, planFile.path, contractFile.path))

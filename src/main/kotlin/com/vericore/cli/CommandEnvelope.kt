@@ -13,8 +13,15 @@ enum class OutputFormat {
     JSON;
 
     companion object {
-        fun resolve(format: String?, jsonFlag: Boolean = false): OutputFormat =
-            if (jsonFlag || format.equals("json", ignoreCase = true)) JSON else HUMAN
+        fun resolve(format: String?, jsonFlag: Boolean = false): OutputFormat {
+            val normalized = format?.trim()?.lowercase()
+            if (jsonFlag && normalized == "human") {
+                throw IllegalArgumentException("Conflicting output format options: cannot specify both --json and --format human")
+            }
+            if (jsonFlag || normalized == "json") return JSON
+            if (normalized == null || normalized == "human" || normalized.isEmpty()) return HUMAN
+            throw IllegalArgumentException("Unsupported output format: '$format'. Supported formats: human, json")
+        }
     }
 }
 
@@ -32,6 +39,7 @@ object CommandStatus {
     const val NOT_EVALUATED = "NOT_EVALUATED"
     const val ERROR = "ERROR"
     const val ALREADY_INITIALIZED = "ALREADY_INITIALIZED"
+    const val REVIEW_REQUIRED = "REVIEW_REQUIRED"
 }
 
 @Serializable
@@ -92,8 +100,17 @@ object JsonEnvelope {
         ignoreUnknownKeys = true
     }
 
-    inline fun <reified T> encode(envelope: CommandEnvelope<T>): String =
-        json.encodeToString(envelope)
+    @Volatile
+    var emitted: Boolean = false
+
+    inline fun <reified T> encode(envelope: CommandEnvelope<T>): String {
+        emitted = true
+        return json.encodeToString(envelope)
+    }
+
+    fun reset() {
+        emitted = false
+    }
 }
 
 /**
@@ -117,4 +134,3 @@ fun repositoryRelativePath(path: String, repositoryRoot: File): String {
     val file = File(path).let { if (it.isAbsolute) it else File(repositoryRoot, path) }
     return repositoryRelativePath(file, repositoryRoot)
 }
-

@@ -27,7 +27,7 @@ class ArchitectureContractCommand : CliktCommand(
 ) {
     private val path by argument("path", help = "Repository path")
     private val contractPath by option("--contract", help = "Architecture contract JSON; defaults to .vericore-architecture-contract.json")
-    private val format by option("--format", help = "Output format (human, json)").default("human")
+    private val format by option("--format", help = "Output format (human, json)")
     private val jsonOutput by option("--json", help = "Write machine-readable contract result to stdout (alias for --format json)").flag()
     private val output by option("--output", help = "Optional path to save contract result JSON artifact")
     private val recordPath by option("--record", help = "Persist the deterministic contract decision history")
@@ -67,12 +67,6 @@ class ArchitectureContractCommand : CliktCommand(
         defaultOutput.parentFile.mkdirs()
         defaultOutput.writeText(json.encodeToString<ArchitectureContractResult>(result))
 
-        if (output != null) {
-            val dest = File(output!!).let { if (it.isAbsolute) it else File(path).canonicalFile.resolve(it.path) }
-            dest.parentFile?.mkdirs()
-            dest.writeText(json.encodeToString<ArchitectureContractResult>(result))
-        }
-
         val outFormat = OutputFormat.resolve(format, jsonOutput)
         val status = if (result.passed) CommandStatus.PASS else CommandStatus.FAIL
 
@@ -97,8 +91,19 @@ class ArchitectureContractCommand : CliktCommand(
                 ),
                 execution = ExecutionInfo(exitCode = if (result.passed) 0 else 1)
             )
-            echo(JsonEnvelope.encode(envelope))
+            val jsonText = JsonEnvelope.encode(envelope)
+            if (output != null) {
+                val dest = File(output!!).let { if (it.isAbsolute) it else File(path).canonicalFile.resolve(it.path) }
+                dest.parentFile?.mkdirs()
+                dest.writeText(jsonText)
+            }
+            echo(jsonText)
         } else {
+            if (output != null) {
+                val dest = File(output!!).let { if (it.isAbsolute) it else File(path).canonicalFile.resolve(it.path) }
+                dest.parentFile?.mkdirs()
+                dest.writeText(json.encodeToString<ArchitectureContractResult>(result))
+            }
             echo(
                 renderArchitectureContractSummary(
                     result,

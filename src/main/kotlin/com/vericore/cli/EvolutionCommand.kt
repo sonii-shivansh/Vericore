@@ -20,7 +20,7 @@ class EvolutionCommand : CliktCommand(
     private val path by argument("path", help = "Repository path").default(".")
     private val months by option("--months", help = "Months back to analyze").int().default(6)
     private val interval by option("--interval", help = "Days between snapshots").int().default(30)
-    private val format by option("--format", help = "Output format (human, json)").default("human")
+    private val format by option("--format", help = "Output format (human, json)")
     private val jsonOutput by option("--json", help = "Write machine-readable evolution JSON to stdout (alias for --format json)").flag()
     private val output by option("--output", help = "Optional path to save evolution JSON artifact")
 

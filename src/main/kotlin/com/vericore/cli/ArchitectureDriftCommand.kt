@@ -24,7 +24,7 @@ class ArchitectureDriftCommand : CliktCommand(
 ) {
     private val path by argument("path", help = "Repository path")
     private val baseline by option("--baseline", help = "Baseline architecture JSON file").required()
-    private val format by option("--format", help = "Output format (human, json)").default("human")
+    private val format by option("--format", help = "Output format (human, json)")
     private val jsonOutput by option("--json", help = "Write machine-readable drift JSON to stdout (alias for --format json)").flag()
     private val output by option("--output", help = "Optional path to save drift JSON artifact")
 
@@ -53,12 +53,6 @@ class ArchitectureDriftCommand : CliktCommand(
         defaultOutput.parentFile.mkdirs()
         defaultOutput.writeText(JsonEnvelope.json.encodeToString(drift))
 
-        if (output != null) {
-            val dest = File(output!!).let { if (it.isAbsolute) it else File(path).canonicalFile.resolve(it.path) }
-            dest.parentFile?.mkdirs()
-            dest.writeText(JsonEnvelope.json.encodeToString(drift))
-        }
-
         val outFormat = OutputFormat.resolve(format, jsonOutput)
         val hasChanges = drift.changes.isNotEmpty()
         val status = if (hasChanges) CommandStatus.WARNING else CommandStatus.PASS
@@ -84,8 +78,20 @@ class ArchitectureDriftCommand : CliktCommand(
                 ),
                 execution = ExecutionInfo(exitCode = 0)
             )
-            echo(JsonEnvelope.encode(envelope))
+            val jsonText = JsonEnvelope.encode(envelope)
+            if (output != null) {
+                val dest = File(output!!).let { if (it.isAbsolute) it else File(path).canonicalFile.resolve(it.path) }
+                dest.parentFile?.mkdirs()
+                dest.writeText(jsonText)
+            }
+            echo(jsonText)
             return
+        }
+
+        if (output != null) {
+            val dest = File(output!!).let { if (it.isAbsolute) it else File(path).canonicalFile.resolve(it.path) }
+            dest.parentFile?.mkdirs()
+            dest.writeText(JsonEnvelope.json.encodeToString(drift))
         }
 
         echo(renderArchitectureDriftSummary(drift, defaultOutput.canonicalPath))

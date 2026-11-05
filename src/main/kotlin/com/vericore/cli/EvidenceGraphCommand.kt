@@ -19,7 +19,7 @@ class EvidenceGraphCommand : CliktCommand(
     help = "Build a deterministic semantic evidence graph from the current analysis snapshot"
 ) {
     private val path by argument("path", help = "Repository path").default(".")
-    private val format by option("--format", help = "Output format (human, json)").default("human")
+    private val format by option("--format", help = "Output format (human, json)")
     private val jsonOutput by option("--json", help = "Write machine-readable graph JSON to stdout (alias for --format json)").flag()
     private val output by option("--output", help = "Optional path to save graph JSON artifact")
 
@@ -41,11 +41,6 @@ class EvidenceGraphCommand : CliktCommand(
         val defaultOutput = outputDir.resolve("semantic-evidence-graph.json")
         if (outFormat == OutputFormat.JSON) {
             defaultOutput.writeText(SemanticEvidenceGraphArtifactCodec.encode(artifact))
-            if (output != null) {
-                val dest = File(output!!).let { if (it.isAbsolute) it else root.resolve(it.path) }
-                dest.parentFile?.mkdirs()
-                dest.writeText(SemanticEvidenceGraphArtifactCodec.encode(artifact))
-            }
             val envelope = CommandEnvelope(
                 schemaVersion = "1.0",
                 command = "evidence-graph",
@@ -58,7 +53,13 @@ class EvidenceGraphCommand : CliktCommand(
                 ),
                 execution = ExecutionInfo(exitCode = 0)
             )
-            echo(JsonEnvelope.encode(envelope))
+            val jsonText = JsonEnvelope.encode(envelope)
+            if (output != null) {
+                val dest = File(output!!).let { if (it.isAbsolute) it else root.resolve(it.path) }
+                dest.parentFile?.mkdirs()
+                dest.writeText(jsonText)
+            }
+            echo(jsonText)
             return
         }
 

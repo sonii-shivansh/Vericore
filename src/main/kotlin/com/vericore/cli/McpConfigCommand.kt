@@ -14,7 +14,7 @@ class McpConfigCommand(private val workingDirectory: File = File(".")) : CliktCo
 ) {
     private val write by option("--write", help = "Write the project-level .mcp.json instead of printing it").flag()
     private val force by option("--force", help = "Allow replacing an existing .mcp.json when used with --write").flag()
-    private val format by option("--format", help = "Output format (human, json)").default("human")
+    private val format by option("--format", help = "Output format (human, json)")
     private val jsonOutput by option("--json", help = "Write config as JSON").flag()
 
     override fun run() {

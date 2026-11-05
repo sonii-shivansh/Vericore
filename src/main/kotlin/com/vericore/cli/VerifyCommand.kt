@@ -41,7 +41,7 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
     private val contractFile by option("--contract", help = "Agent change contract JSON artifact")
     private val output by option("--output", help = "Optional verification artifact path")
     private val contractOnly by option("--contract-only", help = "Validate contract, repository identity, HEAD, and planned working-tree changes without rebuilding the full analysis graph").flag(default = false)
-    private val format by option("--format", help = "Output format (human, json)").default("human")
+    private val format by option("--format", help = "Output format (human, json)")
     private val jsonOutput by option("--json", help = "Write verification JSON envelope to stdout").flag()
 
     override fun run() {
@@ -94,9 +94,11 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
                     EnvelopeArtifact("receipt", receiptFile.path),
                     output?.let { EnvelopeArtifact("verification", it) }
                 ),
-                execution = ExecutionInfo(exitCode = if (result.status == com.vericore.core.workflow.SafetyStatus.PASS) 0 else 1)
+                execution = ExecutionInfo(exitCode = if (result.status == com.vericore.core.workflow.SafetyStatus.FAIL) 1 else 0)
             )
-            echo(JsonEnvelope.encode(envelope))
+            val jsonText = JsonEnvelope.encode(envelope)
+            writeOutput(jsonText)
+            echo(jsonText)
         } else {
             echo("Status: ${result.status}")
             echo("Verification receipt: ${receiptFile.path}")
@@ -198,9 +200,11 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
                 artifacts = listOfNotNull(
                     output?.let { EnvelopeArtifact("verification", it) }
                 ),
-                execution = ExecutionInfo(exitCode = if (result.valid) 0 else 1)
+                execution = ExecutionInfo(exitCode = if (status == com.vericore.core.workflow.SafetyStatus.FAIL) 1 else 0)
             )
-            echo(JsonEnvelope.encode(envelope))
+            val jsonText = JsonEnvelope.encode(envelope)
+            writeOutput(jsonText)
+            echo(jsonText)
         } else {
             echo("Status: ${result.status}")
             val specSummary = VerificationConsoleSummary.render(specificationEvaluation)

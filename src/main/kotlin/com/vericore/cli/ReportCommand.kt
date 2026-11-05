@@ -13,7 +13,7 @@ class ReportCommand : CliktCommand(name = "report", help = "Generate a durable H
     private val path by option("--path", help = "Repository path").default(".")
     private val sessionId by option("--session", help = "Session id; defaults to the latest completed analysis session")
     private val output by option("--output", help = "Output HTML path")
-    private val format by option("--format", help = "Output format (human, json)").default("human")
+    private val format by option("--format", help = "Output format (human, json)")
     private val jsonOutput by option("--json", help = "Write report metadata as JSON to stdout (alias for --format json)").flag()
 
     override fun run() {

@@ -49,6 +49,7 @@ fun main(args: Array<String>) {
         )
         exitProcess(1)
     }
+    com.vericore.cli.JsonEnvelope.reset()
     try {
         MainCommand()
             .subcommands(
@@ -82,7 +83,7 @@ fun main(args: Array<String>) {
             )
             .main(args)
     } catch (e: Throwable) {
-        val exitCode = com.vericore.cli.ErrorHandler.handle(e)
+        val exitCode = com.vericore.cli.ErrorHandler.handle(e, args)
         exitProcess(exitCode)
     }
 }

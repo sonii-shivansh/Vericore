@@ -14,7 +14,7 @@ import kotlinx.serialization.json.Json
 
 class EngineeringContextSnapshotCommand : CliktCommand(name = "context-snapshot", help = "Create a deterministic repository engineering-context snapshot") {
     private val path by argument("path", help = "Repository path")
-    private val format by option("--format", help = "Output format (human, json)").default("human")
+    private val format by option("--format", help = "Output format (human, json)")
     private val jsonOutput by option("--json", help = "Write machine-readable snapshot JSON to stdout (alias for --format json)").flag()
     private val output by option("--output", help = "Optional path to save snapshot JSON artifact")
 
@@ -28,12 +28,6 @@ class EngineeringContextSnapshotCommand : CliktCommand(name = "context-snapshot"
         val defaultOutput = snapshotOutputPath(root)
         defaultOutput.parentFile.mkdirs()
         defaultOutput.writeText(EngineeringContextEngine.encode(snapshot))
-
-        if (output != null) {
-            val dest = File(output!!).let { if (it.isAbsolute) it else File(path).canonicalFile.resolve(it.path) }
-            dest.parentFile?.mkdirs()
-            dest.writeText(EngineeringContextEngine.encode(snapshot))
-        }
 
         val outFormat = OutputFormat.resolve(format, jsonOutput)
         if (outFormat == OutputFormat.JSON) {
@@ -49,8 +43,20 @@ class EngineeringContextSnapshotCommand : CliktCommand(name = "context-snapshot"
                 ),
                 execution = ExecutionInfo(exitCode = 0)
             )
-            echo(JsonEnvelope.encode(envelope))
+            val jsonText = JsonEnvelope.encode(envelope)
+            if (output != null) {
+                val dest = File(output!!).let { if (it.isAbsolute) it else File(path).canonicalFile.resolve(it.path) }
+                dest.parentFile?.mkdirs()
+                dest.writeText(jsonText)
+            }
+            echo(jsonText)
             return
+        }
+
+        if (output != null) {
+            val dest = File(output!!).let { if (it.isAbsolute) it else File(path).canonicalFile.resolve(it.path) }
+            dest.parentFile?.mkdirs()
+            dest.writeText(EngineeringContextEngine.encode(snapshot))
         }
 
         echo(renderEngineeringContextSnapshotSummary(snapshot, defaultOutput.absolutePath))
@@ -60,7 +66,7 @@ class EngineeringContextSnapshotCommand : CliktCommand(name = "context-snapshot"
 class EngineeringContextDiffCommand : CliktCommand(name = "context-diff", help = "Compare two engineering-context snapshots") {
     private val before by argument("before", help = "Baseline snapshot JSON")
     private val after by argument("after", help = "Current snapshot JSON")
-    private val format by option("--format", help = "Output format (human, json)").default("human")
+    private val format by option("--format", help = "Output format (human, json)")
     private val jsonOutput by option("--json", help = "Write machine-readable diff JSON to stdout (alias for --format json)").flag()
     private val output by option("--output", help = "Optional path to save diff JSON artifact")
 
@@ -73,12 +79,6 @@ class EngineeringContextDiffCommand : CliktCommand(name = "context-diff", help =
         val defaultOutput = diffOutputPath()
         defaultOutput.parentFile.mkdirs()
         defaultOutput.writeText(EngineeringContextEngine.encode(diff))
-
-        if (output != null) {
-            val dest = File(output!!)
-            dest.parentFile?.mkdirs()
-            dest.writeText(EngineeringContextEngine.encode(diff))
-        }
 
         val outFormat = OutputFormat.resolve(format, jsonOutput)
         val hasChanges = diff.summary.added > 0 || diff.summary.removed > 0 || diff.summary.modified > 0
@@ -103,8 +103,20 @@ class EngineeringContextDiffCommand : CliktCommand(name = "context-diff", help =
                 ),
                 execution = ExecutionInfo(exitCode = 0)
             )
-            echo(JsonEnvelope.encode(envelope))
+            val jsonText = JsonEnvelope.encode(envelope)
+            if (output != null) {
+                val dest = File(output!!)
+                dest.parentFile?.mkdirs()
+                dest.writeText(jsonText)
+            }
+            echo(jsonText)
             return
+        }
+
+        if (output != null) {
+            val dest = File(output!!)
+            dest.parentFile?.mkdirs()
+            dest.writeText(EngineeringContextEngine.encode(diff))
         }
 
         echo(renderEngineeringContextDiffSummary(diff, defaultOutput.absolutePath))

@@ -21,7 +21,7 @@ class RealityCommand : CliktCommand(
     help = "Build a deterministic engineering-reality snapshot from the current repository state"
 ) {
     private val path by argument("path", help = "Repository path").default(".")
-    private val format by option("--format", help = "Output format (human, json)").default("human")
+    private val format by option("--format", help = "Output format (human, json)")
     private val jsonOutput by option("--json", help = "Write the machine-readable reality snapshot to stdout (alias for --format json)").flag()
     private val output by option("--output", help = "Optional path to save reality snapshot JSON artifact")
 

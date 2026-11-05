@@ -58,6 +58,23 @@ class CommandMatrixComprehensiveTest {
             val humanNoDrift = ArchitectureDriftCommand().test(listOf(cliPath(root), "--baseline", cliPath(baselineFile)))
             assertEquals(0, humanNoDrift.statusCode)
             assertTrue(humanNoDrift.stdout.contains("Architecture Drift"))
+
+            // 4. Actual architecture change detects drift
+            File(srcDir, "B.kt").writeText("package com.example\nimport com.example.A\nclass B : A()\n")
+            git.add().addFilepattern(".").call()
+            git.commit().setMessage("Add B depending on A").call()
+
+            val driftResult = ArchitectureDriftCommand().test(listOf(cliPath(root), "--baseline", cliPath(baselineFile), "--json"))
+            assertEquals(0, driftResult.statusCode)
+            val driftEnvelope = json.parseToJsonElement(driftResult.stdout).jsonObject
+            assertEquals("WARNING", driftEnvelope["status"]?.jsonPrimitive?.content)
+            assertTrue(driftEnvelope["summary"]?.jsonPrimitive?.content?.contains("Architecture drift:") == true)
+
+            // 5. Corrupt baseline file throws exception
+            val corruptBaseline = File(root, "corrupt-baseline.json").apply { writeText("invalid json content") }
+            assertFailsWith<Exception> {
+                ArchitectureDriftCommand().test(listOf(cliPath(root), "--baseline", cliPath(corruptBaseline)))
+            }
         } finally {
             root.deleteRecursively()
         }
@@ -84,6 +101,20 @@ class CommandMatrixComprehensiveTest {
             val humanPass = ArchitectureContractCommand().test(listOf(cliPath(root)))
             assertEquals(0, humanPass.statusCode)
             assertTrue(humanPass.stdout.contains("Architecture Contract"))
+
+            // Genuine violating contract (require a non-existent rule or maxFindings < 0)
+            val contractFile = File(root, ".vericore-architecture-contract.json")
+            contractFile.writeText("""
+                {
+                    "schemaVersion": "1.0",
+                    "maxFindings": -1
+                }
+            """.trimIndent())
+
+            val ex = assertFailsWith<com.vericore.core.exceptions.ValidationException> {
+                ArchitectureContractCommand().test(listOf(cliPath(root), "--contract", cliPath(contractFile)))
+            }
+            assertTrue(ex.message?.contains("Architecture contract failed") == true)
         } finally {
             root.deleteRecursively()
         }
@@ -348,5 +379,94 @@ class CommandMatrixComprehensiveTest {
         } finally {
             root.deleteRecursively()
         }
+    }
+
+    @Test
+    fun `testStandardizedOutputOption - format json with output writes identical envelope to destination file`() {
+        val root = Files.createTempDirectory("vericore-test-output-opt").toFile()
+        try {
+            initGitRepo(root)
+            val srcDir = File(root, "src/main/kotlin/com/example").apply { mkdirs() }
+            File(srcDir, "App.kt").writeText("package com.example\nclass App\n")
+
+            val outJsonFile = File(root, "custom-output.json")
+            val result = ImprovedAnalyzeCommand().test(listOf(cliPath(root), "--format", "json", "--output", cliPath(outJsonFile)))
+            assertEquals(0, result.statusCode)
+            assertTrue(outJsonFile.isFile)
+
+            val stdoutEnvelope = json.parseToJsonElement(result.stdout).jsonObject
+            val fileEnvelope = json.parseToJsonElement(outJsonFile.readText()).jsonObject
+            assertEquals(stdoutEnvelope["schemaVersion"]?.jsonPrimitive?.content, fileEnvelope["schemaVersion"]?.jsonPrimitive?.content)
+            assertEquals(stdoutEnvelope["command"]?.jsonPrimitive?.content, fileEnvelope["command"]?.jsonPrimitive?.content)
+            assertEquals(stdoutEnvelope["status"]?.jsonPrimitive?.content, fileEnvelope["status"]?.jsonPrimitive?.content)
+            assertEquals(stdoutEnvelope["summary"]?.jsonPrimitive?.content, fileEnvelope["summary"]?.jsonPrimitive?.content)
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `testDoctorSingleFailureCount - Gemini validation failure counts as exactly one failure`() {
+        val root = Files.createTempDirectory("vericore-test-doctor-count").toFile()
+        try {
+            initGitRepo(root)
+            val configFile = File(root, ".vericore.json")
+            configFile.writeText("""
+                {
+                    "ai": {
+                        "enabled": true,
+                        "provider": "gemini",
+                        "apiKey": "invalid-test-key-12345"
+                    }
+                }
+            """.trimIndent())
+
+            val ex = assertFailsWith<com.vericore.core.exceptions.ConfigurationException> {
+                DoctorCommand().test(listOf("--path", cliPath(root), "--json"))
+            }
+            assertTrue(ex.message?.contains("1 error(s)") == true, "Gemini failure must count as 1 error, not 2: ${ex.message}")
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `testVerifyStatusAndExitCodeAgreement`() {
+        val root = Files.createTempDirectory("vericore-test-verify-codes").toFile()
+        try {
+            initGitRepo(root)
+            val srcDir = File(root, "src/main/kotlin/com/example").apply { mkdirs() }
+            File(srcDir, "App.kt").writeText("package com.example\nclass App\n")
+
+            ImprovedAnalyzeCommand().test(listOf(cliPath(root)))
+            PrepareCommand().test(listOf("Refactor App", "--path", cliPath(root)))
+
+            // PASS: exit code is 0 in envelope and command returns 0
+            val passResult = VerifyCommand().test(listOf("--path", cliPath(root), "--contract-only", "--json"))
+            assertEquals(0, passResult.statusCode)
+            val passEnvelope = json.parseToJsonElement(passResult.stdout).jsonObject
+            assertEquals("PASS", passEnvelope["status"]?.jsonPrimitive?.content)
+            assertEquals("0", passEnvelope["execution"]?.jsonObject?.get("exitCode")?.jsonPrimitive?.content)
+
+            // FAIL: tamper contract fingerprint
+            val contractFile = File(root, "output/agent-change-contract.json")
+            val contractObj = json.parseToJsonElement(contractFile.readText()).jsonObject
+            val tampered = contractFile.readText().replace(contractObj["fingerprint"]?.jsonPrimitive?.content.orEmpty(), "tampered-hash-12345")
+            contractFile.writeText(tampered)
+            val failEx = assertFailsWith<com.vericore.core.exceptions.ValidationException> {
+                VerifyCommand().test(listOf("--path", cliPath(root), "--contract-only", "--json"))
+            }
+            assertTrue(failEx.message?.contains("Change verification failed") == true)
+        } finally {
+            root.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `testSetupFailureInJsonModeThrowsValidationExceptionWithPureJsonStdout`() {
+        val ex = assertFailsWith<com.vericore.core.exceptions.ValidationException> {
+            SetupCommand().test(listOf("--json", "--force", "--api-key", "invalid-key-for-test"))
+        }
+        assertTrue(ex.message?.contains("Gemini validation failed") == true)
     }
 }

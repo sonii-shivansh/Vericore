@@ -34,7 +34,7 @@ class RepositoryQACommand : CliktCommand(name = "repo-qa", help = "Retrieve grou
         "--evidence-output",
         help = "Optional path for the reusable GroundedEvidence JSON artifact used by the plan command"
     )
-    private val format by option("--format", help = "Output format (human, json)").default("human")
+    private val format by option("--format", help = "Output format (human, json)")
     private val jsonOutput by option("--json", help = "Write machine-readable JSON to stdout (alias for --format json)").flag()
     private val output by option("--output", help = "Optional path to save JSON output")
 

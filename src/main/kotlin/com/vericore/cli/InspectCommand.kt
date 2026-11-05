@@ -19,7 +19,7 @@ class InspectCommand : CliktCommand(
     help = "Inspect repository architecture, risk, hotspots, and next actions"
 ) {
     private val path by option("--path", help = "Repository path (default: current directory)").default(".")
-    private val format by option("--format", help = "Output format (human, json)").default("human")
+    private val format by option("--format", help = "Output format (human, json)")
     private val jsonOutput by option("--json", help = "Write machine-readable inspection JSON to stdout (alias for --format json)").flag()
     private val output by option("--output", help = "Optional path to save inspection JSON artifact")
 
@@ -61,12 +61,6 @@ class InspectCommand : CliktCommand(
         defaultOutput.parentFile.mkdirs()
         defaultOutput.writeText(JsonEnvelope.json.encodeToString(inspection))
 
-        if (output != null) {
-            val dest = File(output!!).let { if (it.isAbsolute) it else File(path).canonicalFile.resolve(it.path) }
-            dest.parentFile?.mkdirs()
-            dest.writeText(JsonEnvelope.json.encodeToString(inspection))
-        }
-
         val outFormat = OutputFormat.resolve(format, jsonOutput)
         val status = if (inspection.criticalRiskFiles == 0) CommandStatus.PASS else CommandStatus.WARNING
 
@@ -99,8 +93,20 @@ class InspectCommand : CliktCommand(
                 nextStep = "vericore recommendations ${root.path}",
                 execution = ExecutionInfo(exitCode = 0)
             )
-            echo(JsonEnvelope.encode(envelope))
+            val jsonText = JsonEnvelope.encode(envelope)
+            if (output != null) {
+                val dest = File(output!!).let { if (it.isAbsolute) it else File(path).canonicalFile.resolve(it.path) }
+                dest.parentFile?.mkdirs()
+                dest.writeText(jsonText)
+            }
+            echo(jsonText)
             return
+        }
+
+        if (output != null) {
+            val dest = File(output!!).let { if (it.isAbsolute) it else File(path).canonicalFile.resolve(it.path) }
+            dest.parentFile?.mkdirs()
+            dest.writeText(JsonEnvelope.json.encodeToString(inspection))
         }
 
         echo(renderInspectionSummary(inspection, path))

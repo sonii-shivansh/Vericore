@@ -34,7 +34,9 @@ data class ChangeImpactResult(
     val schemaVersion: String = "1.0",
     val changedPaths: List<String>,
     val nodes: List<ImpactNode>,
-    val summary: ImpactSummary
+    val summary: ImpactSummary,
+    @EncodeDefault(EncodeDefault.Mode.ALWAYS)
+    val testCandidates: List<String> = emptyList()
 )
 
 /** Deterministic reverse-dependency analysis suitable for CI and AI grounding. */
@@ -77,7 +79,7 @@ object ChangeImpactEngine {
         }
 
         val testPaths = findTestCandidates(graph.vertexSet(), normalizedChanges)
-        val nodes = distances.entries
+        val graphNodes = distances.entries
             .sortedWith(compareBy<Map.Entry<String, Int>> { it.value }.thenBy { normalize(it.key) })
             .map { (path, depth) ->
                 val normalizedPath = normalize(path)
@@ -101,7 +103,21 @@ object ChangeImpactEngine {
                 ImpactNode(path, relationship, depth, score, reasons)
             }
 
-        val impactedNonChanged = nodes.filter { it.relationship != ImpactRelationship.CHANGED }
+        // Include any identified test candidates that were not reached during reverse-dependency traversal
+        val traversedPaths = distances.keys.toSet()
+        val unreachableTestNodes = testPaths.filter { it !in traversedPaths }.sorted().map { testPath ->
+            val normalizedPath = normalize(testPath)
+            ImpactNode(
+                path = testPath,
+                relationship = ImpactRelationship.TEST_CANDIDATE,
+                depth = -1,
+                score = 50.0,
+                reasons = listOf("test candidate matching changed file name (independent of dependency graph)", "candidate test suite", "likely test coverage candidate")
+            )
+        }
+        val allNodes = graphNodes + unreachableTestNodes
+
+        val impactedNonChanged = allNodes.filter { it.relationship != ImpactRelationship.CHANGED }
         val impactedPackages = impactedNonChanged.mapNotNull { packageByNormalizedPath[normalize(it.path)] }.filter { it.isNotBlank() }.toSet().size
         val changedPackages = normalizedChanges.mapNotNull { packageByNormalizedPath[it] }.filter { it.isNotBlank() }.toSet()
         val crossPackageImpacts = impactedNonChanged.count {
@@ -111,7 +127,7 @@ object ChangeImpactEngine {
 
         return ChangeImpactResult(
             changedPaths = normalizedChanges,
-            nodes = nodes,
+            nodes = allNodes,
             summary = ImpactSummary(
                 changedFiles = normalizedChanges.size,
                 impactedFiles = impactedNonChanged.count { it.relationship != ImpactRelationship.TEST_CANDIDATE },
@@ -119,7 +135,8 @@ object ChangeImpactEngine {
                 crossPackageImpacts = crossPackageImpacts,
                 testCandidates = testPaths.size,
                 maxDepth = distances.values.maxOrNull() ?: 0
-            )
+            ),
+            testCandidates = testPaths.sorted()
         )
     }
 

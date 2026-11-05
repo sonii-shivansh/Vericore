@@ -38,7 +38,7 @@ class EngineeringPlanCommand : CliktCommand(
     private val criterionEvidenceRules by option("--criterion-evidence-rule", help = "Set a criterion evidence rule (ALL_BOUND_COMMANDS_SUCCEEDED or ALL_BOUND_JUNIT_CASES_PASSED) as <criterion-id>=<rule>; repeatable").multiple()
     private val evidenceFile by option("--evidence", help = "Path to a grounded evidence JSON artifact; relative paths resolve from the repository")
     private val outputFile by option("--output", help = "Write the plan JSON to this path instead of stdout")
-    private val format by option("--format", help = "Output format (human, json)").default("human")
+    private val format by option("--format", help = "Output format (human, json)")
     private val jsonOutput by option("--json", help = "Write machine-readable plan JSON to stdout (alias for --format json)").flag()
 
     override fun run() {
@@ -69,13 +69,6 @@ class EngineeringPlanCommand : CliktCommand(
         defaultOutput.parentFile?.mkdirs()
         defaultOutput.writeText(JsonEnvelope.json.encodeToString(plan))
 
-        val resolvedTarget = if (outputFile != null) {
-            val dest = resolveOutput(root, outputFile!!)
-            dest.parentFile?.mkdirs()
-            dest.writeText(JsonEnvelope.json.encodeToString(plan))
-            dest
-        } else defaultOutput
-
         val outFormat = OutputFormat.resolve(format, jsonOutput)
         if (outFormat == OutputFormat.JSON) {
             val envelope = CommandEnvelope(
@@ -93,13 +86,26 @@ class EngineeringPlanCommand : CliktCommand(
                     )
                 },
                 artifacts = listOf(
-                    EnvelopeArtifact("engineering-plan", resolvedTarget.path)
+                    EnvelopeArtifact("engineering-plan", defaultOutput.path)
                 ),
                 execution = ExecutionInfo(exitCode = 0)
             )
-            echo(JsonEnvelope.encode(envelope))
+            val jsonText = JsonEnvelope.encode(envelope)
+            if (outputFile != null) {
+                val dest = resolveOutput(root, outputFile!!)
+                dest.parentFile?.mkdirs()
+                dest.writeText(jsonText)
+            }
+            echo(jsonText)
             return
         }
+
+        val resolvedTarget = if (outputFile != null) {
+            val dest = resolveOutput(root, outputFile!!)
+            dest.parentFile?.mkdirs()
+            dest.writeText(JsonEnvelope.json.encodeToString(plan))
+            dest
+        } else defaultOutput
 
         echo(renderPlanSummary(plan, root, resolvedTarget.path))
     }

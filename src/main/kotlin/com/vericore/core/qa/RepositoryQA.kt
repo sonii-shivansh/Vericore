@@ -3,6 +3,7 @@ package com.vericore.core.qa
 import com.vericore.core.ai.EvidenceCitation
 import com.vericore.core.ai.GroundedEvidence
 import kotlinx.serialization.Serializable
+import java.io.File
 
 @Serializable
 enum class QuestionIntent {
@@ -76,35 +77,94 @@ object RepositoryQuestionClassifier {
 }
 
 class RepositoryEvidenceRetriever {
+    companion object {
+        const val MIN_RELEVANCE_THRESHOLD = 20
+
+        private val stopWords = setOf(
+            "what", "which", "who", "where", "when", "why", "how", "can", "could", "does", "do", "is", "are", "should",
+            "the", "a", "an", "this", "that", "these", "those", "for", "from", "with", "about", "into", "through",
+            "over", "under", "above", "below", "there", "here", "all", "any", "some", "none", "not", "and", "or", "but",
+            "in", "on", "at", "to", "of", "by"
+        )
+    }
+
     fun retrieve(question: RepositoryQuestion, evidence: GroundedEvidence, maxResults: Int = 8): RepositoryQAResult {
         require(maxResults in 1..32) { "maxResults must be between 1 and 32" }
         val ranked = evidence.citations.map { citation ->
-            RetrievedEvidence(citation, score(question.intent, question.entity, citation))
-        }.filter { it.relevance > 0 }
+            RetrievedEvidence(citation, score(question, citation))
+        }.filter { it.relevance >= MIN_RELEVANCE_THRESHOLD }
             .sortedWith(compareByDescending<RetrievedEvidence> { it.relevance }.thenBy { it.citation.id })
             .take(maxResults)
         return RepositoryQAResult(question, ranked, ranked.isEmpty())
     }
 
-    private fun score(intent: QuestionIntent, entity: String?, citation: EvidenceCitation): Int {
-        var score = when (intent) {
-            QuestionIntent.RISK -> if (citation.type.contains("hotspot") || citation.type.contains("risk")) 50 else 0
-            QuestionIntent.DEPENDENCY -> if (citation.type.contains("file-graph") || citation.type.contains("hotspot")) 45 else 0
+    internal fun score(question: RepositoryQuestion, citation: EvidenceCitation): Int {
+        var score = 0
+        if (matchesEntity(question.entity, citation)) {
+            score += 100
+        }
+
+        val keywords = extractKeywords(question.question)
+        var keywordMatches = 0
+        for (kw in keywords) {
+            if (matchesKeyword(kw, citation)) {
+                keywordMatches++
+            }
+        }
+        score += keywordMatches * 20
+
+        val intentScore = when (question.intent) {
+            QuestionIntent.RISK -> if (citation.type.contains("hotspot") || citation.type.contains("risk")) 40 else 0
+            QuestionIntent.DEPENDENCY -> if (citation.type.contains("file-graph") || citation.type.contains("hotspot")) 35 else 0
             QuestionIntent.ARCHITECTURE -> when {
-                citation.type.contains("architecture") -> 60
-                citation.type.contains("hotspot") -> 50
+                citation.type.contains("architecture") -> 50
+                citation.type.contains("hotspot") -> 30
                 citation.type.contains("file-graph") -> 15
                 else -> 0
             }
-            QuestionIntent.IMPACT, QuestionIntent.PR_CHANGE -> if (citation.type.contains("file-graph") || citation.type.contains("hotspot")) 30 else 0
-            QuestionIntent.TEST -> if (citation.type.contains("file-graph")) 20 else 0
-            QuestionIntent.GENERAL -> 10
+            QuestionIntent.IMPACT, QuestionIntent.PR_CHANGE -> if (citation.type.contains("file-graph") || citation.type.contains("hotspot")) 25 else 0
+            QuestionIntent.TEST -> if (citation.type.contains("test") || citation.type.contains("file-graph")) 25 else 0
+            QuestionIntent.GENERAL -> 0
             QuestionIntent.UNKNOWN -> 0
         }
-        if (matchesEntity(entity, citation)) {
-            score += 100
-        }
+        score += intentScore
+
         return score
+    }
+
+    internal fun extractKeywords(text: String): Set<String> {
+        return Regex("[A-Za-z0-9_$-]{3,}")
+            .findAll(text)
+            .map { it.value.lowercase() }
+            .filter { it !in stopWords }
+            .toSet()
+    }
+
+    internal fun matchesKeyword(keyword: String, citation: EvidenceCitation): Boolean {
+        if (keyword.isBlank()) return false
+        val kw = keyword.lowercase()
+        if (kw == "main" || kw == "test") {
+            val fileName = citation.path?.replace('\\', '/')
+                ?.substringAfterLast('/')?.substringBeforeLast('.')?.lowercase()
+            if (fileName == kw) return true
+
+            val wordRegex = Regex("\\b${Regex.escape(kw)}\\b", RegexOption.IGNORE_CASE)
+            for (match in wordRegex.findAll(citation.detail)) {
+                if (isPathSegment(citation.detail, match.range.first, match.range.last + 1)) continue
+                return true
+            }
+            return false
+        }
+
+        if (citation.id.lowercase().contains(kw)) return true
+        citation.path?.let { p ->
+            val normPath = p.replace('\\', '/')
+            val fileName = normPath.substringAfterLast('/').lowercase()
+            if (fileName.contains(kw)) return true
+        }
+        if (citation.relatedPaths.any { rp -> rp.replace('\\', '/').substringAfterLast('/').lowercase().contains(kw) }) return true
+        if (citation.detail.lowercase().contains(kw)) return true
+        return false
     }
 
     internal fun matchesEntity(rawEntity: String?, citation: EvidenceCitation): Boolean {
@@ -144,13 +204,24 @@ class RepositoryEvidenceRetriever {
         for (match in detailMatches) {
             val start = match.range.first
             val end = match.range.last + 1
-            val charBefore = if (start > 0) citation.detail[start - 1] else ' '
-            val charAfter = if (end < citation.detail.length) citation.detail[end] else ' '
-            if ((charBefore == '/' || charBefore == '\\') && (charAfter == '/' || charAfter == '\\')) {
+            if (isPathSegment(citation.detail, start, end)) {
                 continue
             }
             return true
         }
+
+        return false
+    }
+
+    private fun isPathSegment(text: String, start: Int, end: Int): Boolean {
+        val charBefore = if (start > 0) text[start - 1] else ' '
+        val charAfter = if (end < text.length) text[end] else ' '
+        val prefix = if (start >= 4) text.substring(start - 4, start).lowercase() else ""
+
+        if (prefix == "src/" || prefix == "src\\") return true
+        if ((charBefore == '/' || charBefore == '\\') && (charAfter == '/' || charAfter == '\\')) return true
+        if ((charBefore == '/' || charBefore == '\\') && charAfter != '.') return true
+        if (charAfter == '/' || charAfter == '\\') return true
 
         return false
     }

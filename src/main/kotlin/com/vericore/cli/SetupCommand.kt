@@ -4,6 +4,7 @@ import com.vericore.core.ai.AISetup
 import com.vericore.core.ai.AISetupResult
 import com.vericore.core.config.UserConfigStore
 import com.vericore.core.exceptions.ConfigurationException
+import com.vericore.core.exceptions.ValidationException
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
@@ -16,8 +17,9 @@ class SetupCommand : CliktCommand(
     private val provider by option("--provider", help = "AI provider (currently: gemini)").default("gemini")
     private val model by option("--model", help = "Gemini model to use").default(AISetup.DEFAULT_GEMINI_MODEL)
     private val force by option("--force", help = "Replace an existing saved credential").flag()
-    private val format by option("--format", help = "Output format (human, json)").default("human")
+    private val format by option("--format", help = "Output format (human, json)")
     private val jsonOutput by option("--json", help = "Write setup result as JSON to stdout (alias for --format json)").flag()
+    private val apiKeyOption by option("--api-key", help = "Gemini API key (defaults to environment)").default("")
 
     override fun run() {
         if (!provider.equals("gemini", ignoreCase = true)) {
@@ -30,12 +32,14 @@ class SetupCommand : CliktCommand(
         val isJson = outFormat == OutputFormat.JSON
 
         val existing = UserConfigStore.load()?.ai
-        val environmentKey = sequenceOf(
-            System.getenv("VERICORE_GEMINI_API_KEY"),
-            System.getenv("VERICORE_GOOGLE_API_KEY"),
-            System.getenv("GEMINI_API_KEY"),
-            System.getenv("GOOGLE_API_KEY")
-        ).firstOrNull { !it.isNullOrBlank() }?.trim().orEmpty()
+        val environmentKey = apiKeyOption.ifBlank {
+            sequenceOf(
+                System.getenv("VERICORE_GEMINI_API_KEY"),
+                System.getenv("VERICORE_GOOGLE_API_KEY"),
+                System.getenv("GEMINI_API_KEY"),
+                System.getenv("GOOGLE_API_KEY")
+            ).firstOrNull { !it.isNullOrBlank() }?.trim().orEmpty()
+        }
 
         if (!force && existing?.apiKey?.isNotBlank() == true) {
             if (isJson) {
@@ -119,10 +123,11 @@ class SetupCommand : CliktCommand(
                         execution = ExecutionInfo(exitCode = 1)
                     )
                     echo(JsonEnvelope.encode(envelope))
-                    return
+                    throw ValidationException("Gemini validation failed: ${result.message}")
                 }
                 echo("❌ ${result.message}")
                 echo("   Nothing was saved.")
+                throw ValidationException("Gemini validation failed: ${result.message}")
             }
         }
     }

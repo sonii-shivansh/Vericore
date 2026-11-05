@@ -29,7 +29,7 @@ class DoctorCommand : CliktCommand(
         "--path",
         help = "Repository path to inspect; defaults to the current directory"
     ).default(".")
-    private val format by option("--format", help = "Output format (human, json)").default("human")
+    private val format by option("--format", help = "Output format (human, json)")
     private val jsonOutput by option("--json", help = "Write doctor results as JSON to stdout (alias for --format json)").flag()
     private val output by option("--output", help = "Optional path to save doctor JSON artifact")
 
@@ -133,7 +133,6 @@ class DoctorCommand : CliktCommand(
             when (val result = AISetup.validateGemini(resolvedApiKey, effective.ai.model)) {
                 AISetupResult.Success -> check("Gemini API", true, "reachable and credentials accepted")
                 is AISetupResult.Failure -> {
-                    failures++
                     check("Gemini API", false, result.message)
                 }
             }

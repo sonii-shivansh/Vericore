@@ -17,7 +17,7 @@ import kotlinx.serialization.encodeToString
 
 class ArchitectureCommand : CliktCommand(name = "architecture", help = "Analyze repository architecture and detect structural violations") {
     private val path by argument("path", help = "Repository path")
-    private val format by option("--format", help = "Output format (human, json)").default("human")
+    private val format by option("--format", help = "Output format (human, json)")
     private val jsonOutput by option("--json", help = "Write machine-readable architecture JSON to stdout (alias for --format json)").flag()
     private val output by option("--output", help = "Optional path to save architecture JSON artifact")
 
@@ -36,12 +36,6 @@ class ArchitectureCommand : CliktCommand(name = "architecture", help = "Analyze 
         val defaultOutput = outputPath(root)
         defaultOutput.parentFile.mkdirs()
         defaultOutput.writeText(JsonEnvelope.json.encodeToString(result))
-
-        if (output != null) {
-            val dest = File(output!!).let { if (it.isAbsolute) it else File(path).canonicalFile.resolve(it.path) }
-            dest.parentFile?.mkdirs()
-            dest.writeText(JsonEnvelope.json.encodeToString(result))
-        }
 
         val outFormat = OutputFormat.resolve(format, jsonOutput)
         val status = if (result.summary.findings == 0 && result.summary.cycles == 0) CommandStatus.PASS else CommandStatus.WARNING
@@ -67,8 +61,20 @@ class ArchitectureCommand : CliktCommand(name = "architecture", help = "Analyze 
                 ),
                 execution = ExecutionInfo(exitCode = 0)
             )
-            echo(JsonEnvelope.encode(envelope))
+            val jsonText = JsonEnvelope.encode(envelope)
+            if (output != null) {
+                val dest = File(output!!).let { if (it.isAbsolute) it else File(path).canonicalFile.resolve(it.path) }
+                dest.parentFile?.mkdirs()
+                dest.writeText(jsonText)
+            }
+            echo(jsonText)
             return
+        }
+
+        if (output != null) {
+            val dest = File(output!!).let { if (it.isAbsolute) it else File(path).canonicalFile.resolve(it.path) }
+            dest.parentFile?.mkdirs()
+            dest.writeText(JsonEnvelope.json.encodeToString(result))
         }
 
         echo(renderArchitectureSummary(result, outputPath = defaultOutput.absolutePath, includeExplanation = true))
