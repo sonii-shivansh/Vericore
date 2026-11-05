@@ -33,4 +33,7 @@ internal object HumanCommandOutput {
 
     fun section(title: String, vararg lines: String): Section =
         Section(title = title, lines = lines.toList())
+
+    fun section(title: String, lines: List<String>): Section =
+        Section(title = title, lines = lines)
 }

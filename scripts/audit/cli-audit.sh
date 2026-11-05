@@ -99,11 +99,11 @@ package fixture
 import fixture.Target
 class Dependent
 KOTLIN
-"$APP" repo-qa "What depends on Target?" --path "$qa_fixture" --evidence-output "$qa_fixture/grounded-evidence.json" > "$qa_fixture/repo-qa.json"
+"$APP" repo-qa "What depends on Target?" --path "$qa_fixture" --evidence-output "$qa_fixture/grounded-evidence.json" --format json > "$qa_fixture/repo-qa.json"
 python3 - "$qa_fixture/repo-qa.json" <<'PY'
 import json, sys
 result = json.load(open(sys.argv[1]))
-evidence = [item["citation"] for item in result["evidence"]]
+evidence = [item["citation"] for item in (result.get("data", {}).get("evidence") or result.get("evidence", []))]
 assert any("Dependent.kt" in citation.get("relatedPaths", []) for citation in evidence), evidence
 assert any("Dependent.kt" in citation.get("detail", "") for citation in evidence), evidence
 PY
@@ -128,7 +128,7 @@ package fixture
 import fixture.C
 class A
 KOTLIN
-"$APP" architecture-drift "$drift_fixture" --baseline "$drift_fixture/baseline.json" --json > "$drift_fixture/drift.log"
+"$APP" architecture-drift "$drift_fixture" --baseline "$drift_fixture/baseline.json" > "$drift_fixture/drift.log"
 grep -q "Added edges: 1" "$drift_fixture/drift.log"
 grep -q "Removed edges: 1" "$drift_fixture/drift.log"
 grep -q "EDGE_ADDED: A.kt|C.kt" "$drift_fixture/drift.log"

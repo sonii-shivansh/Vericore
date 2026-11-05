@@ -41,6 +41,8 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
     private val contractFile by option("--contract", help = "Agent change contract JSON artifact")
     private val output by option("--output", help = "Optional verification artifact path")
     private val contractOnly by option("--contract-only", help = "Validate contract, repository identity, HEAD, and planned working-tree changes without rebuilding the full analysis graph").flag(default = false)
+    private val format by option("--format", help = "Output format (human, json)").default("human")
+    private val jsonOutput by option("--json", help = "Write verification JSON envelope to stdout").flag()
 
     override fun run() {
         val root = File(path).canonicalFile
@@ -62,18 +64,51 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
         val encoded = json.encodeToString(result)
         writeOutput(encoded)
         val receipt = VerificationReceipt.from(result)
-        root.resolve("output/verification-receipt.json").apply {
+        val receiptFile = root.resolve("output/verification-receipt.json").apply {
             parentFile?.mkdirs()
             writeText(json.encodeToString(receipt))
         }
-        echo("Verification receipt: ${root.resolve("output/verification-receipt.json").path}")
-        echo("Status: ${result.status}")
-        System.err.println(VerificationConsoleSummary.render(result.specificationEvaluation))
-        if (result.status != com.vericore.core.workflow.SafetyStatus.PASS) {
-            result.reasons
-                .filterNot { it.startsWith("Specification criterion '") }
-                .forEach { System.err.println("  - $it") }
+
+        val outFormat = OutputFormat.resolve(format, jsonOutput)
+        val effectiveReasons = result.reasons.distinct().ifEmpty {
+            if (result.status != com.vericore.core.workflow.SafetyStatus.PASS) {
+                listOf("Change verification failed: planned change criteria or scope constraints were not satisfied.")
+            } else emptyList()
         }
+
+        if (outFormat == OutputFormat.JSON) {
+            val envelope = CommandEnvelope(
+                schemaVersion = "1.0",
+                command = "verify",
+                status = result.status.name,
+                summary = "Working tree verification against engineering plan and change contract",
+                repository = RepositoryInfo(name = root.name, path = root.path),
+                data = result,
+                findings = effectiveReasons.map { reason ->
+                    EnvelopeFinding(
+                        level = if (result.status == com.vericore.core.workflow.SafetyStatus.PASS) "INFO" else "ERROR",
+                        message = reason
+                    )
+                },
+                artifacts = listOfNotNull(
+                    EnvelopeArtifact("receipt", receiptFile.path),
+                    output?.let { EnvelopeArtifact("verification", it) }
+                ),
+                execution = ExecutionInfo(exitCode = if (result.status == com.vericore.core.workflow.SafetyStatus.PASS) 0 else 1)
+            )
+            echo(JsonEnvelope.encode(envelope))
+        } else {
+            echo("Status: ${result.status}")
+            echo("Verification receipt: ${receiptFile.path}")
+            val specSummary = VerificationConsoleSummary.render(result.specificationEvaluation)
+            if (specSummary.isNotBlank()) {
+                System.err.println(specSummary)
+            }
+            if (result.status != com.vericore.core.workflow.SafetyStatus.PASS) {
+                effectiveReasons.forEach { System.err.println("  - $it") }
+            }
+        }
+
         if (result.status == com.vericore.core.workflow.SafetyStatus.FAIL) {
             throw ValidationException("Change verification failed: the prepared contract or change scope is invalid")
         }
@@ -122,9 +157,6 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
             ?.filter { it.status != CriterionEvaluationStatus.PASS }
             ?.map { criterion -> "Specification criterion '${criterion.id}' is ${criterion.status}: ${criterion.reason}" }
             .orEmpty()
-        val allReasons = reasons +
-            safety.reasons.filter { it != "No source working-tree changes were detected." } +
-            specificationReasons
         val status = when {
             reasons.isNotEmpty() || safety.status == com.vericore.core.workflow.SafetyStatus.FAIL ||
                 specificationEvaluation?.status == CriterionEvaluationStatus.FAIL -> com.vericore.core.workflow.SafetyStatus.FAIL
@@ -132,6 +164,11 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
                 specificationEvaluation?.status == CriterionEvaluationStatus.INCONCLUSIVE ||
                 specificationEvaluation?.status == CriterionEvaluationStatus.NOT_EVALUATED -> com.vericore.core.workflow.SafetyStatus.REVIEW_REQUIRED
             else -> com.vericore.core.workflow.SafetyStatus.PASS
+        }
+        val allReasons = (reasons + safety.reasons + specificationReasons).distinct().ifEmpty {
+            if (status != com.vericore.core.workflow.SafetyStatus.PASS) {
+                listOf("Contract verification failed: change criteria or scope constraints were not met.")
+            } else emptyList()
         }
         val result = ContractOnlyVerificationResult(
             repository = root.path,
@@ -142,12 +179,37 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
             specificationEvaluation = specificationEvaluation
         )
         writeOutput(json.encodeToString(result))
-        echo("Status: ${result.status}")
-        System.err.println(VerificationConsoleSummary.render(specificationEvaluation))
-        if (status != com.vericore.core.workflow.SafetyStatus.PASS) {
-            allReasons
-                .filterNot { it.startsWith("Specification criterion '") }
-                .forEach { System.err.println("  - $it") }
+
+        val outFormat = OutputFormat.resolve(format, jsonOutput)
+        if (outFormat == OutputFormat.JSON) {
+            val envelope = CommandEnvelope(
+                schemaVersion = "1.0",
+                command = "verify",
+                status = result.status,
+                summary = "Contract-only verification against engineering plan and change contract",
+                repository = RepositoryInfo(name = root.name, path = root.path),
+                data = result,
+                findings = allReasons.map { reason ->
+                    EnvelopeFinding(
+                        level = if (result.valid) "INFO" else "ERROR",
+                        message = reason
+                    )
+                },
+                artifacts = listOfNotNull(
+                    output?.let { EnvelopeArtifact("verification", it) }
+                ),
+                execution = ExecutionInfo(exitCode = if (result.valid) 0 else 1)
+            )
+            echo(JsonEnvelope.encode(envelope))
+        } else {
+            echo("Status: ${result.status}")
+            val specSummary = VerificationConsoleSummary.render(specificationEvaluation)
+            if (specSummary.isNotBlank()) {
+                System.err.println(specSummary)
+            }
+            if (status != com.vericore.core.workflow.SafetyStatus.PASS) {
+                allReasons.forEach { System.err.println("  - $it") }
+            }
         }
         if (status == com.vericore.core.workflow.SafetyStatus.FAIL) {
             throw ValidationException("Change verification failed: the prepared contract or change scope is invalid")
@@ -195,9 +257,10 @@ class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current c
         if (output != null) {
             val file = File(output!!).let { if (it.isAbsolute) it else File(path).canonicalFile.resolve(it.path) }.apply { parentFile?.mkdirs() }
             file.writeText(encoded)
-            echo("Verification report: ${file.path}")
-        } else {
-            echo(encoded)
+            val outFormat = OutputFormat.resolve(format, jsonOutput)
+            if (outFormat == OutputFormat.HUMAN) {
+                echo("Verification report: ${file.path}")
+            }
         }
     }
 }

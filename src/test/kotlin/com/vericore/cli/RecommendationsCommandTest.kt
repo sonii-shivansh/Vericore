@@ -45,7 +45,7 @@ class RecommendationsCommandTest {
     }
 
     @Test
-    fun jsonModeKeepsArtifactPathAndHumanSummary() {
+    fun jsonModeOutputsCleanEnvelopeAndWritesArtifact() {
         val root = Files.createTempDirectory("vericore-recommendations-contract").toFile()
         try {
             val snapshot = AnalysisSnapshot(
@@ -67,10 +67,18 @@ class RecommendationsCommandTest {
 
             assertEquals(0, result.statusCode)
             assertTrue(artifact.isFile, "JSON artifact should retain output/recommendations.json")
-            assertTrue(result.stdout.contains("Engineering Recommendations"))
-            assertTrue(result.stdout.contains("Recommendations:"), "stdout should confirm the JSON artifact path")
+            val envelope = Json.parseToJsonElement(result.stdout).jsonObject
+            assertEquals("1.0", envelope["schemaVersion"]?.jsonPrimitive?.content)
+            assertEquals("recommendations", envelope["command"]?.jsonPrimitive?.content)
+            assertEquals("NO_FINDINGS", envelope["status"]?.jsonPrimitive?.content)
+
             val json = Json.parseToJsonElement(artifact.readText()).jsonArray
             assertEquals("BASELINE_HEALTHY", json.first().jsonObject["id"]?.jsonPrimitive?.content)
+
+            val humanResult = RecommendationsCommand().test(repositoryArgument)
+            assertEquals(0, humanResult.statusCode)
+            assertTrue(humanResult.stdout.contains("Engineering Recommendations"))
+            assertTrue(humanResult.stdout.contains("Maintain the current engineering baseline"))
         } finally {
             root.deleteRecursively()
         }

@@ -80,7 +80,7 @@ Summary
     }
 
     @Test
-    fun jsonModeWritesCompatibleArtifactAndKeepsHumanSummary() {
+    fun jsonModeWritesCompatibleArtifactAndEmitsJsonEnvelope() {
         val root = createRepositoryWithAnalysisSnapshot()
         try {
             val repositoryArgument = root.absolutePath.replace("\\", "/")
@@ -89,14 +89,11 @@ Summary
 
             assertEquals(0, result.statusCode)
             assertTrue(artifact.isFile, "JSON mode should write output/semantic-evidence-graph.json")
-            assertTrue(result.stdout.contains("Semantic Evidence Graph"))
-            val normalizedStdout = result.stdout.replace("\\", "/").lowercase()
-            val normalizedArtifactPath = artifact.canonicalPath.replace("\\", "/").lowercase()
-            assertTrue(
-                normalizedStdout.contains("semantic evidence graph: $normalizedArtifactPath"),
-                "stdout should include the normalized artifact path: ${result.stdout}"
-            )
-            assertTrue(result.stdout.contains("Graph digest:"))
+
+            val envelope = Json.parseToJsonElement(result.stdout).jsonObject
+            assertEquals("1.0", envelope["schemaVersion"]?.jsonPrimitive?.content)
+            assertEquals("evidence-graph", envelope["command"]?.jsonPrimitive?.content)
+            assertEquals("PASS", envelope["status"]?.jsonPrimitive?.content)
 
             val json = Json.parseToJsonElement(artifact.readText()).jsonObject
             assertEquals(SemanticEvidenceGraphArtifact.SCHEMA_VERSION, json["schemaVersion"]?.jsonPrimitive?.content)
@@ -107,6 +104,11 @@ Summary
             assertTrue(json.containsKey("edges"))
             assertTrue(json["nodeCount"]?.jsonPrimitive?.content?.toIntOrNull() != null)
             assertTrue(json["edgeCount"]?.jsonPrimitive?.content?.toIntOrNull() != null)
+
+            val humanResult = EvidenceGraphCommand().test(repositoryArgument)
+            assertEquals(0, humanResult.statusCode)
+            assertTrue(humanResult.stdout.contains("Semantic Evidence Graph"))
+            assertTrue(humanResult.stdout.contains("Graph digest:"))
         } finally {
             root.deleteRecursively()
         }

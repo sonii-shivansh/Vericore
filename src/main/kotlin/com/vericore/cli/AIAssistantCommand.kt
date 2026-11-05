@@ -10,17 +10,27 @@ import com.vericore.core.scanner.RepositoryScanner
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.default
+import com.github.ajalt.clikt.parameters.options.default
+import com.github.ajalt.clikt.parameters.options.flag
+import com.github.ajalt.clikt.parameters.options.option
 import java.io.File
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.encodeToString
 
 class AIAssistantCommand :
     CliktCommand(name = "ask", help = "Ask questions about your codebase using AI") {
     private val question by argument("question", help = "The question to ask").default("")
+    private val format by option("--format", help = "Output format (human, json)").default("human")
+    private val jsonOutput by option("--json", help = "Write machine-readable AI response as JSON to stdout (alias for --format json)").flag()
+    private val output by option("--output", help = "Optional path to save AI response JSON artifact")
 
     override fun run() {
         if (question.isBlank()) {
             throw com.github.ajalt.clikt.core.PrintHelpMessage(currentContext)
         }
+
+        val outFormat = OutputFormat.resolve(format, jsonOutput)
+        val isJson = outFormat == OutputFormat.JSON
 
         var config = ConfigLoader.loadEffective()
         if (!config.ai.enabled || config.ai.apiKey.isBlank()) {
@@ -28,10 +38,12 @@ class AIAssistantCommand :
             config = ConfigLoader.loadEffective()
         }
 
-        echo("🤖 Analyzing codebase to answer: \"$question\"")
+        if (!isJson) {
+            echo("🤖 Analyzing codebase to answer: \"$question\"")
+        }
 
         runBlocking {
-            echo("   Gathering context...")
+            if (!isJson) echo("   Gathering context...")
             val root = File(".")
             val scanner = RepositoryScanner()
             val files = scanner.scan(root.absolutePath)
@@ -59,6 +71,39 @@ class AIAssistantCommand :
                     throw IllegalArgumentException("Unsupported AI provider: ${config.ai.provider}")
                 }
 
+                if (isJson) {
+                    val envelope = CommandEnvelope(
+                        schemaVersion = "1.0",
+                        command = "ask",
+                        status = CommandStatus.SUCCESS,
+                        summary = "AI answer for: \"$question\"",
+                        repository = RepositoryInfo(name = root.name, path = root.absolutePath),
+                        data = response,
+                        findings = response.suggestedFiles.map { f ->
+                            EnvelopeFinding(
+                                level = "INFO",
+                                message = "Suggested relevant file",
+                                path = f
+                            )
+                        },
+                        execution = ExecutionInfo(exitCode = 0)
+                    )
+                    val jsonText = JsonEnvelope.encode(envelope)
+                    if (output != null) {
+                        val dest = File(output!!).let { if (it.isAbsolute) it else root.resolve(it.path) }
+                        dest.parentFile?.mkdirs()
+                        dest.writeText(jsonText)
+                    }
+                    echo(jsonText)
+                    return@runBlocking
+                }
+
+                if (output != null) {
+                    val dest = File(output!!).let { if (it.isAbsolute) it else root.resolve(it.path) }
+                    dest.parentFile?.mkdirs()
+                    dest.writeText(JsonEnvelope.json.encodeToString(response))
+                }
+
                 echo(renderAskSummary(response.answer, response.suggestedFiles, response.confidence))
             } catch (e: Exception) {
                 if (e is VericoreException) throw e
@@ -82,7 +127,6 @@ class AIAssistantCommand :
         }
     }
 }
-
 
 /** Formats the final answer only; progress output and provider/error behavior remain unchanged. */
 internal fun renderAskSummary(answer: String, suggestedFiles: List<String>, confidence: Double): String =

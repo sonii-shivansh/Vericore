@@ -3,9 +3,11 @@ package com.vericore.cli
 import com.vericore.core.planner.ChangeSpecification
 import com.vericore.core.workflow.AgentContext
 import com.vericore.core.workflow.EngineeringPreparation
+import com.vericore.core.workflow.EngineeringPreparationResult
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.default
+import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.multiple
 import com.github.ajalt.clikt.parameters.options.option
 import java.io.File
@@ -32,6 +34,8 @@ class PrepareCommand : CliktCommand(name = "prepare", help = "Prepare an evidenc
     private val requiredEvidence by option("--required-evidence", help = "Evidence that must be supplied/reviewed for acceptance").multiple()
     private val criterionEvidence by option("--criterion-evidence", help = "Bind a criterion to evidence, a verification-command-NNN ID, or junit-test-case:<class>#<name> as <criterion-id>=<evidence-id>; repeatable").multiple()
     private val criterionEvidenceRules by option("--criterion-evidence-rule", help = "Set a criterion evidence rule (ALL_BOUND_COMMANDS_SUCCEEDED or ALL_BOUND_JUNIT_CASES_PASSED) as <criterion-id>=<rule>; repeatable").multiple()
+    private val format by option("--format", help = "Output format (human, json)").default("human")
+    private val jsonOutput by option("--json", help = "Write machine-readable preparation JSON to stdout (alias for --format json)").flag()
 
     override fun run() {
         val root = File(path).canonicalFile
@@ -50,7 +54,6 @@ class PrepareCommand : CliktCommand(name = "prepare", help = "Prepare an evidenc
             require(!agentMetadataSupplied) { "--agent-provider is required when agent identity/session/event metadata is supplied." }
             null
         }
-        val json = Json { prettyPrint = true; encodeDefaults = true }
         val artifactPath = output ?: root.resolve("output/engineering-preparation.json").path
         val artifact = File(artifactPath).let { if (it.isAbsolute) it else root.resolve(it.path) }
         val planPath = planOutput ?: root.resolve("output/engineering-plan.json").path
@@ -63,13 +66,72 @@ class PrepareCommand : CliktCommand(name = "prepare", help = "Prepare an evidenc
             if (canonical.startsWith(rootPath)) rootPath.relativize(canonical).toString().replace(File.separatorChar, '/') else null
         }.distinct().sorted()
         val result = runBlocking { EngineeringPreparation.prepare(root.path, changeSummary, plannedPaths, specification, excludedPaths, agentContext) }
-        artifact.apply { parentFile?.mkdirs() }.writeText(json.encodeToString(result))
-        planFile.apply { parentFile?.mkdirs() }.writeText(json.encodeToString(result.plan))
-        contractFile.apply { parentFile?.mkdirs() }.writeText(json.encodeToString(result.contract))
-        echo("Engineering context: ${artifact.path}")
-        echo("Engineering plan: ${planFile.path}")
-        echo("Agent change contract: ${contractFile.path}")
-        echo("Risk: ${result.plan.riskLevel}")
-        echo("Affected components: ${result.plan.affectedComponents.size}")
+        artifact.apply { parentFile?.mkdirs() }.writeText(JsonEnvelope.json.encodeToString(result))
+        planFile.apply { parentFile?.mkdirs() }.writeText(JsonEnvelope.json.encodeToString(result.plan))
+        contractFile.apply { parentFile?.mkdirs() }.writeText(JsonEnvelope.json.encodeToString(result.contract))
+
+        val outFormat = OutputFormat.resolve(format, jsonOutput)
+        if (outFormat == OutputFormat.JSON) {
+            val envelope = CommandEnvelope(
+                schemaVersion = "1.0",
+                command = "prepare",
+                status = CommandStatus.PASS,
+                summary = "Engineering preparation completed for '$changeSummary': risk ${result.plan.riskLevel}, ${result.plan.plannedPaths.size} planned paths",
+                repository = RepositoryInfo(name = root.name, path = root.path),
+                data = result,
+                findings = result.plan.affectedComponents.map { comp ->
+                    EnvelopeFinding(
+                        level = "INFO",
+                        message = "Affected component in planned change scope",
+                        path = repositoryRelativePath(comp, root)
+                    )
+                },
+                artifacts = listOf(
+                    EnvelopeArtifact("preparation", artifact.path),
+                    EnvelopeArtifact("plan", planFile.path),
+                    EnvelopeArtifact("contract", contractFile.path)
+                ),
+                execution = ExecutionInfo(exitCode = 0)
+            )
+            echo(JsonEnvelope.encode(envelope))
+            return
+        }
+
+        echo(renderPrepareSummary(result, root, artifact.path, planFile.path, contractFile.path))
     }
+}
+
+internal fun renderPrepareSummary(
+    result: EngineeringPreparationResult,
+    root: File,
+    contextPath: String,
+    planPath: String,
+    contractPath: String
+): String {
+    val plannedPathsStr = if (result.plan.plannedPaths.isEmpty()) {
+        "None (read-only / repository understanding)"
+    } else {
+        result.plan.plannedPaths.joinToString(", ") { repositoryRelativePath(it, root) }
+    }
+    val sections = listOf(
+        HumanCommandOutput.section(
+            "Artifacts",
+            "Engineering context: $contextPath",
+            "Engineering plan: $planPath",
+            "Agent change contract: $contractPath"
+        ),
+        HumanCommandOutput.section(
+            "Summary",
+            "Change: ${result.plan.changeSummary}",
+            "Risk: ${result.plan.riskLevel}",
+            "Planned mutation scope: $plannedPathsStr",
+            "Affected components: ${result.plan.affectedComponents.size}"
+        )
+    )
+    return HumanCommandOutput.render(
+        title = "🧭 Engineering Preparation",
+        status = CommandStatus.PASS,
+        sections = sections,
+        nextStep = "Perform planned code modifications, then run `vericore verify` to enforce safety."
+    )
 }

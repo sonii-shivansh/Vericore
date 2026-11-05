@@ -19,7 +19,9 @@ class InspectCommand : CliktCommand(
     help = "Inspect repository architecture, risk, hotspots, and next actions"
 ) {
     private val path by option("--path", help = "Repository path (default: current directory)").default(".")
-    private val jsonOutput by option("--json", help = "Write machine-readable inspection JSON").flag()
+    private val format by option("--format", help = "Output format (human, json)").default("human")
+    private val jsonOutput by option("--json", help = "Write machine-readable inspection JSON to stdout (alias for --format json)").flag()
+    private val output by option("--output", help = "Optional path to save inspection JSON artifact")
 
     override fun run() {
         val root = File(path).canonicalFile
@@ -55,11 +57,50 @@ class InspectCommand : CliktCommand(
             recommendations = recommendations.take(5)
         )
 
-        if (jsonOutput) {
-            val output = root.resolve("output/inspection.json")
-            output.parentFile.mkdirs()
-            output.writeText(Json { prettyPrint = true; encodeDefaults = true }.encodeToString(inspection))
-            echo("🔎 Inspection: ${output.absolutePath}")
+        val defaultOutput = root.resolve("output/inspection.json")
+        defaultOutput.parentFile.mkdirs()
+        defaultOutput.writeText(JsonEnvelope.json.encodeToString(inspection))
+
+        if (output != null) {
+            val dest = File(output!!).let { if (it.isAbsolute) it else File(path).canonicalFile.resolve(it.path) }
+            dest.parentFile?.mkdirs()
+            dest.writeText(JsonEnvelope.json.encodeToString(inspection))
+        }
+
+        val outFormat = OutputFormat.resolve(format, jsonOutput)
+        val status = if (inspection.criticalRiskFiles == 0) CommandStatus.PASS else CommandStatus.WARNING
+
+        if (outFormat == OutputFormat.JSON) {
+            val envelope = CommandEnvelope(
+                schemaVersion = "1.0",
+                command = "inspect",
+                status = status,
+                summary = "Repository inspection: ${inspection.metrics.files} files, ${inspection.highRiskFiles} high-risk files, ${inspection.criticalRiskFiles} critical-risk files, ${inspection.recommendations.size} recommendations",
+                repository = RepositoryInfo(name = root.name, path = root.path),
+                data = inspection,
+                findings = inspection.hotspots.map { h ->
+                    EnvelopeFinding(
+                        level = "INFO",
+                        message = "Hotspot score ${String.format("%.4f", h.score)} (churn=${h.churn}, dependents=${h.dependents})",
+                        path = repositoryRelativePath(h.path, root)
+                    )
+                },
+                recommendations = inspection.recommendations.map { rec ->
+                    EnvelopeRecommendation(
+                        priority = rec.priority.name,
+                        title = rec.title,
+                        action = rec.action,
+                        evidencePaths = rec.evidencePaths.map { repositoryRelativePath(it, root) }
+                    )
+                },
+                artifacts = listOf(
+                    EnvelopeArtifact("inspection", defaultOutput.path)
+                ),
+                nextStep = "vericore recommendations ${root.path}",
+                execution = ExecutionInfo(exitCode = 0)
+            )
+            echo(JsonEnvelope.encode(envelope))
+            return
         }
 
         echo(renderInspectionSummary(inspection, path))
@@ -90,7 +131,6 @@ internal data class InspectionMetrics(
     val packages: Int,
     val crossPackageEdges: Int
 )
-
 
 /** Formats only the human summary; inspection data and JSON serialization remain unchanged. */
 internal fun renderInspectionSummary(inspection: InspectionOutput, path: String): String =

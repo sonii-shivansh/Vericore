@@ -2,14 +2,17 @@ package com.vericore.cli
 
 import com.vericore.core.ai.GroundedEvidence
 import com.vericore.core.planner.ChangeSpecification
+import com.vericore.core.planner.EngineeringPlan
 import com.vericore.core.planner.EngineeringPlanRequest
 import com.vericore.core.planner.EngineeringPlanner
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.default
-import com.github.ajalt.clikt.parameters.options.option
+import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.multiple
+import com.github.ajalt.clikt.parameters.options.option
 import java.io.File
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 /** Generates a deterministic, repository-scoped, evidence-backed engineering plan. */
@@ -35,6 +38,8 @@ class EngineeringPlanCommand : CliktCommand(
     private val criterionEvidenceRules by option("--criterion-evidence-rule", help = "Set a criterion evidence rule (ALL_BOUND_COMMANDS_SUCCEEDED or ALL_BOUND_JUNIT_CASES_PASSED) as <criterion-id>=<rule>; repeatable").multiple()
     private val evidenceFile by option("--evidence", help = "Path to a grounded evidence JSON artifact; relative paths resolve from the repository")
     private val outputFile by option("--output", help = "Write the plan JSON to this path instead of stdout")
+    private val format by option("--format", help = "Output format (human, json)").default("human")
+    private val jsonOutput by option("--json", help = "Write machine-readable plan JSON to stdout (alias for --format json)").flag()
 
     override fun run() {
         val root = File(repositoryPath).canonicalFile
@@ -59,20 +64,44 @@ class EngineeringPlanCommand : CliktCommand(
                 )
             )
         )
-        val json = Json { prettyPrint = true; encodeDefaults = true }
-            .encodeToString(plan)
 
-        if (outputFile != null) {
-            val output = resolveOutput(root, outputFile!!)
-            output.parentFile?.mkdirs()
-            output.writeText(json)
-            echo("🧭 Engineering plan: ${output.path}")
-            echo("   Risk: ${plan.riskLevel}")
-            echo("   Affected components: ${plan.affectedComponents.size}")
-            echo("   Planned paths: ${plan.plannedPaths.size}")
-        } else {
-            echo(json)
+        val defaultOutput = root.resolve("output/engineering-plan.json")
+        defaultOutput.parentFile?.mkdirs()
+        defaultOutput.writeText(JsonEnvelope.json.encodeToString(plan))
+
+        val resolvedTarget = if (outputFile != null) {
+            val dest = resolveOutput(root, outputFile!!)
+            dest.parentFile?.mkdirs()
+            dest.writeText(JsonEnvelope.json.encodeToString(plan))
+            dest
+        } else defaultOutput
+
+        val outFormat = OutputFormat.resolve(format, jsonOutput)
+        if (outFormat == OutputFormat.JSON) {
+            val envelope = CommandEnvelope(
+                schemaVersion = "1.0",
+                command = "plan",
+                status = CommandStatus.PASS,
+                summary = "Engineering plan for '${plan.changeSummary}': risk ${plan.riskLevel}, ${plan.plannedPaths.size} planned paths, ${plan.affectedComponents.size} affected components",
+                repository = RepositoryInfo(name = root.name, path = root.path),
+                data = plan,
+                findings = plan.affectedComponents.map { comp ->
+                    EnvelopeFinding(
+                        level = "INFO",
+                        message = "Affected component in planned change scope",
+                        path = repositoryRelativePath(comp, root)
+                    )
+                },
+                artifacts = listOf(
+                    EnvelopeArtifact("engineering-plan", resolvedTarget.path)
+                ),
+                execution = ExecutionInfo(exitCode = 0)
+            )
+            echo(JsonEnvelope.encode(envelope))
+            return
         }
+
+        echo(renderPlanSummary(plan, root, resolvedTarget.path))
     }
 
     private fun resolveInput(root: File, value: String): File {
@@ -87,4 +116,45 @@ class EngineeringPlanCommand : CliktCommand(
         require(candidate.toPath().startsWith(root.toPath())) { "Output path must be inside repository: $value" }
         return candidate
     }
+}
+
+internal fun renderPlanSummary(
+    plan: EngineeringPlan,
+    root: File,
+    artifactPath: String? = null
+): String {
+    val plannedPathsStr = if (plan.plannedPaths.isEmpty()) {
+        "None (read-only / repository understanding)"
+    } else {
+        plan.plannedPaths.joinToString(", ") { repositoryRelativePath(it, root) }
+    }
+    val sections = buildList {
+        artifactPath?.let { add(HumanCommandOutput.section("Artifact", "Engineering plan: $it")) }
+        add(
+            HumanCommandOutput.section(
+                "Summary",
+                "Change: ${plan.changeSummary}",
+                "Risk: ${plan.riskLevel}",
+                "Planned mutation scope: $plannedPathsStr",
+                "Affected components: ${plan.affectedComponents.size}"
+            )
+        )
+        if (plan.specification.requiredBehaviors.isNotEmpty() || plan.specification.acceptanceCriteria.isNotEmpty()) {
+            add(
+                HumanCommandOutput.section(
+                    "Specification",
+                    "Required behaviors: ${plan.specification.requiredBehaviors.size}",
+                    "Forbidden behaviors: ${plan.specification.forbiddenBehaviors.size}",
+                    "Protected invariants: ${plan.specification.protectedInvariants.size}",
+                    "Acceptance criteria: ${plan.specification.acceptanceCriteria.size}"
+                )
+            )
+        }
+    }
+    return HumanCommandOutput.render(
+        title = "🧭 Engineering Plan",
+        status = CommandStatus.PASS,
+        sections = sections,
+        nextStep = "Run `vericore prepare \"${plan.changeSummary}\"` to create the immutable change contract."
+    )
 }

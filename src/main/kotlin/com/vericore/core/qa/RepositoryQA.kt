@@ -78,9 +78,8 @@ object RepositoryQuestionClassifier {
 class RepositoryEvidenceRetriever {
     fun retrieve(question: RepositoryQuestion, evidence: GroundedEvidence, maxResults: Int = 8): RepositoryQAResult {
         require(maxResults in 1..32) { "maxResults must be between 1 and 32" }
-        val entity = question.entity?.lowercase()
         val ranked = evidence.citations.map { citation ->
-            RetrievedEvidence(citation, score(question.intent, entity, citation))
+            RetrievedEvidence(citation, score(question.intent, question.entity, citation))
         }.filter { it.relevance > 0 }
             .sortedWith(compareByDescending<RetrievedEvidence> { it.relevance }.thenBy { it.citation.id })
             .take(maxResults)
@@ -102,9 +101,57 @@ class RepositoryEvidenceRetriever {
             QuestionIntent.GENERAL -> 10
             QuestionIntent.UNKNOWN -> 0
         }
-        if (entity != null && (citation.id.lowercase().contains(entity) || citation.path?.lowercase()?.contains(entity) == true || citation.detail.lowercase().contains(entity))) {
+        if (matchesEntity(entity, citation)) {
             score += 100
         }
         return score
+    }
+
+    internal fun matchesEntity(rawEntity: String?, citation: EvidenceCitation): Boolean {
+        if (rawEntity.isNullOrBlank()) return false
+        val entity = rawEntity.trim('`', ' ')
+        if (entity.isBlank()) return false
+
+        // Check exact match in citation ID tokens (separated by colons, hashes, dots)
+        val idTokens = citation.id.split(':', '#', '.')
+        if (idTokens.any { it.equals(entity, ignoreCase = true) }) return true
+
+        // Check path: match filename or filename without extension
+        citation.path?.let { p ->
+            val normPath = p.replace('\\', '/')
+            val fileName = normPath.substringAfterLast('/')
+            val nameWithoutExt = fileName.substringBeforeLast('.')
+            if (nameWithoutExt.equals(entity, ignoreCase = true) || fileName.equals(entity, ignoreCase = true)) {
+                return true
+            }
+            if (entity.contains('/') || entity.contains('\\')) {
+                val normEntity = entity.replace('\\', '/').trim('/')
+                if (normPath.contains(normEntity, ignoreCase = true)) return true
+            }
+        }
+
+        // Check related paths (e.g. imported or dependent files)
+        if (citation.relatedPaths.any { rp ->
+            val normRp = rp.replace('\\', '/')
+            val fileName = normRp.substringAfterLast('/')
+            val nameWithoutExt = fileName.substringBeforeLast('.')
+            nameWithoutExt.equals(entity, ignoreCase = true) || fileName.equals(entity, ignoreCase = true)
+        }) return true
+
+        // Check word-boundary match in detail, avoiding false positive on path segments like /main/ or /test/
+        val wordRegex = Regex("\\b${Regex.escape(entity)}\\b", RegexOption.IGNORE_CASE)
+        val detailMatches = wordRegex.findAll(citation.detail)
+        for (match in detailMatches) {
+            val start = match.range.first
+            val end = match.range.last + 1
+            val charBefore = if (start > 0) citation.detail[start - 1] else ' '
+            val charAfter = if (end < citation.detail.length) citation.detail[end] else ' '
+            if ((charBefore == '/' || charBefore == '\\') && (charAfter == '/' || charAfter == '\\')) {
+                continue
+            }
+            return true
+        }
+
+        return false
     }
 }

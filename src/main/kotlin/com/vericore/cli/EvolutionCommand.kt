@@ -6,6 +6,7 @@ import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.default
 import com.github.ajalt.clikt.parameters.options.default
+import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.int
 import java.io.File
@@ -19,21 +20,56 @@ class EvolutionCommand : CliktCommand(
     private val path by argument("path", help = "Repository path").default(".")
     private val months by option("--months", help = "Months back to analyze").int().default(6)
     private val interval by option("--interval", help = "Days between snapshots").int().default(30)
+    private val format by option("--format", help = "Output format (human, json)").default("human")
+    private val jsonOutput by option("--json", help = "Write machine-readable evolution JSON to stdout (alias for --format json)").flag()
+    private val output by option("--output", help = "Optional path to save evolution JSON artifact")
 
     override fun run() {
         val root = File(path).canonicalFile
         require(root.isDirectory) { "Repository path is not a directory: $path" }
-        echo("⏳ Starting Temporal Analysis (Time Machine)...")
-        echo("   Looking back $months months, every $interval days.")
+
+        val outFormat = OutputFormat.resolve(format, jsonOutput)
+        val isJson = outFormat == OutputFormat.JSON
+
+        if (!isJson) {
+            echo("⏳ Starting Temporal Analysis (Time Machine)...")
+            echo("   Looking back $months months, every $interval days.")
+        }
 
         val analyzer = TemporalAnalyzer(root.path)
         try {
             val snapshots = analyzer.analyzeEvolution(months, interval)
-            echo(renderEvolutionReport(snapshots))
-
             if (snapshots.isEmpty()) {
                 throw IllegalStateException("No historical snapshots were found. Is this a git repository with commit history?")
             }
+
+            if (isJson) {
+                val envelope = CommandEnvelope(
+                    schemaVersion = "1.0",
+                    command = "evolution",
+                    status = CommandStatus.PASS,
+                    summary = "Evolution analysis over $months months: ${snapshots.size} historical snapshots",
+                    repository = RepositoryInfo(name = root.name, path = root.path),
+                    data = snapshots,
+                    execution = ExecutionInfo(exitCode = 0)
+                )
+                val jsonText = JsonEnvelope.encode(envelope)
+                if (output != null) {
+                    val dest = File(output!!).let { if (it.isAbsolute) it else root.resolve(it.path) }
+                    dest.parentFile?.mkdirs()
+                    dest.writeText(jsonText)
+                }
+                echo(jsonText)
+                return
+            }
+
+            if (output != null) {
+                val dest = File(output!!).let { if (it.isAbsolute) it else root.resolve(it.path) }
+                dest.parentFile?.mkdirs()
+                dest.writeText(JsonEnvelope.json.encodeToString(snapshots))
+            }
+
+            echo(renderEvolutionReport(snapshots))
         } catch (e: Exception) {
             throw IllegalStateException("Evolution analysis failed: ${e.message ?: e::class.simpleName}", e)
         }

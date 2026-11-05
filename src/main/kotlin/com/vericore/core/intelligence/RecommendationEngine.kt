@@ -46,31 +46,37 @@ object RecommendationEngine {
         }
 
         if (snapshot.architecture.hasCycles) {
+            val cycleEvidence = snapshot.hotspots.filter { it.dependents > 0 && it.dependencies > 0 }.map { it.path }.take(5)
             recommendations += EngineeringRecommendation(
                 id = "ARCHITECTURE_CYCLES",
                 priority = RecommendationPriority.HIGH,
                 title = "Break dependency cycles",
                 reason = "The analyzed dependency graph contains cycles.",
+                evidencePaths = cycleEvidence,
                 action = "Identify the smallest cycle boundaries and remove unnecessary bidirectional dependencies before adding more coupling."
             )
         }
 
         if (snapshot.metrics.parseFailures > 0) {
+            val parseEvidence = snapshot.files.filter { it.importCount == 0 }.map { it.path }.take(5)
             recommendations += EngineeringRecommendation(
                 id = "PARSER_FAILURES",
                 priority = RecommendationPriority.HIGH,
                 title = "Resolve parser diagnostics",
                 reason = "${snapshot.metrics.parseFailures} source files reported parser diagnostics during analysis.",
+                evidencePaths = parseEvidence,
                 action = "Resolve or explicitly account for parser diagnostics before relying on repository-wide dependency or risk conclusions."
             )
         }
 
         if (snapshot.architecture.crossPackageEdges > 0) {
+            val couplingEvidence = snapshot.hotspots.take(3).map { it.path }
             recommendations += EngineeringRecommendation(
                 id = "CROSS_PACKAGE_COUPLING",
                 priority = RecommendationPriority.MEDIUM,
                 title = "Review cross-package coupling",
                 reason = "${snapshot.architecture.crossPackageEdges} dependency edges cross package boundaries.",
+                evidencePaths = couplingEvidence,
                 action = "Review the highest-centrality cross-package paths and keep new dependencies aligned with the intended architecture."
             )
         }

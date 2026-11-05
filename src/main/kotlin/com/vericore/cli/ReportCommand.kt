@@ -2,6 +2,7 @@ package com.vericore.cli
 
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.default
+import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.vericore.core.intelligence.AnalysisSnapshot
 import com.vericore.core.session.SessionRecord
@@ -12,6 +13,8 @@ class ReportCommand : CliktCommand(name = "report", help = "Generate a durable H
     private val path by option("--path", help = "Repository path").default(".")
     private val sessionId by option("--session", help = "Session id; defaults to the latest completed analysis session")
     private val output by option("--output", help = "Output HTML path")
+    private val format by option("--format", help = "Output format (human, json)").default("human")
+    private val jsonOutput by option("--json", help = "Write report metadata as JSON to stdout (alias for --format json)").flag()
 
     override fun run() {
         val root = File(path).canonicalFile
@@ -23,6 +26,31 @@ class ReportCommand : CliktCommand(name = "report", help = "Generate a durable H
         val target = output?.let { File(it).canonicalFile } ?: root.resolve(".vericore").resolve("reports").resolve(session.id + ".html")
         target.parentFile?.mkdirs()
         target.writeText(render(snapshot, session))
+
+        val outFormat = OutputFormat.resolve(format, jsonOutput)
+        if (outFormat == OutputFormat.JSON) {
+            val envelope = CommandEnvelope(
+                schemaVersion = "1.0",
+                command = "report",
+                status = CommandStatus.PASS,
+                summary = "HTML engineering report generated for session ${session.id}",
+                repository = RepositoryInfo(name = root.name, path = root.path),
+                data = mapOf(
+                    "sessionId" to session.id,
+                    "reportPath" to target.absolutePath,
+                    "totalFiles" to snapshot.metrics.totalFiles.toString(),
+                    "totalNodes" to snapshot.metrics.totalNodes.toString(),
+                    "totalEdges" to snapshot.metrics.totalEdges.toString()
+                ),
+                artifacts = listOf(
+                    EnvelopeArtifact("html-report", target.absolutePath)
+                ),
+                execution = ExecutionInfo(exitCode = 0)
+            )
+            echo(JsonEnvelope.encode(envelope))
+            return
+        }
+
         echo(renderReportSummary(session.id, root.absolutePath, target.absolutePath))
     }
 

@@ -15,6 +15,9 @@ class ScanCommand : CliktCommand(
     private val clearCache by option("--clear-cache").flag()
     private val noSnapshot by option("--no-snapshot").flag()
     private val verbose by option("--verbose", "-v").flag()
+    private val format by option("--format", help = "Output format (human, json)").default("human")
+    private val jsonOutput by option("--json", help = "Write machine-readable JSON to stdout (alias for --format json)").flag()
+    private val output by option("--output", help = "Optional path to save JSON output")
 
     override fun run() {
         val args = buildList {
@@ -23,6 +26,17 @@ class ScanCommand : CliktCommand(
             if (clearCache) add("--clear-cache")
             if (noSnapshot) add("--no-snapshot")
             if (verbose) add("--verbose")
+            if (jsonOutput || format.equals("json", ignoreCase = true)) {
+                add("--format")
+                add("json")
+            } else if (format.isNotBlank() && !format.equals("human", ignoreCase = true)) {
+                add("--format")
+                add(format)
+            }
+            if (output != null) {
+                add("--output")
+                add(output!!)
+            }
         }.toTypedArray()
         ImprovedAnalyzeCommand().main(args)
     }

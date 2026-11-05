@@ -68,4 +68,17 @@ class RepositoryQATest {
         val retriever = RepositoryEvidenceRetriever()
         assertEquals(retriever.retrieve(question, evidence), retriever.retrieve(question, evidence))
     }
+
+    @Test
+    fun `does not match directory segments like src main when entity is Main`() {
+        val mixedEvidence = GroundedEvidence(
+            citations = listOf(
+                EvidenceCitation("file.1", "file-graph", path = "src/main/kotlin/PaymentService.kt", detail = "PaymentService in src/main/kotlin"),
+                EvidenceCitation("file.2", "file-graph", path = "src/main/kotlin/Main.kt", detail = "Main entrypoint in src/main/kotlin")
+            )
+        )
+        val retriever = RepositoryEvidenceRetriever()
+        assertTrue(!retriever.matchesEntity("Main", mixedEvidence.citations[0]), "Should not match src/main path segment for PaymentService")
+        assertTrue(retriever.matchesEntity("Main", mixedEvidence.citations[1]), "Should match Main.kt")
+    }
 }

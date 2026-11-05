@@ -16,6 +16,8 @@ class SetupCommand : CliktCommand(
     private val provider by option("--provider", help = "AI provider (currently: gemini)").default("gemini")
     private val model by option("--model", help = "Gemini model to use").default(AISetup.DEFAULT_GEMINI_MODEL)
     private val force by option("--force", help = "Replace an existing saved credential").flag()
+    private val format by option("--format", help = "Output format (human, json)").default("human")
+    private val jsonOutput by option("--json", help = "Write setup result as JSON to stdout (alias for --format json)").flag()
 
     override fun run() {
         if (!provider.equals("gemini", ignoreCase = true)) {
@@ -23,6 +25,9 @@ class SetupCommand : CliktCommand(
                 "Unsupported provider: $provider. Supported provider: gemini"
             )
         }
+
+        val outFormat = OutputFormat.resolve(format, jsonOutput)
+        val isJson = outFormat == OutputFormat.JSON
 
         val existing = UserConfigStore.load()?.ai
         val environmentKey = sequenceOf(
@@ -33,21 +38,67 @@ class SetupCommand : CliktCommand(
         ).firstOrNull { !it.isNullOrBlank() }?.trim().orEmpty()
 
         if (!force && existing?.apiKey?.isNotBlank() == true) {
+            if (isJson) {
+                val envelope = CommandEnvelope(
+                    schemaVersion = "1.0",
+                    command = "setup",
+                    status = CommandStatus.ALREADY_INITIALIZED,
+                    summary = "Gemini is already configured for this user",
+                    data = mapOf("model" to (existing.model ?: model)),
+                    artifacts = listOf(
+                        EnvelopeArtifact("config", UserConfigStore.configFile().absolutePath)
+                    ),
+                    nextStep = "vericore doctor",
+                    execution = ExecutionInfo(exitCode = 0)
+                )
+                echo(JsonEnvelope.encode(envelope))
+                return
+            }
             echo("✓ Gemini is already configured for this user.")
             echo("  Config: ${UserConfigStore.configFile().absolutePath}")
             echo("  Run 'vericore doctor' to verify the setup.")
             return
         }
 
-        val apiKey = environmentKey.ifBlank { readSecret("Gemini API key") }
+        val apiKey = environmentKey.ifBlank {
+            if (isJson) "" else readSecret("Gemini API key")
+        }
         if (apiKey.isBlank()) {
+            if (isJson) {
+                val envelope = CommandEnvelope(
+                    schemaVersion = "1.0",
+                    command = "setup",
+                    status = CommandStatus.WARNING,
+                    summary = "No API key supplied. Nothing was changed.",
+                    data = mapOf("model" to model),
+                    execution = ExecutionInfo(exitCode = 0)
+                )
+                echo(JsonEnvelope.encode(envelope))
+                return
+            }
             echo("❌ No API key supplied. Nothing was changed.")
             return
         }
 
-        echo("🔐 Validating Gemini credentials...")
+        if (!isJson) echo("🔐 Validating Gemini credentials...")
         when (val result = AISetup.configureGemini(apiKey, model)) {
             AISetupResult.Success -> {
+                if (isJson) {
+                    val envelope = CommandEnvelope(
+                        schemaVersion = "1.0",
+                        command = "setup",
+                        status = CommandStatus.PASS,
+                        summary = "Gemini API key validated and saved securely",
+                        data = mapOf("model" to model),
+                        artifacts = listOf(
+                            EnvelopeArtifact("config", UserConfigStore.configFile().absolutePath)
+                        ),
+                        nextStep = "vericore ask \"What is the architecture of this repository?\"",
+                        execution = ExecutionInfo(exitCode = 0)
+                    )
+                    echo(JsonEnvelope.encode(envelope))
+                    return
+                }
                 echo("✓ Gemini API key validated")
                 echo("✓ Saved securely for this user")
                 echo("  Config: ${UserConfigStore.configFile().absolutePath}")
@@ -55,6 +106,21 @@ class SetupCommand : CliktCommand(
                 echo("  vericore ask \"What is the architecture of this repository?\"")
             }
             is AISetupResult.Failure -> {
+                if (isJson) {
+                    val envelope = CommandEnvelope(
+                        schemaVersion = "1.0",
+                        command = "setup",
+                        status = CommandStatus.FAIL,
+                        summary = "Gemini validation failed: ${result.message}",
+                        data = mapOf("model" to model),
+                        findings = listOf(
+                            EnvelopeFinding(level = "ERROR", message = result.message)
+                        ),
+                        execution = ExecutionInfo(exitCode = 1)
+                    )
+                    echo(JsonEnvelope.encode(envelope))
+                    return
+                }
                 echo("❌ ${result.message}")
                 echo("   Nothing was saved.")
             }

@@ -9,6 +9,7 @@ data class ProductCommandResult(
     val schemaVersion: String = "1.0",
     val command: String,
     val status: String,
+    val summary: String? = null,
     val repository: String? = null,
     val findings: List<ProductFinding> = emptyList(),
     val artifacts: List<ProductArtifact> = emptyList(),
