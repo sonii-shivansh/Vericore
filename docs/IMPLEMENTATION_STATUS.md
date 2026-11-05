@@ -101,7 +101,7 @@ The latest confirmed published release is `v1.0.1`, published on 2026-10-20. Cha
 
 The master strategic roadmap is documented in [Product Direction](PRODUCT_DIRECTION.md) and follows Phase 0 through Phase 9. It is a plan, not a statement that every listed capability is already shipped.
 
-**Phase 0 — Foundation Freeze & Truth is complete for its documented scope.** Its exit decision, acceptance evidence, and limitations are recorded in [Phase 0 Foundation Checklist](PHASE0_FOUNDATION_CHECKLIST.md) and [Phase 0 Benchmark Baseline](PHASE0_BENCHMARK_BASELINE.md). That closeout does not automatically certify a release; each published artifact requires its own exact-candidate readiness evidence.
+**Foundation Freeze & Truth is complete for its documented scope.** Each published artifact requires its own exact-candidate readiness evidence.
 
 **Current operational priority: keep source, documentation, and published artifacts aligned.** Treat every candidate as unreleased until its tag and assets exist. Run the required gates on the exact candidate SHA before publication, and re-certify after any subsequent change.
 

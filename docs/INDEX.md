@@ -34,7 +34,7 @@
 | [Change Safety](CHANGE_SAFETY.md) | Persisted Agent Change Contract and prepare/verify semantics |
 | [Data & Privacy](DATA_PRIVACY.md) | Local behavior, optional provider-bound data flow and privacy boundary |
 | [Artifact Schema Catalog](ARTIFACT_SCHEMA_CATALOG.md) | Artifact contracts, schema versions, compatibility and source locations |
-| [Semantic Evidence Graph](PHASE_6_SEMANTIC_EVIDENCE_GRAPH.md) | Evidence graph design and implementation scope |
+| [Semantic Evidence Graph](EVIDENCE_GRAPH.md) | Evidence graph design and implementation scope |
 | [PR Intelligence](PR_INTELLIGENCE.md) | Deterministic pull-request analysis |
 | [Deterministic Evidence Evaluators](DETERMINISTIC_EVIDENCE_EVALUATORS.md) | Supported machine-readable criterion syntax and evaluation limits |
 
@@ -46,24 +46,9 @@ Machine-readable schemas live in [`docs/schemas/`](schemas/). They are interface
 |---|---|
 | [Development Guide](DEVELOPMENT.md) | Build/test workflow, extension points, review and release discipline |
 | [Implementation Status](IMPLEMENTATION_STATUS.md) | Implemented capabilities, limitations and current release/phase state |
-| [Product Direction](PRODUCT_DIRECTION.md) | Long-term Phase 0–9 product roadmap; roadmap items are not proof of implementation |
+| [Product Direction](PRODUCT_DIRECTION.md) | Long-term product roadmap; roadmap items are not proof of implementation |
 | [Repository Governance](REPOSITORY_GOVERNANCE.md) | Intended repository settings, CI/release model and governance caveats |
 | [Verification Benchmark](VERIFICATION_BENCHMARK.md) | Public benchmark design, methodology and interpretation boundaries |
-| [Phase 0 Foundation Checklist](PHASE0_FOUNDATION_CHECKLIST.md) | Foundation acceptance criteria and closeout record |
-| [Phase 1 Acceptance Checklist](PHASE1_ACCEPTANCE_CHECKLIST.md) | Measurable exit gate for the 60-Second Vericore product journey |
-| [Phase 0 Benchmark Baseline](PHASE0_BENCHMARK_BASELINE.md) | Recorded run metadata, methodology, artifact digest and limitations |
-
-## Release documentation
-
-Release-readiness files have different purposes. Published-release records are historical evidence for the exact tag and commit; later commits require their own certification.
-
-| Document | How to interpret it |
-|---|---|
-| [v0.9.0 Release Readiness](RELEASE_READINESS_0.9.0.md) | Historical certification record for the published v0.9.0 tag; does not certify later commits |
-| [v0.8.2 Release Readiness](RELEASE_READINESS_0.8.2.md) | Historical record for the v0.8.2 release |
-| [v0.8.1 Release Readiness](RELEASE_READINESS_0.8.1.md) | Historical release record |
-| [v0.8.0 Release Readiness](RELEASE_READINESS_0.8.0.md) | Historical release record |
-| [v1.0.0 Release Readiness](RELEASE_READINESS_1.0.0.md) | Longer-term pre-1.0 planning checklist; not a published-release claim |
 | [Changelog](../CHANGELOG.md) | User-visible changes grouped by version |
 
 ## Contribution and community policies
@@ -94,7 +79,7 @@ flowchart LR
 | New user | README → Why Vericore? → Getting Started → CLI Reference |
 | Coding-agent integrator | README → MCP → Change Safety → Data & Privacy |
 | Contributor | Repository Map → Architecture → Development → relevant tests |
-| Release reviewer | Implementation Status → Release Readiness → exact-SHA GitHub Actions evidence |
+| Release reviewer | Implementation Status → Changelog → exact-SHA GitHub Actions evidence |
 
 ## Documentation rules
 

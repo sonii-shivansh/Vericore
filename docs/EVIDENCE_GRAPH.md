@@ -1,6 +1,6 @@
-# Phase 6 — Semantic Evidence Graph Foundation
+# Semantic Evidence Graph Architecture
 
-> **Status:** Implemented. This document is a historical design-and-delivery record for the Phase 6 semantic evidence graph foundation. The capability is present on `main` and was already included in the published `v0.8.2` release.
+> **Status:** Implemented and active. This document specifies the design, invariants, and delivery scope of the Vericore semantic evidence graph.
 
 ## Goal
 

@@ -16,13 +16,14 @@ import time
 REPO_ROOT = pathlib.Path(__file__).parent.parent.resolve()
 CLI_BAT = REPO_ROOT / "build" / "install" / "vericore" / "bin" / "vericore.bat"
 CLI_SH = REPO_ROOT / "build" / "install" / "vericore" / "bin" / "vericore"
-JAVA_HOME = os.environ.get("JAVA_HOME", r"C:\Program Files\Java\jdk-25.0.4.1")
+CLI_BIN = CLI_BAT if os.name == "nt" else CLI_SH
+JAVA_HOME = os.environ.get("JAVA_HOME")
 
 def run_cli(args, cwd=None, env=None, input_text=None, timeout=30):
     cmd_env = os.environ.copy()
     if env:
         cmd_env.update(env)
-    cmd = [str(CLI_BAT)] + args
+    cmd = [str(CLI_BIN)] + args
     res = subprocess.run(
         cmd,
         cwd=cwd or str(REPO_ROOT),
@@ -245,7 +246,7 @@ public class PaymentService {
 def test_mcp_integration():
     print("\n=== [6/9] Scenario I: MCP Server Integration (Stdio handshake) ===")
     p = subprocess.Popen(
-        [str(CLI_BAT), "mcp"],
+        [str(CLI_BIN), "mcp"],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -297,23 +298,36 @@ def test_rest_server_integration():
 
 def test_installer_regression_suite():
     print("\n=== [8/9] Installer Regression Suite (PowerShell & Shell contracts) ===")
-    res_ps = subprocess.run(
-        ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/test-installers.ps1"],
-        cwd=str(REPO_ROOT),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        encoding="utf-8",
-        errors="replace"
-    )
-    assert res_ps.returncode == 0, f"test-installers.ps1 failed: {res_ps.stderr}\n{res_ps.stdout}"
-    assert "Windows installer contract and path-safety tests passed." in res_ps.stdout or res_ps.returncode == 0
-    print(" PASS: scripts/test-installers.ps1: 100% tests passed")
+    if os.name == "nt":
+        res_ps = subprocess.run(
+            ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", "scripts/test-installers.ps1"],
+            cwd=str(REPO_ROOT),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding="utf-8",
+            errors="replace"
+        )
+        assert res_ps.returncode == 0, f"test-installers.ps1 failed: {res_ps.stderr}\n{res_ps.stdout}"
+        assert "Windows installer contract and path-safety tests passed." in res_ps.stdout or res_ps.returncode == 0
+        print(" PASS: scripts/test-installers.ps1: 100% tests passed")
+    else:
+        res_sh = subprocess.run(
+            ["bash", "scripts/test-installers.sh"],
+            cwd=str(REPO_ROOT),
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding="utf-8",
+            errors="replace"
+        )
+        assert res_sh.returncode == 0, f"test-installers.sh failed: {res_sh.stderr}\n{res_sh.stdout}"
+        print(" PASS: scripts/test-installers.sh: 100% tests passed")
 
 def test_audit_tools():
     print("\n=== [9/9] Audit & Release Readiness Tooling ===")
     res_rr = subprocess.run(
-        ["python", "scripts/audit/test_release_readiness.py"],
+        [sys.executable, "scripts/audit/test_release_readiness.py"],
         cwd=str(REPO_ROOT),
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
@@ -322,7 +336,7 @@ def test_audit_tools():
     assert res_rr.returncode == 0, f"test_release_readiness.py failed: {res_rr.stderr}"
     
     res_vs = subprocess.run(
-        ["python", "scripts/audit/test_action_verification_summary.py"],
+        [sys.executable, "scripts/audit/test_action_verification_summary.py"],
         cwd=str(REPO_ROOT),
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,

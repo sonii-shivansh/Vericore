@@ -69,8 +69,6 @@ init → scan → inspect → ask/repo-qa → review → plan
 
 The journey's explanation step is delivered through grounded `repo-qa` answers and the evidence-backed explanations available in `review`; Phase 1 does not define a separate `explain` CLI command. Do not document or test a standalone `explain` command unless a separate product decision introduces one. Keep specialized commands. The unified journey is the product surface, not a reason to delete useful lower-level commands.
 
-Phase 1 completion is gated by the measurable checks in [Phase 1 Acceptance Checklist](PHASE1_ACCEPTANCE_CHECKLIST.md). A passing individual PR or unit-test suite is not, by itself, phase-completion evidence.
-
 ### Phase 2 — Universal Agent Layer
 
 Create one common **Vericore Agent Adapter** for Claude Code, Cursor, Codex, Gemini/Antigravity, GitHub Copilot, and future agents. Standardize agent/session identity, repository, contract, event metadata, changed files, verification requests, and results. Keep MCP as a key integration boundary rather than building independent implementations for every agent.

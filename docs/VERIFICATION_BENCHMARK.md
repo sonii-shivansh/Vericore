@@ -30,8 +30,7 @@ The run artifact is evidence of the cases actually executed on that candidate. D
 ## Initial baseline policy
 
 - The original v0.1 catalog is retained unchanged. The evaluator fixture version 0.2.1 extends v0.2 with deterministic JUnit testcase evidence regressions while retaining the earlier false-acceptance and false-rejection guards.
-- CI produces a machine-readable result for each candidate tested by the Phase 0 Foundation workflow.
-- The recorded Phase 0 baseline is documented in [Phase 0 Benchmark Baseline](PHASE0_BENCHMARK_BASELINE.md), including the closeout SHA, workflow run, result count, elapsed time, artifact digest, and limits. Treat that record as the initial baseline; later runs must append new candidate/SHA-specific evidence rather than overwriting it.
+- CI produces a machine-readable result for each tested candidate. Later runs append new candidate/SHA-specific evidence rather than overwriting historic baselines.
 - Expand to more repositories/languages only after current cases are stable. Broader coverage for cross-agent and cross-repository omissions belongs to the later ecosystem phase in the master roadmap.
 
 ## Limitations

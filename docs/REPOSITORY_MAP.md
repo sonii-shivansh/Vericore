@@ -66,8 +66,7 @@ Vericore/
 │   └── agent-change-v0.1/     # Versioned Phase 0 benchmark cases
 ├── docs/
 │   ├── schemas/              # Machine-readable artifact contracts
-│   ├── images/               # Documentation and brand assets
-│   └── superpowers/plans/    # Dated historical engineering plans
+│   └── images/               # Documentation and brand assets
 ├── gradle/                   # Gradle wrapper files
 ├── scripts/
 │   └── audit/                # Release, CLI, MCP, REST and foundation audit runners
@@ -142,7 +141,6 @@ For exact trigger semantics and release policy, consult [Repository Governance](
 - [API](API.md) and [MCP](MCP.md) — integration contracts.
 - [Support Matrix](SUPPORT_MATRIX.md) — implemented and unsupported boundaries.
 - [Implementation Status](IMPLEMENTATION_STATUS.md) — capabilities, limitations and current release/roadmap state.
-- [Release readiness](RELEASE_READINESS_0.9.0.md) — current pre-1.0 candidate tracker.
 - [Artifact Schema Catalog](ARTIFACT_SCHEMA_CATALOG.md) — machine-readable contracts and compatibility notes.
 
 ## Why root Markdown files stay at the root
