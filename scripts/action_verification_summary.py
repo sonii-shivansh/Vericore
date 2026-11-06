@@ -26,10 +26,12 @@ def _criterion_id(value: Any) -> str:
 
 
 def render_summary(report: dict[str, Any]) -> str:
-    overall = _status(report.get("status"))
-    safety = report.get("safety") if isinstance(report.get("safety"), dict) else {}
-    changed = safety.get("changedPaths", report.get("changedPaths", []))
-    unexpected = safety.get("unexpectedPaths", report.get("unexpectedPaths", []))
+    # If report is wrapped in a CommandEnvelope, unbox the data payload
+    payload = report.get("data") if isinstance(report.get("data"), dict) else report
+    overall = _status(payload.get("status") or report.get("status"))
+    safety = payload.get("safety") if isinstance(payload.get("safety"), dict) else {}
+    changed = safety.get("changedPaths", payload.get("changedPaths", []))
+    unexpected = safety.get("unexpectedPaths", payload.get("unexpectedPaths", []))
     changed_count = len(changed) if isinstance(changed, list) else 0
     unexpected_count = len(unexpected) if isinstance(unexpected, list) else 0
 
@@ -41,7 +43,7 @@ def render_summary(report: dict[str, Any]) -> str:
         f"- **Unexpected paths:** {unexpected_count}",
     ]
 
-    evaluation = report.get("specificationEvaluation")
+    evaluation = payload.get("specificationEvaluation")
     if not isinstance(evaluation, dict):
         lines.extend([
             "",

@@ -161,7 +161,12 @@ jobs:
               p=Path('output')/name
               assert p.is_file() and p.stat().st_size > 0, name
               json.loads(p.read_text())
-          assert 'Dirty: false' in (out/'09-context-snapshot.txt').read_text()
+          snap_txt = (out/'09-context-snapshot.txt').read_text()
+          if snap_txt.strip().startswith('{'):
+              snap_env = json.loads(snap_txt)
+              assert snap_env.get('data', {}).get('dirty') is False or 'dirty=false' in snap_env.get('summary', '').lower()
+          else:
+              assert 'dirty: false' in snap_txt.lower()
           (out/'SUMMARY.md').write_text('# Vericore live command output audit\n\nAll deterministic command outputs were captured and validated.\n')
           PY
       - name: Capture Vericore MCP output

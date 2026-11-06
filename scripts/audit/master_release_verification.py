@@ -534,7 +534,7 @@ public class DomainModel {
         has_banner = res["stdout"].strip().startswith("==") or "Starting Vericore" in res["stdout"]
         pure_stdout = valid_json and not has_banner
 
-        required_envelope_keys = {"schemaVersion", "command", "status", "summary", "timestamp"}
+        required_envelope_keys = {"schemaVersion", "command", "status", "summary", "execution"}
         is_envelope = isinstance(parsed, dict) and required_envelope_keys.issubset(parsed.keys())
 
         self.json_validations.append({

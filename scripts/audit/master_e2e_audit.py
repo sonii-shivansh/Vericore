@@ -98,8 +98,8 @@ def parse_json_safe(text):
 def is_valid_envelope(data):
     if not isinstance(data, dict):
         return False
-    # Universal Command Envelope has schemaVersion, command, status, summary, timestamp
-    required_keys = {"schemaVersion", "command", "status", "summary", "timestamp"}
+    # Universal Command Envelope has schemaVersion, command, status, summary, execution
+    required_keys = {"schemaVersion", "command", "status", "summary", "execution"}
     return required_keys.issubset(data.keys())
 
 def setup_git_repo(path):
