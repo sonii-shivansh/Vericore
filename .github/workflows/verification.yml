@@ -144,7 +144,7 @@ jobs:
       - name: Generate grounded repository evidence
         run: |
           rm -f output/grounded-evidence.json
-          ./build/install/vericore/bin/vericore repo-qa "which files are the main architectural hotspots?" --path . --evidence-output output/grounded-evidence.json > output/repo-qa.json
+          ./build/install/vericore/bin/vericore repo-qa "which files are the main architectural hotspots?" --path . --evidence-output output/grounded-evidence.json --format json > output/repo-qa.json
           test -s output/repo-qa.json
           test -s output/grounded-evidence.json
           python3 - <<'PY'
