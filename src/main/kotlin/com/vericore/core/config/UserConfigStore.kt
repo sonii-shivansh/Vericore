@@ -6,7 +6,7 @@ import java.nio.file.attribute.PosixFilePermission
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 
 @Serializable
 data class StoredAIConfig(

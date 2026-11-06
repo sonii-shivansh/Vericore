@@ -5,7 +5,7 @@ import com.vericore.core.exceptions.ValidationException
 import com.vericore.core.exceptions.VericoreException
 import com.github.ajalt.clikt.core.CliktError
 import com.github.ajalt.clikt.core.PrintHelpMessage
-import mu.KotlinLogging
+import io.github.oshai.kotlinlogging.KotlinLogging
 
 object ErrorHandler {
     private val logger = KotlinLogging.logger {}

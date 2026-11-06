@@ -41,7 +41,7 @@ jobs:
           printf '%s\n' "$BASE_SHA" > review-artifact/base-sha
 
       - name: Upload review artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: vericore-pr-review
           path: review-artifact/
