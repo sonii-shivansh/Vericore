@@ -20,22 +20,17 @@ class ScanCommand : CliktCommand(
     private val output by option("--output", help = "Optional path to save JSON output")
 
     override fun run() {
-        val outFormat = OutputFormat.resolve(format, jsonOutput)
-        val args = buildList {
-            add(path)
-            if (noCache) add("--no-cache")
-            if (clearCache) add("--clear-cache")
-            if (noSnapshot) add("--no-snapshot")
-            if (verbose) add("--verbose")
-            if (outFormat == OutputFormat.JSON) {
-                add("--format")
-                add("json")
-            }
-            if (output != null) {
-                add("--output")
-                add(output!!)
-            }
-        }.toTypedArray()
-        ImprovedAnalyzeCommand().main(args)
+        runAnalysisEngine(
+            commandIdentity = "scan",
+            path = path,
+            noCache = noCache,
+            clearCache = clearCache,
+            noSnapshot = noSnapshot,
+            verbose = verbose,
+            format = format,
+            jsonOutput = jsonOutput,
+            output = output,
+            echo = { echo(it) }
+        )
     }
 }

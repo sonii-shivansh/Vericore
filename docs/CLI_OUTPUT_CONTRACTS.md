@@ -35,9 +35,9 @@
 
 | Command | Default stdout | Machine-readable mode (`--format json` / `--json`) | Standardized Contract Notes |
 |---|---|---|---|
-| `init` | Human summary | `CommandEnvelope<ProductCommandResult>` | Returns `PASS` or `ALREADY_INITIALIZED`. |
-| `scan` | Human analysis summary | `CommandEnvelope<AnalysisSnapshot>` | Forwards `--format json` to analysis. |
-| `analyze` | Progress + human report | `CommandEnvelope<AnalysisSnapshot>` | Canonical artifacts saved in `output/`. |
+| `init` | Human summary | `CommandEnvelope<ProductCommandResult>` | Emits universal envelope containing ProductCommandResult lifecycle data and execution block (0). Returns `PASS` or `ALREADY_INITIALIZED`. |
+| `scan` | Human analysis summary | `CommandEnvelope<AnalysisSnapshot>` | Emits universal envelope with command identity `"scan"`, sharing analysis engine. |
+| `analyze` | Progress + human report | `CommandEnvelope<AnalysisSnapshot>` | Emits universal envelope with command identity `"analyze"`. Canonical artifacts saved in `output/`. |
 | `inspect` | Human summary via `HumanCommandOutput` | `CommandEnvelope<InspectionResult>` | Writes `output/inspection.json`. |
 | `doctor` | Human diagnostic checklist | `CommandEnvelope<List<DoctorCheckResult>>` | Exit code 0 on pass/warning; exit code 2 on failures. Gemini failure counts as 1. |
 | `impact` | Human summary with test candidates & reasons | `CommandEnvelope<ChangeImpactResult>` | `result.testCandidates` and `nodes` include all candidates. |
@@ -57,7 +57,7 @@
 | `prepare` | Human preparation summary | `CommandEnvelope<EngineeringPreparationResult>` | Persists preparation, plan, and contract (schema 3.0). |
 | `verify` | Human verification summary | `CommandEnvelope<VerificationResult>` | `PASS`, `NO_CHANGES`, `REVIEW_REQUIRED` exit 0; `FAIL` exits 1. |
 | `ask` | Human answer with files & confidence | `CommandEnvelope<GroundedAIResponse>` | AI grounded query response. |
-| `evolution` | Human repo evolution summary | `CommandEnvelope<List<RepositorySnapshot>>` | Git commit evolution over time. |
+| `evolution` | Human repo evolution summary | `CommandEnvelope<List<CodebaseSnapshot>>` | Git commit evolution over time with ISO-8601 UTC timestamps. |
 | `server` | Server startup log | HTTP endpoints | REST API daemon. |
 | `mcp` | MCP stdio protocol | Pure JSON-RPC | Never mix human text into stdout. |
 | `mcp-config` | Human summary / stdout JSON | `CommandEnvelope<McpConfig>` | Generates `.mcp.json` client configuration. |

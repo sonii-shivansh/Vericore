@@ -61,7 +61,7 @@ def test_doctor_and_version():
     print("\n=== [2/9] Scenario C: Java 25 Distribution Smoke Test (doctor & --version) ===")
     res_version = run_cli(["--version"])
     assert res_version.returncode == 0, f"--version failed: {res_version.stderr}"
-    assert "vericore version 1.0.2" in res_version.stdout.strip()
+    assert "vericore version 2.0.0" in res_version.stdout.strip()
     print(f" PASS: vericore --version: {res_version.stdout.strip()}")
 
     res_doctor = run_cli(["doctor"])

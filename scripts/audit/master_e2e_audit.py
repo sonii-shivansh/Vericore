@@ -1006,7 +1006,7 @@ public class XssCandidate {}
                 "javaVersion": 25,
                 "os": os.name,
                 "platform": sys.platform,
-                "cliDistribution": "vericore version 1.0.2"
+                "cliDistribution": "vericore version 2.0.0"
             },
             "metrics": {
                 "totalCommandInvocations": total_commands,
@@ -1073,7 +1073,7 @@ public class XssCandidate {}
 **Audit Verdict:** `{summary['verdict']}`  
 **Date:** {summary['auditTimestamp']}  
 **Java Version Baseline:** JDK 25 LTS  
-**CLI Version:** vericore version 1.0.2  
+**CLI Version:** vericore version 2.0.0  
 
 ## Executive Summary
 - **Commands Evaluated:** 27 registered subcommands across 5 dimensions.

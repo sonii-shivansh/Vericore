@@ -75,6 +75,19 @@ class GroundedEvidenceTest : FunSpec({
         paths shouldContain "B.kt"
         paths.none { it.startsWith("/") || it.contains(":\\") } shouldBe true
     }
+
+    test("emits all fields required by grounded-evidence schema") {
+        val snapshot = snapshot()
+        val evidence = GroundedEvidenceBuilder.fromSnapshot(snapshot)
+        val json = Json { encodeDefaults = true }
+        val jsonText = json.encodeToString(evidence)
+
+        jsonText shouldContain "\"schemaVersion\":\"1.1\""
+        jsonText shouldContain "\"repositoryCommit\":\"commit-123\""
+        jsonText shouldContain "\"repositoryStateDigest\":\"state-digest\""
+        jsonText shouldContain "\"analysisSchemaVersion\":\"1.1\""
+        jsonText shouldContain "\"citations\":"
+    }
 })
 
 private fun snapshot() = AnalysisSnapshot(
