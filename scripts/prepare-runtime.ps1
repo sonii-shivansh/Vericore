@@ -47,7 +47,7 @@ $modules = ($moduleOutput | Select-Object -Last 1).Trim()
 if ([string]::IsNullOrWhiteSpace($modules)) { throw 'jdeps returned no runtime modules.' }
 $modules = "$modules,jdk.crypto.ec,java.net.http"
 
-# Temurin 24+ enables JEP 493 runtime-image linking. Avoid --bind-services:
+# Temurin 24+ enables JEP 493 runtime-image linking. Avoid jlink service binding:
 # service binding can pull jdk.jlink into the new image, which cannot be
 # re-linked in this mode. Runtime providers required by Vericore are explicit
 # above and in the jdeps-derived module set.
