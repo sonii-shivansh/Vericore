@@ -47,13 +47,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Install pinned JSON Schema validator
-        run: python3 -m pip install --disable-pip-version-check -r scripts/audit/requirements-schema.txt
+      - name: Install pinned JSON Schema validator in an isolated environment
+        run: |
+          python3 -m venv "$RUNNER_TEMP/schema-venv"
+          "$RUNNER_TEMP/schema-venv/bin/python" -m pip install --disable-pip-version-check -r scripts/audit/requirements-schema.txt
       - name: Validate Bash syntax and exercise installer
         run: |
           bash -n scripts/install.sh
           bash scripts/test-installers.sh
-          python3 scripts/audit/test_release_readiness.py
+          "$RUNNER_TEMP/schema-venv/bin/python" scripts/audit/test_release_readiness.py
 
   windows-installer-syntax:
     name: Windows installer safety and upgrade regression
