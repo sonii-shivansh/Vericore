@@ -30,10 +30,12 @@ assert_contains "$UNIX_SCRIPT" '$APP_JAR'
 assert_contains "$UNIX_SCRIPT" 'vericore-*.jar'
 assert_contains "$UNIX_SCRIPT" 'DEPENDENCY_CLASSPATH'
 assert_contains "$UNIX_SCRIPT" 'awk'
+assert_not_contains "$UNIX_SCRIPT" '--bind-services'
 
 assert_contains "$WINDOWS_SCRIPT" "'--class-path'"
 assert_contains "$WINDOWS_SCRIPT" '$appJar'
 assert_contains "$WINDOWS_SCRIPT" 'vericore-*.jar'
 assert_contains "$WINDOWS_SCRIPT" '$dependencyClassPath'
+assert_not_contains "$WINDOWS_SCRIPT" "'--bind-services'"
 
 printf '%s\n' 'Runtime packaging contract test passed.'
