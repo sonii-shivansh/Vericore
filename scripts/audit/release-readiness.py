@@ -10,6 +10,16 @@ from pathlib import Path
 import re
 
 SCHEMA_VERSION = "1.0"
+ALLOWED_CHECK_RESULTS = frozenset({
+    "success",
+    "failure",
+    "cancelled",
+    "skipped",
+    "neutral",
+    # Observed for cancelled/abandoned reusable-workflow matrix jobs in Actions.
+    # This is intentionally a non-success result; do not normalize it to success.
+    "abandoned",
+})
 REQUIRED_CHECKS = frozenset({
     "deterministic-audit",
     "windows-ci",
@@ -56,7 +66,7 @@ def main() -> int:
         if name in checks:
             parser.error(f"duplicate check name: {name}")
         passed = result == "success"
-        if result not in {"success", "failure", "cancelled", "skipped", "neutral"}:
+        if result not in ALLOWED_CHECK_RESULTS:
             invalid_results.append(f"{name}={result}")
         checks[name] = {"required": True, "result": result, "passed": passed}
 
