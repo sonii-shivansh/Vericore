@@ -152,9 +152,11 @@ jobs:
           from pathlib import Path
           result = json.loads(Path("output/repo-qa.json").read_text())
           evidence = json.loads(Path("output/grounded-evidence.json").read_text())
-          assert "question" in result
-          assert "evidence" in result
-          assert isinstance(result["evidence"], list)
+          result_data = result.get("data", result)
+          assert isinstance(result_data, dict)
+          assert "question" in result_data
+          assert "evidence" in result_data
+          assert isinstance(result_data["evidence"], list)
           assert evidence["schemaVersion"] == "1.1"
           assert isinstance(evidence["citations"], list)
           assert evidence["citations"]
