@@ -57,12 +57,18 @@ jobs:
           chmod +x ./gradlew
           ./gradlew --no-daemon installDist
 
-      - name: Verify CLI on Unix
+      - name: Build bundled Java runtime on Unix
+        if: runner.os != 'Windows'
+        shell: bash
+        run: ./scripts/prepare-runtime.sh build/install/vericore
+
+      - name: Verify CLI on Unix using bundled Java only
         if: runner.os != 'Windows'
         shell: bash
         run: |
-          ./build/install/vericore/bin/vericore --version | grep -F '${{ steps.version.outputs.version }}'
-          ./build/install/vericore/bin/vericore --help >/dev/null
+          JAVA_HOME='/does-not-exist' ./build/install/vericore/bin/vericore --version | grep -F '${{ steps.version.outputs.version }}'
+          JAVA_HOME='/does-not-exist' ./build/install/vericore/bin/vericore --help >/dev/null
+          test -x ./build/install/vericore/jre/bin/java
 
       - name: Verify Unix release archive
         if: runner.os != 'Windows'
