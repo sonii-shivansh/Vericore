@@ -16,7 +16,7 @@ repositories {
 dependencies {
     implementation(kotlin("stdlib"))
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.11.0")
-    implementation("com.github.ajalt.clikt:clikt:4.4.0")
+    implementation("com.github.ajalt.clikt:clikt:5.1.0")
     implementation("com.github.javaparser:javaparser-symbol-solver-core:3.28.2")
     implementation("com.squareup:kotlinpoet:2.4.0")
     implementation("org.eclipse.jgit:org.eclipse.jgit:7.8.0.202609011348-r")

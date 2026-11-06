@@ -1,6 +1,7 @@
 package com.vericore.cli
 
 import com.vericore.core.exceptions.ConfigurationException
+import com.github.ajalt.clikt.core.main
 import java.nio.file.Files
 import kotlin.test.Test
 import kotlin.test.assertFailsWith

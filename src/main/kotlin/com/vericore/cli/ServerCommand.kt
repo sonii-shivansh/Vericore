@@ -12,7 +12,8 @@ import io.ktor.server.netty.Netty
 
 /** Starts the local Vericore HTTP API. Remote binding is an explicitly unsafe opt-in. */
 class ServerCommand :
-    CliktCommand(name = "server", help = "Start the Vericore HTTP API (loopback by default)") {
+    CliktCommand(name = "server") {
+    override fun help(context: com.github.ajalt.clikt.core.Context): String = "Start the Vericore HTTP API (loopback by default)"
     private val host by option("-h", "--host", help = "Host to bind to (loopback by default)").default("127.0.0.1")
     private val port by option("-p", "--port", help = "Port to listen on").int().default(8080)
     private val allowRemoteHost by option(

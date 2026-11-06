@@ -30,6 +30,7 @@ import com.vericore.cli.ServerCommand
 import com.vericore.cli.SetupCommand
 import com.vericore.cli.VerifyCommand
 import com.github.ajalt.clikt.core.subcommands
+import com.github.ajalt.clikt.core.main
 import kotlin.system.exitProcess
 import io.github.oshai.kotlinlogging.KotlinLoggingConfiguration
 

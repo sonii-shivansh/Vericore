@@ -22,9 +22,9 @@ import org.eclipse.jgit.revwalk.RevWalk
 import org.eclipse.jgit.treewalk.CanonicalTreeParser
 
 class ReviewCommand : CliktCommand(
-    name = "review",
-    help = "Review a Git change with deterministic impact, risk, architecture, and test signals"
+    name = "review"
 ) {
+    override fun help(context: com.github.ajalt.clikt.core.Context): String = "Review a Git change with deterministic impact, risk, architecture, and test signals"
     private val path by option("--path", help = "Repository path").default(".")
     private val base by option("--base", help = "Base Git revision; pair with --head")
     private val head by option("--head", help = "Head Git revision; pair with --base")

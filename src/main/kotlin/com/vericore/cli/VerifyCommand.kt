@@ -35,7 +35,8 @@ data class ContractOnlyVerificationResult(
 )
 
 /** Verifies the working-tree change against an engineering plan and immutable change contract. */
-class VerifyCommand : CliktCommand(name = "verify", help = "Verify the current change against an engineering plan and immutable change contract") {
+class VerifyCommand : CliktCommand(name = "verify") {
+    override fun help(context: com.github.ajalt.clikt.core.Context): String = "Verify the current change against an engineering plan and immutable change contract"
     private val path by option("--path", help = "Repository path").default(".")
     private val planFile by option("--plan", help = "Engineering plan JSON artifact")
     private val contractFile by option("--contract", help = "Agent change contract JSON artifact")

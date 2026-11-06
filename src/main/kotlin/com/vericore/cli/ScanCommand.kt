@@ -7,9 +7,9 @@ import com.github.ajalt.clikt.parameters.options.option
 
 /** Product-level repository understanding command. */
 class ScanCommand : CliktCommand(
-    name = "scan",
-    help = "Understand a repository and generate engineering intelligence"
+    name = "scan"
 ) {
+    override fun help(context: com.github.ajalt.clikt.core.Context): String = "Understand a repository and generate engineering intelligence"
     private val path by option("--path", help = "Repository path (default: current directory)").default(".")
     private val noCache by option("--no-cache").flag()
     private val clearCache by option("--clear-cache").flag()

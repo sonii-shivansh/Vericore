@@ -46,7 +46,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42ed6d17772635956322a3cf5fcf309b634b # v7.0.1
       - name: Validate Bash syntax and exercise installer
         run: |
           bash -n scripts/install.sh
@@ -59,7 +59,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42ed6d17772635956322a3cf5fcf309b634b # v7.0.1
       - name: Parse PowerShell installer
         shell: pwsh
         run: |

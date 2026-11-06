@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintStream
 import java.nio.file.Files
+import com.github.ajalt.clikt.core.main
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

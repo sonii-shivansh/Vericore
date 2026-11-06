@@ -14,9 +14,9 @@ import kotlinx.serialization.encodeToString
 import java.io.File
 
 class RecommendationsCommand : CliktCommand(
-    name = "recommendations",
-    help = "Generate deterministic engineering recommendations from an analysis snapshot"
+    name = "recommendations"
 ) {
+    override fun help(context: com.github.ajalt.clikt.core.Context): String = "Generate deterministic engineering recommendations from an analysis snapshot"
     private val path by argument("path", help = "Repository path").default(".")
     private val format by option("--format", help = "Output format (human, json)")
     private val jsonOutput by option("--json", help = "Write machine-readable recommendations JSON to stdout (alias for --format json)").flag()

@@ -25,9 +25,9 @@ import kotlin.system.measureTimeMillis
 class ImprovedAnalyzeCommand(
     private val commandIdentity: String = "analyze"
 ) : CliktCommand(
-    name = commandIdentity,
-    help = "Analyze a repository and generate engineering intelligence"
+    name = commandIdentity
 ) {
+    override fun help(context: com.github.ajalt.clikt.core.Context): String = "Analyze a repository and generate engineering intelligence"
     private val path by argument("path", help = "Repository path")
     private val noCache by option("--no-cache").flag()
     private val clearCache by option("--clear-cache").flag()

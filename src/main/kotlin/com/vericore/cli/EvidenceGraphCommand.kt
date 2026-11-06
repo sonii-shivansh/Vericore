@@ -15,9 +15,9 @@ import kotlinx.serialization.json.Json
 
 /** Emits the deterministic semantic evidence graph used by Reality and grounding. */
 class EvidenceGraphCommand : CliktCommand(
-    name = "evidence-graph",
-    help = "Build a deterministic semantic evidence graph from the current analysis snapshot"
+    name = "evidence-graph"
 ) {
+    override fun help(context: com.github.ajalt.clikt.core.Context): String = "Build a deterministic semantic evidence graph from the current analysis snapshot"
     private val path by argument("path", help = "Repository path").default(".")
     private val format by option("--format", help = "Output format (human, json)")
     private val jsonOutput by option("--json", help = "Write machine-readable graph JSON to stdout (alias for --format json)").flag()

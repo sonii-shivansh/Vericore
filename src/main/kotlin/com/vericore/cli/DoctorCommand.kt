@@ -22,9 +22,9 @@ data class DoctorCheckResult(
 )
 
 class DoctorCommand : CliktCommand(
-    name = "doctor",
-    help = "Check the local Vericore installation and configuration"
+    name = "doctor"
 ) {
+    override fun help(context: com.github.ajalt.clikt.core.Context): String = "Check the local Vericore installation and configuration"
     private val path by option(
         "--path",
         help = "Repository path to inspect; defaults to the current directory"

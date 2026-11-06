@@ -8,7 +8,8 @@ import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import java.io.File
 
-class InitCommand : CliktCommand(name = "init", help = "Initialize Vericore for a repository") {
+class InitCommand : CliktCommand(name = "init") {
+    override fun help(context: com.github.ajalt.clikt.core.Context): String = "Initialize Vericore for a repository"
     private val path by option("--path", help = "Repository path (default: current directory)").default(".")
     private val force by option("--force", help = "Replace an existing Vericore project configuration").flag()
     private val format by option("--format", help = "Output format (human, json)")

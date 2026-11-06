@@ -9,7 +9,8 @@ import com.vericore.core.session.SessionRecord
 import java.io.File
 import kotlinx.serialization.json.Json
 
-class ReportCommand : CliktCommand(name = "report", help = "Generate a durable HTML engineering report from the latest Vericore session") {
+class ReportCommand : CliktCommand(name = "report") {
+    override fun help(context: com.github.ajalt.clikt.core.Context): String = "Generate a durable HTML engineering report from the latest Vericore session"
     private val path by option("--path", help = "Repository path").default(".")
     private val sessionId by option("--session", help = "Session id; defaults to the latest completed analysis session")
     private val output by option("--output", help = "Output HTML path")

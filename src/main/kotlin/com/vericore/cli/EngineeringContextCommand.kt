@@ -13,7 +13,8 @@ import java.io.File
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 
-class EngineeringContextSnapshotCommand : CliktCommand(name = "context-snapshot", help = "Create a deterministic repository engineering-context snapshot") {
+class EngineeringContextSnapshotCommand : CliktCommand(name = "context-snapshot") {
+    override fun help(context: com.github.ajalt.clikt.core.Context): String = "Create a deterministic repository engineering-context snapshot"
     private val path by argument("path", help = "Repository path")
     private val format by option("--format", help = "Output format (human, json)")
     private val jsonOutput by option("--json", help = "Write machine-readable snapshot JSON to stdout (alias for --format json)").flag()
@@ -64,7 +65,8 @@ class EngineeringContextSnapshotCommand : CliktCommand(name = "context-snapshot"
     }
 }
 
-class EngineeringContextDiffCommand : CliktCommand(name = "context-diff", help = "Compare two engineering-context snapshots") {
+class EngineeringContextDiffCommand : CliktCommand(name = "context-diff") {
+    override fun help(context: com.github.ajalt.clikt.core.Context): String = "Compare two engineering-context snapshots"
     private val before by argument("before", help = "Baseline snapshot JSON")
     private val after by argument("after", help = "Current snapshot JSON")
     private val format by option("--format", help = "Output format (human, json)")

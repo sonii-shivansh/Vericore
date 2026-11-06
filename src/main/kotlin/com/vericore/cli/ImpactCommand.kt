@@ -21,9 +21,9 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 class ImpactCommand : CliktCommand(
-    name = "impact",
-    help = "Analyze the dependency impact of changed files"
+    name = "impact"
 ) {
+    override fun help(context: com.github.ajalt.clikt.core.Context): String = "Analyze the dependency impact of changed files"
     private val path by argument("path", help = "Repository path")
     private val changed by argument("changed", help = "Changed file path(s) relative to the repository").multiple(required = true)
     private val format by option("--format", help = "Output format (human, json)")

@@ -16,7 +16,8 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 /** Creates reusable evidence, plan, and repository-bound change-contract artifacts before implementation. */
-class PrepareCommand : CliktCommand(name = "prepare", help = "Prepare an evidence-backed change plan before coding") {
+class PrepareCommand : CliktCommand(name = "prepare") {
+    override fun help(context: com.github.ajalt.clikt.core.Context): String = "Prepare an evidence-backed change plan before coding"
     private val changeSummary by argument("change-summary", help = "Short description of the proposed change")
     private val path by option("--path", help = "Repository path").default(".")
     private val output by option("--output", help = "Preparation artifact path")
