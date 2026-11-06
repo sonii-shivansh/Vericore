@@ -47,7 +47,11 @@ $modules = ($moduleOutput | Select-Object -Last 1).Trim()
 if ([string]::IsNullOrWhiteSpace($modules)) { throw 'jdeps returned no runtime modules.' }
 $modules = "$modules,jdk.crypto.ec,java.net.http"
 
-& $Jlink '--add-modules' $modules '--bind-services' '--strip-debug' '--no-header-files' '--no-man-pages' '--output' $Jre
+# Temurin 24+ enables JEP 493 runtime-image linking. Avoid jlink service binding:
+# service binding can pull jdk.jlink into the new image, which cannot be
+# re-linked in this mode. Runtime providers required by Vericore are explicit
+# above and in the jdeps-derived module set.
+& $Jlink '--add-modules' $modules '--strip-debug' '--no-header-files' '--no-man-pages' '--output' $Jre
 if ($LASTEXITCODE -ne 0) { throw 'jlink failed while creating the bundled Java runtime.' }
 
 $script = Join-Path $AppHome 'bin\vericore.bat'

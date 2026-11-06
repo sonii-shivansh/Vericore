@@ -3,6 +3,12 @@ name: Platform Smoke
 on:
   workflow_dispatch:
   workflow_call:
+  pull_request:
+    paths:
+      - "scripts/prepare-runtime.sh"
+      - "scripts/prepare-runtime.ps1"
+      - "scripts/test-runtime-packaging.sh"
+      - ".github/workflows/platform.yml"
 
 permissions:
   contents: read
@@ -42,6 +48,10 @@ jobs:
           bash -n scripts/install.sh
           bash scripts/test-installers.sh
 
+      - name: Verify runtime packaging script contract
+        shell: bash
+        run: bash scripts/test-runtime-packaging.sh
+
       - name: Resolve application version
         id: version
         shell: bash
@@ -57,12 +67,18 @@ jobs:
           chmod +x ./gradlew
           ./gradlew --no-daemon installDist
 
-      - name: Verify CLI on Unix
+      - name: Build bundled Java runtime on Unix
+        if: runner.os != 'Windows'
+        shell: bash
+        run: ./scripts/prepare-runtime.sh build/install/vericore
+
+      - name: Verify CLI on Unix using bundled Java only
         if: runner.os != 'Windows'
         shell: bash
         run: |
-          ./build/install/vericore/bin/vericore --version | grep -F '${{ steps.version.outputs.version }}'
-          ./build/install/vericore/bin/vericore --help >/dev/null
+          JAVA_HOME='/does-not-exist' ./build/install/vericore/bin/vericore --version | grep -F '${{ steps.version.outputs.version }}'
+          JAVA_HOME='/does-not-exist' ./build/install/vericore/bin/vericore --help >/dev/null
+          test -x ./build/install/vericore/jre/bin/java
 
       - name: Verify Unix release archive
         if: runner.os != 'Windows'
@@ -89,13 +105,20 @@ jobs:
             throw 'Windows launcher does not use the compact lib wildcard classpath.'
           }
 
-      - name: Verify CLI on Windows
+      - name: Build bundled Java runtime on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: .\scripts\prepare-runtime.ps1 -DistDir .\build\install\vericore
+
+      - name: Verify CLI on Windows using bundled Java only
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
+          $env:JAVA_HOME = 'C:\does-not-exist'
           $version = (& .\build\install\vericore\bin\vericore.bat --version).Trim()
-          if ($version -notmatch [regex]::Escape('${{ steps.version.outputs.version }}')) { throw "Unexpected CLI version: $version" }
+          if ($version -notmatch [regex]::Escape('${{ steps.version.outputs.version }}')) { throw "Unexpected version: $version" }
           & .\build\install\vericore\bin\vericore.bat --help | Out-Null
+          if (-not (Test-Path .\build\install\vericore\jre\bin\java.exe)) { throw 'Bundled Java runtime was not created.' }
 
       - name: Verify Windows release archive
         if: runner.os == 'Windows'

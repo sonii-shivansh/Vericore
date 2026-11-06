@@ -75,9 +75,12 @@ if [[ -z "$MODULES" ]]; then
 fi
 MODULES="$MODULES,jdk.crypto.ec,java.net.http"
 
+# Temurin 24+ enables JEP 493 runtime-image linking. Avoid jlink service binding:
+# service binding can pull jdk.jlink into the new image, which cannot be
+# re-linked in this mode. Runtime providers required by Vericore are explicit
+# above and in the jdeps-derived module set.
 "$JLINK" \
   --add-modules "$MODULES" \
-  --bind-services \
   --strip-debug \
   --no-header-files \
   --no-man-pages \
