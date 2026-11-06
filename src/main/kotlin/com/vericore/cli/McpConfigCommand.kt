@@ -1,6 +1,7 @@
 package com.vericore.cli
 
 import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.vericore.core.exceptions.ValidationException
@@ -13,8 +14,11 @@ class McpConfigCommand(private val workingDirectory: File = File(".")) : CliktCo
 ) {
     private val write by option("--write", help = "Write the project-level .mcp.json instead of printing it").flag()
     private val force by option("--force", help = "Allow replacing an existing .mcp.json when used with --write").flag()
+    private val format by option("--format", help = "Output format (human, json)")
+    private val jsonOutput by option("--json", help = "Write config as JSON").flag()
 
     override fun run() {
+        OutputFormat.resolve(format, jsonOutput)
         val config = """
             {
               "mcpServers": {

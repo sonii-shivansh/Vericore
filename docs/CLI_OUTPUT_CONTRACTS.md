@@ -1,70 +1,64 @@
-# CLI Output Contract Inventory
+# CLI Output Contract Inventory & Standardization
 
-**Audited against:** `main` at `f046c6d06105ebb4c529a17f2b5bf5116c748bf0` (PR #256 merge)  
-**Purpose:** Record observed stdout/file-output behavior before migrating more commands to the shared human-readable renderer.
+**Audited against:** `main` at `f046c6d06105ebb4c529a17f2b5bf5116c748bf0` with CLI standardization & targeted fixes
+**Purpose:** Record standardized human and machine-readable output contracts across all 27 registered Vericore CLI command areas.
 
-This is an implementation inventory, not a promise that every output shape is already ideal. The source code is authoritative if this document and implementation disagree. Update this inventory alongside future CLI output-contract changes.
+## Core Contract Guiding Principles
 
-## Compatibility rules
+1. **Human by Default, JSON on Request:** Every command produces human-readable output by default. When `--format json` or `--json` is specified, pure parseable JSON is emitted to standard output.
+2. **Universal JSON Envelope:** All machine-readable JSON outputs conform to the standardized `CommandEnvelope<T>` schema (version `"1.0"`), including `schemaVersion`, `command`, `status`, `summary`, `repository`, `data`, `findings`, `recommendations`, `artifacts`, `nextStep`, and `execution: { exitCode }`.
+3. **Status and Process Exit Code Alignment:**
+   - Analytical severity (e.g. CRITICAL/HIGH findings in `review` or `pr-intelligence`) is mapped to `CommandStatus.REVIEW_REQUIRED` with exit code `0`, distinguishing successful analysis with required attention from command failure.
+   - `verify`: `PASS` (0), `NO_CHANGES` (0), `REVIEW_REQUIRED` (0), and `FAIL` (1) strictly agree between `envelope.execution.exitCode` and process exit code.
+   - `setup`: AI validation failure emits a `FAIL` envelope with `execution.exitCode = 1` and exits with code 1 while keeping stdout pure JSON.
+   - `doctor`: Failed Gemini credential validation counts as exactly 1 failure.
+4. **Output Format Validation (`OutputFormat.resolve`):**
+   - Valid formats: `human`, `json` (case-insensitive).
+   - Invalid formats (e.g. `--format xml`, `--format invalid`): rejected immediately with `IllegalArgumentException` and exit code `2`.
+   - Conflicting options (`--format human --json`): rejected with `IllegalArgumentException` and exit code `2`.
+5. **Standardized `--output` Behavior:**
+   - When `--format json --output <file>` is specified, the exact same `CommandEnvelope<T>` JSON is written to `<file>` as emitted to `stdout`.
+   - Domain artifacts (e.g., `output/analysis-snapshot.json`, `output/engineering-plan.json`) remain saved in their canonical directory locations.
+6. **Impact Analysis Test Candidate Representation:**
+   - Both dependency-graph-reachable test files and naming-convention test candidates are included in `ChangeImpactResult.nodes` (`relationship = TEST_CANDIDATE`), `ChangeImpactResult.summary.testCandidates`, and `ChangeImpactResult.testCandidates`.
+   - Impact summary displays all identified test candidates with the reason each was selected.
+7. **Repository QA Evidence Relevance:**
+   - General intent questions do not receive an unconditional baseline score.
+   - Relevance threshold `MIN_RELEVANCE_THRESHOLD = 20` ensures unrelated questions yield `insufficientEvidence = true` with empty evidence.
+   - Path segments (such as `/main/` or `/test/`) do not match entities `Main` or `Test`.
+8. **Structured JSON Errors:**
+   - When JSON output is requested and a post-parsing execution or validation failure occurs before output generation, `ErrorHandler` emits a structured error envelope to `stdout` and diagnostic text to `stderr`.
+9. **MCP and Server Isolation:**
+   - `mcp` stdout is strictly reserved for JSON-RPC stdio protocol traffic. Logs and diagnostics go exclusively to stderr or file logs.
 
-1. **Do not infer stdout behavior from a `--json` flag.** Some commands write a JSON artifact and still print a human summary; others print JSON to stdout.
-2. Preserve existing JSON fields/schema, artifact paths, and whether JSON is emitted to stdout or a file unless a separately reviewed change explicitly changes that contract.
-3. Preserve success/failure behavior and error handling. Human-readable formatting must not decide verification, risk, or validation outcomes.
-4. Keep standard output usable for its documented purpose. In particular, commands whose default output is JSON must not have progress text prepended to that JSON.
-5. Error text, progress output, and generated artifacts are separate concerns. Do not claim a command is JSON-only unless the implementation actually makes stdout JSON-only.
-6. Treat this table as a source audit, not proof that every documented case has a regression test. Add tests for the contract before changing it.
+## Command-by-Command Inventory
 
-## Command-by-command inventory
-
-“Human console” means status/progress/summary text is printed. “JSON file” means a machine-readable artifact is written, not that stdout is JSON.
-
-| Command | Default stdout | Machine-readable mode / artifact | Contract notes |
+| Command | Default stdout | Machine-readable mode (`--format json` / `--json`) | Standardized Contract Notes |
 |---|---|---|---|
-| `init` | Human initialization summary | `--json`: `ProductCommandResult` JSON to stdout | JSON mode returns before printing the human summary. Already-initialized status is `ALREADY_INITIALIZED`; successful initialization is `PASS`. |
-| `scan` | Delegates to `analyze`; progress and analysis summary | No `--json` option of its own | Passes `--no-cache`, `--clear-cache`, `--no-snapshot`, and `--verbose` through to analysis. |
-| `analyze` | Progress plus human-readable codebase report | Persists analysis/session artifacts as implemented; no `--json` flag in this command | Verbose mode may print stack traces. Keep progress output and errors out of any future machine-only stream. |
-| `inspect` | Human inspection summary rendered through `HumanCommandOutput` | `--json`: `output/inspection.json` | Writes the JSON file and still prints the human summary. Requires the persisted analysis snapshot. Summary formatting does not change inspection data, JSON schema, artifact path, or exit behavior. |
-| `doctor` | Diagnostic lines and final readiness/attention summary | No JSON option observed | Errors produce a non-success exit through `ConfigurationException`; optional AI configuration can be reported as warnings. |
-| `impact` | Human impact summary rendered through `HumanCommandOutput` | `--json`: `output/change-impact.json` | Writes JSON and still prints the human summary; node-detail lines remain unchanged. Summary rendering does not change the JSON schema, artifact path, or impact calculations. |
-| `architecture` | Human architecture summary rendered through `HumanCommandOutput` | `--json`: `output/architecture.json` | Writes JSON and still prints the human summary. Summary rendering preserves the architecture result, JSON schema, artifact path, and analysis behavior. |
-| `architecture-drift` | Human drift summary rendered through `HumanCommandOutput` | `--json`: `output/architecture-drift.json` | Requires a baseline argument; JSON mode still prints a human summary. Summary rendering preserves drift calculations, JSON schema, artifact path, and error behavior. |
-| `architecture-contract` | Human contract decision summary rendered through `HumanCommandOutput` | `--json`: `output/architecture-contract.json` | Also may print legacy-contract warnings and decision-history path. A failed contract still raises `ValidationException`; JSON mode does not mean summary-free stdout. Rendering preserves decision, fingerprint, artifact path, and the 30-violation display limit. |
-| `context-snapshot` | Human context summary rendered through `HumanCommandOutput` | `--json`: `output/engineering-context.json` | JSON mode writes the file and still prints the summary. Rendering preserves snapshot values, JSON encoding, and artifact path. |
-| `context-diff` | Human context-diff summary rendered through `HumanCommandOutput`, with up to 30 changes | `--json`: `output/engineering-context-diff.json` | JSON mode writes the file and still prints the summary. Rendering preserves diff calculation, JSON encoding, relative artifact path, and 30-change display limit. |
-| `evidence-graph` | Human graph summary rendered through `HumanCommandOutput` | `--json`: `output/semantic-evidence-graph.json` | JSON mode writes the artifact and still prints the human summary. Rendering preserves the graph values/digest, JSON schema and encoding, artifact path, stdout mode, and missing-analysis failure behavior. |
-| `reality` | Human engineering-reality summary rendered through `HumanCommandOutput` | `--json`: `output/engineering-reality.json` | JSON mode writes the file and still prints the human summary. Rendering preserves the reality snapshot/digest, JSON encoding, artifact path, stdout behavior, and validation failures. |
-| `pr-intelligence` | Human PR-intelligence summary rendered through `HumanCommandOutput`, including finding details when present | `--json`: `output/pr-intelligence.json` | JSON mode writes the file and still prints the human summary. Rendering preserves result values, finding order/content, JSON serialization, artifact path, and the paired `--base`/`--head` requirement. |
-| `repo-qa` | JSON result to stdout | Optional `--evidence-output <file>` writes reusable grounded-evidence JSON | Default stdout is machine-readable JSON; do not prepend human progress output. |
-| `report` | Human report-generated summary rendered through `HumanCommandOutput` | `--output <file>` selects the HTML report path | Generates HTML; this is not a JSON command. The summary layout is presentation-only; session selection and artifact paths are unchanged. |
-| `review` | Human review summary rendered through `HumanCommandOutput`, including deterministic findings and optional grounded AI review | `--json`: `output/review.json` | JSON mode writes the artifact and still prints the human summary. Rendering preserves deterministic findings, optional AI details, JSON schema, artifact path, paired `--base`/`--head` requirement, and next-step guidance. |
-| `recommendations` | Human prioritized recommendations rendered through `HumanCommandOutput` | `--json`: `output/recommendations.json` | Writes JSON and still prints human recommendations. Requires an analysis snapshot. Summary formatting does not change recommendation generation, JSON fields, artifact path, or exit behavior. |
-| `plan` | JSON to stdout by default | `--output <file>` writes plan JSON to a repository-local file | With `--output`, stdout becomes a human summary; without it, stdout is JSON. |
-| `prepare` | Human summary and artifact paths | Writes preparation, engineering-plan, and agent-change-contract JSON files; paths can be overridden with output options | New contracts are schema 3.0 and embed the validated prepare-time candidate baseline; paths can be overridden with output options. Keep the preparation, plan, and contract aligned. |
-| `verify` | Status/path summary on success; full and contract-only modes write criterion-level requirement-evidence summaries and non-pass reasons to stderr | Verification result JSON goes to stdout by default or to the path passed to `--output`; full verification also writes `output/verification-receipt.json` (schema 1.3) with baseline digest validity and unplanned-drift paths | Both full and `--contract-only` verification validate the prepare-time baseline and detect unplanned tracked, untracked, or ignored input drift. Legacy contracts without a baseline fail and must be prepared again. `--contract-only` returns before writing the full verification receipt. Requirement-evidence output explicitly identifies a missing structured specification as `NOT_EVALUATED`, enumerates criterion statuses/reasons when present, and shows non-pass reasons for `REVIEW_REQUIRED` as well as `FAIL`. Non-empty specifications with unevaluated criteria return `REVIEW_REQUIRED`; malformed specifications fail closed. Existing exit behavior is unchanged; `FAIL` raises `ValidationException`. |
-| `ask` | Progress messages followed by the final answer rendered through `HumanCommandOutput`, with suggested files and confidence when available | No JSON option observed | Rendering affects only the final answer; progress messages, grounded context construction, provider selection, sanitized errors, and command failure behavior remain unchanged. |
-| `evolution` | Progress messages followed by a report rendered through `HumanCommandOutput`, with timestamped snapshots and net file growth | No JSON option observed | Preserves `--months` and `--interval` defaults, local-time timestamp formatting, 7-character commit IDs, growth calculation, and the no-history error path. |
-| `server` | Startup message, then server operation | HTTP API, not CLI JSON mode | Keep startup logs separate from HTTP response bodies. |
-| `mcp` | MCP protocol on stdout | MCP stdio protocol | **Protocol-sensitive:** do not print human summaries or ordinary logs to stdout while serving MCP; use the established logging/error channel. |
-| `mcp-config` | JSON configuration to stdout by default | `--write` writes `.mcp.json`; `--force` permits replacement | Default stdout is JSON. `--write` prints a confirmation message instead. |
-| `setup` | Interactive/setup status messages | Saves user-level AI configuration | No JSON option observed. Do not echo credential contents. |
-
-## Output-contract risks to address before broad migration
-
-- **Flag naming is inconsistent:** `--json` means “write an artifact and keep printing human text” for several analysis commands, but means “JSON on stdout” for `init`. `plan`, `verify`, `repo-qa`, and `mcp-config` have their own stdout/file rules.
-- **There is no universal JSON-output contract yet.** Do not implement a global rule that changes current behavior. First add explicit command-level tests and choose a compatibility-preserving renderer migration.
-- **Exit behavior is part of the contract.** `doctor`, `verify`, and `architecture-contract` have failure paths that must not be converted to success merely to improve presentation.
-- **Artifact paths are observable behavior.** Consumers may rely on paths such as `output/review.json`, `output/inspection.json`, and `output/verification-receipt.json`.
-- **MCP stdout is protocol data.** Human-oriented rendering must never leak into the MCP protocol stream.
-
-## Suggested test checklist for each output migration
-
-- Default invocation: expected human output or JSON stdout, as documented.
-- JSON/artifact option: artifact exists, parses, and retains the same schema/fields.
-- Stdout contract: verify whether stdout is human text, JSON, or protocol data; do not mix formats accidentally.
-- Error path: nonzero exit remains nonzero and diagnostic stream remains appropriate.
-- Paths and side effects: default and overridden artifact locations remain unchanged.
-- Empty/no-finding case: output remains understandable without changing the underlying decision.
-
-## Source files reviewed
-
-The inventory was assembled from the command registration in `src/main/kotlin/com/vericore/Main.kt` and command implementations under `src/main/kotlin/com/vericore/cli/`, including `InitCommand`, `ScanCommand`, `ImprovedAnalyzeCommand`, `InspectCommand`, `DoctorCommand`, `ImpactCommand`, architecture commands, context commands, `EvidenceGraphCommand`, `RealityCommand`, `PRIntelligenceCommand`, `RepositoryQACommand`, `ReportCommand`, `ReviewCommand`, `RecommendationsCommand`, `EngineeringPlanCommand`, `PrepareCommand`, `VerifyCommand`, `AIAssistantCommand`, `EvolutionCommand`, `ServerCommand`, `McpCommand`, `McpConfigCommand`, and `SetupCommand`.
+| `init` | Human summary | `CommandEnvelope<ProductCommandResult>` | Returns `PASS` or `ALREADY_INITIALIZED`. |
+| `scan` | Human analysis summary | `CommandEnvelope<AnalysisSnapshot>` | Forwards `--format json` to analysis. |
+| `analyze` | Progress + human report | `CommandEnvelope<AnalysisSnapshot>` | Canonical artifacts saved in `output/`. |
+| `inspect` | Human summary via `HumanCommandOutput` | `CommandEnvelope<InspectionResult>` | Writes `output/inspection.json`. |
+| `doctor` | Human diagnostic checklist | `CommandEnvelope<List<DoctorCheckResult>>` | Exit code 0 on pass/warning; exit code 2 on failures. Gemini failure counts as 1. |
+| `impact` | Human summary with test candidates & reasons | `CommandEnvelope<ChangeImpactResult>` | `result.testCandidates` and `nodes` include all candidates. |
+| `architecture` | Human architecture summary | `CommandEnvelope<ArchitectureIntelligenceResult>` | Analyzes dependencies, cycles, and cross-layer violations. |
+| `architecture-drift` | Human drift summary | `CommandEnvelope<ArchitectureDriftResult>` | Compares current against baseline. Invalid baseline throws exception. |
+| `architecture-contract`| Human contract decision | `CommandEnvelope<ArchitectureContractResult>` | Enforces contract; failures exit 1 with structured violations. |
+| `context-snapshot` | Human context summary | `CommandEnvelope<EngineeringContextSnapshot>` | Deterministic file hashes and digest. |
+| `context-diff` | Human diff summary | `CommandEnvelope<EngineeringContextDiff>` | Compares two snapshots; indicates added/removed/modified. |
+| `evidence-graph` | Human graph summary | `CommandEnvelope<SemanticEvidenceGraphArtifact>`| Semantic evidence graph with nodes and edges. |
+| `reality` | Human reality summary | `CommandEnvelope<EngineeringRealityArtifact>` | Unified reality verification. |
+| `pr-intelligence` | Human PR intelligence summary | `CommandEnvelope<PRIntelligenceResult>` | High/Critical severity produces `REVIEW_REQUIRED` (exit code 0). |
+| `repo-qa` | Human answer and citations | `CommandEnvelope<RepositoryQAResult>` | Relevance threshold 20; unrelated queries produce `insufficientEvidence = true`. |
+| `report` | Human confirmation + HTML | `CommandEnvelope<Map<String, String>>` | Generates HTML report in `output/index.html`. |
+| `review` | Human code review summary | `CommandEnvelope<ReviewOutput>` | Critical severity produces `REVIEW_REQUIRED` (exit code 0). |
+| `recommendations` | Human recommendations | `CommandEnvelope<List<EngineeringRecommendation>>` | Baseline healthy or actionable recommendations. |
+| `plan` | Human engineering plan | `CommandEnvelope<EngineeringPlan>` | Binds specification to planned mutation scope. |
+| `prepare` | Human preparation summary | `CommandEnvelope<EngineeringPreparationResult>` | Persists preparation, plan, and contract (schema 3.0). |
+| `verify` | Human verification summary | `CommandEnvelope<VerificationResult>` | `PASS`, `NO_CHANGES`, `REVIEW_REQUIRED` exit 0; `FAIL` exits 1. |
+| `ask` | Human answer with files & confidence | `CommandEnvelope<GroundedAIResponse>` | AI grounded query response. |
+| `evolution` | Human repo evolution summary | `CommandEnvelope<List<RepositorySnapshot>>` | Git commit evolution over time. |
+| `server` | Server startup log | HTTP endpoints | REST API daemon. |
+| `mcp` | MCP stdio protocol | Pure JSON-RPC | Never mix human text into stdout. |
+| `mcp-config` | Human summary / stdout JSON | `CommandEnvelope<McpConfig>` | Generates `.mcp.json` client configuration. |
+| `setup` | Interactive / diagnostic output | `CommandEnvelope<Map<String, String>>` | Secure key validation. Failure exits 1 with clean JSON. |

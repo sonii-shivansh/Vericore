@@ -4,10 +4,12 @@ import com.vericore.core.cache.CacheManager
 import com.vericore.core.config.ConfigLoader
 import com.vericore.core.graph.RobustDependencyGraph
 import com.vericore.core.intelligence.ArchitectureDriftEngine
+import com.vericore.core.intelligence.ArchitectureDriftResult
 import com.vericore.core.intelligence.ArchitectureIntelligenceEngine
 import com.vericore.core.scanner.RepositoryScanner
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
+import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.options.required
@@ -22,7 +24,9 @@ class ArchitectureDriftCommand : CliktCommand(
 ) {
     private val path by argument("path", help = "Repository path")
     private val baseline by option("--baseline", help = "Baseline architecture JSON file").required()
-    private val jsonOutput by option("--json", help = "Write machine-readable drift JSON").flag()
+    private val format by option("--format", help = "Output format (human, json)")
+    private val jsonOutput by option("--json", help = "Write machine-readable drift JSON to stdout (alias for --format json)").flag()
+    private val output by option("--output", help = "Optional path to save drift JSON artifact")
 
     override fun run() {
         val root = File(path).canonicalFile
@@ -45,18 +49,57 @@ class ArchitectureDriftCommand : CliktCommand(
         val currentResult = ArchitectureIntelligenceEngine.analyze(graph.graph, root, config.architecture)
         val drift = ArchitectureDriftEngine.compare(baselineResult, currentResult)
 
-        if (jsonOutput) {
-            val output = outputPath(root)
-            output.parentFile.mkdirs()
-            output.writeText(Json { prettyPrint = true; encodeDefaults = true }.encodeToString(drift))
+        val defaultOutput = outputPath(root)
+        defaultOutput.parentFile.mkdirs()
+        defaultOutput.writeText(JsonEnvelope.json.encodeToString(drift))
+
+        val outFormat = OutputFormat.resolve(format, jsonOutput)
+        val hasChanges = drift.changes.isNotEmpty()
+        val status = if (hasChanges) CommandStatus.WARNING else CommandStatus.PASS
+
+        if (outFormat == OutputFormat.JSON) {
+            val envelope = CommandEnvelope(
+                schemaVersion = "1.0",
+                command = "architecture-drift",
+                status = status,
+                summary = "Architecture drift: ${drift.summary.addedFindings} added findings, ${drift.summary.newCycles} new cycles, ${drift.summary.addedEdges} added edges, ${drift.summary.removedEdges} removed edges",
+                repository = RepositoryInfo(name = root.name, path = root.path),
+                data = drift,
+                findings = drift.changes.map { change ->
+                    EnvelopeFinding(
+                        level = if (change.type.contains("ADDED")) "WARNING" else "INFO",
+                        message = "${change.type}: ${change.key}",
+                        ruleId = change.type,
+                        path = change.key
+                    )
+                },
+                artifacts = listOf(
+                    EnvelopeArtifact("architecture-drift", defaultOutput.path)
+                ),
+                execution = ExecutionInfo(exitCode = 0)
+            )
+            val jsonText = JsonEnvelope.encode(envelope)
+            if (output != null) {
+                val dest = File(output!!).let { if (it.isAbsolute) it else File(path).canonicalFile.resolve(it.path) }
+                dest.parentFile?.mkdirs()
+                dest.writeText(jsonText)
+            }
+            echo(jsonText)
+            return
         }
 
-        echo(renderArchitectureDriftSummary(drift, if (jsonOutput) outputPath(root).canonicalPath else null))
+        if (output != null) {
+            val dest = File(output!!).let { if (it.isAbsolute) it else File(path).canonicalFile.resolve(it.path) }
+            dest.parentFile?.mkdirs()
+            dest.writeText(JsonEnvelope.json.encodeToString(drift))
+        }
+
+        echo(renderArchitectureDriftSummary(drift, defaultOutput.canonicalPath))
     }
 }
 
 internal fun renderArchitectureDriftSummary(
-    result: com.vericore.core.intelligence.ArchitectureDriftResult,
+    result: ArchitectureDriftResult,
     outputPath: String? = null
 ): String {
     val sections = buildList {

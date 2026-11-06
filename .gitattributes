@@ -1,8 +1,4 @@
-# Ensure gradlew scripts have correct permissions
-gradlew eol=lf
-gradlew.bat eol=crlf
-*.sh eol=lf
-
-# Mark shell scripts as executable
-*.sh binary
-gradlew binary
+# Ensure shell and batch scripts have correct line endings
+gradlew text eol=lf
+gradlew.bat text eol=crlf
+*.sh text eol=lf

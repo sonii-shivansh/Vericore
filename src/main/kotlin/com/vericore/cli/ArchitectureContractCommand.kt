@@ -13,6 +13,7 @@ import com.vericore.core.intelligence.ArchitectureIntelligenceEngine
 import com.vericore.core.scanner.RepositoryScanner
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
+import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import java.io.File
@@ -26,7 +27,9 @@ class ArchitectureContractCommand : CliktCommand(
 ) {
     private val path by argument("path", help = "Repository path")
     private val contractPath by option("--contract", help = "Architecture contract JSON; defaults to .vericore-architecture-contract.json")
-    private val jsonOutput by option("--json", help = "Write machine-readable contract result").flag()
+    private val format by option("--format", help = "Output format (human, json)")
+    private val jsonOutput by option("--json", help = "Write machine-readable contract result to stdout (alias for --format json)").flag()
+    private val output by option("--output", help = "Optional path to save contract result JSON artifact")
     private val recordPath by option("--record", help = "Persist the deterministic contract decision history")
 
     override fun run() {
@@ -46,7 +49,7 @@ class ArchitectureContractCommand : CliktCommand(
         val resolution = contractPath?.let { ArchitectureContractFileResolver.Resolution(File(it), usedLegacy = false) }
             ?: ArchitectureContractFileResolver.resolve(root)
         if (resolution.usedLegacy) {
-            echo("⚠️ Using legacy CodeContext architecture contract. Migrate to .vericore-architecture-contract.json")
+            System.err.println("⚠️ Using legacy CodeContext architecture contract. Migrate to .vericore-architecture-contract.json")
         }
         val contract = if (resolution.file.exists()) {
             json.decodeFromString<ArchitectureContract>(resolution.file.readText())
@@ -58,23 +61,61 @@ class ArchitectureContractCommand : CliktCommand(
         recordPath?.let { target ->
             val historyFile = File(target)
             ArchitectureContractHistoryStore.record(historyFile, decision)
-            echo("🧾 Contract decision history: ${historyFile.absolutePath}")
         }
-        if (jsonOutput) {
-            val output = outputPath(root)
-            output.parentFile.mkdirs()
-            output.writeText(json.encodeToString<ArchitectureContractResult>(result))
-        }
-        echo(
-            renderArchitectureContractSummary(
-                result,
-                findingsCount = architecture.findings.size,
-                cyclesCount = architecture.cycles.size,
-                decisionId = decision.decisionId,
-                outputPath = if (jsonOutput) outputPath(root).absolutePath else null,
-                recordPath = recordPath?.let { File(it).absolutePath }
+
+        val defaultOutput = outputPath(root)
+        defaultOutput.parentFile.mkdirs()
+        defaultOutput.writeText(json.encodeToString<ArchitectureContractResult>(result))
+
+        val outFormat = OutputFormat.resolve(format, jsonOutput)
+        val status = if (result.passed) CommandStatus.PASS else CommandStatus.FAIL
+
+        if (outFormat == OutputFormat.JSON) {
+            val envelope = CommandEnvelope(
+                schemaVersion = "1.0",
+                command = "architecture-contract",
+                status = status,
+                summary = "Architecture contract evaluation: ${if (result.passed) "PASSED" else "FAILED"} (${result.violations.size} violations)",
+                repository = RepositoryInfo(name = root.name, path = root.path),
+                data = result,
+                findings = result.violations.map { violation ->
+                    EnvelopeFinding(
+                        level = "ERROR",
+                        message = "${violation.ruleId}: ${violation.message}",
+                        ruleId = violation.ruleId
+                    )
+                },
+                artifacts = listOfNotNull(
+                    EnvelopeArtifact("architecture-contract", defaultOutput.path),
+                    recordPath?.let { EnvelopeArtifact("decision-history", File(it).absolutePath) }
+                ),
+                execution = ExecutionInfo(exitCode = if (result.passed) 0 else 1)
             )
-        )
+            val jsonText = JsonEnvelope.encode(envelope)
+            if (output != null) {
+                val dest = File(output!!).let { if (it.isAbsolute) it else File(path).canonicalFile.resolve(it.path) }
+                dest.parentFile?.mkdirs()
+                dest.writeText(jsonText)
+            }
+            echo(jsonText)
+        } else {
+            if (output != null) {
+                val dest = File(output!!).let { if (it.isAbsolute) it else File(path).canonicalFile.resolve(it.path) }
+                dest.parentFile?.mkdirs()
+                dest.writeText(json.encodeToString<ArchitectureContractResult>(result))
+            }
+            echo(
+                renderArchitectureContractSummary(
+                    result,
+                    findingsCount = architecture.findings.size,
+                    cyclesCount = architecture.cycles.size,
+                    decisionId = decision.decisionId,
+                    outputPath = defaultOutput.absolutePath,
+                    recordPath = recordPath?.let { File(it).absolutePath }
+                )
+            )
+        }
+
         if (!result.passed) {
             throw ValidationException("Architecture contract failed")
         }

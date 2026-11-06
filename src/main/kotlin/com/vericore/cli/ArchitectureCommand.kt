@@ -4,19 +4,22 @@ import com.vericore.core.cache.CacheManager
 import com.vericore.core.config.ConfigLoader
 import com.vericore.core.graph.RobustDependencyGraph
 import com.vericore.core.intelligence.ArchitectureIntelligenceEngine
+import com.vericore.core.intelligence.ArchitectureIntelligenceResult
 import com.vericore.core.scanner.RepositoryScanner
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
+import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import java.io.File
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 
 class ArchitectureCommand : CliktCommand(name = "architecture", help = "Analyze repository architecture and detect structural violations") {
     private val path by argument("path", help = "Repository path")
-    private val jsonOutput by option("--json", help = "Write machine-readable architecture JSON").flag()
+    private val format by option("--format", help = "Output format (human, json)")
+    private val jsonOutput by option("--json", help = "Write machine-readable architecture JSON to stdout (alias for --format json)").flag()
+    private val output by option("--output", help = "Optional path to save architecture JSON artifact")
 
     override fun run() {
         val root = File(path).canonicalFile
@@ -29,18 +32,59 @@ class ArchitectureCommand : CliktCommand(name = "architecture", help = "Analyze 
         graph.build(parsed).getOrThrow()
         graph.analyze().getOrThrow()
         val result = ArchitectureIntelligenceEngine.analyze(graph.graph, root, config.architecture)
-        if (jsonOutput) {
-            val output = outputPath(root)
-            output.parentFile.mkdirs()
-            output.writeText(Json { prettyPrint = true; encodeDefaults = true }.encodeToString(result))
+
+        val defaultOutput = outputPath(root)
+        defaultOutput.parentFile.mkdirs()
+        defaultOutput.writeText(JsonEnvelope.json.encodeToString(result))
+
+        val outFormat = OutputFormat.resolve(format, jsonOutput)
+        val status = if (result.summary.findings == 0 && result.summary.cycles == 0) CommandStatus.PASS else CommandStatus.WARNING
+
+        if (outFormat == OutputFormat.JSON) {
+            val envelope = CommandEnvelope(
+                schemaVersion = "1.0",
+                command = "architecture",
+                status = status,
+                summary = "Analyzed ${result.summary.filesAnalyzed} files: ${result.summary.findings} findings, ${result.summary.cycles} cycles, ${result.summary.crossLayerDependencies} cross-layer dependencies",
+                repository = RepositoryInfo(name = root.name, path = root.path),
+                data = result,
+                findings = result.findings.map { finding ->
+                    EnvelopeFinding(
+                        level = finding.severity,
+                        message = "${finding.ruleId}: ${finding.evidence}",
+                        ruleId = finding.ruleId,
+                        path = finding.source
+                    )
+                },
+                artifacts = listOf(
+                    EnvelopeArtifact("architecture-report", defaultOutput.path)
+                ),
+                execution = ExecutionInfo(exitCode = 0)
+            )
+            val jsonText = JsonEnvelope.encode(envelope)
+            if (output != null) {
+                val dest = File(output!!).let { if (it.isAbsolute) it else File(path).canonicalFile.resolve(it.path) }
+                dest.parentFile?.mkdirs()
+                dest.writeText(jsonText)
+            }
+            echo(jsonText)
+            return
         }
-        echo(renderArchitectureSummary(result, outputPath = if (jsonOutput) outputPath(root).absolutePath else null))
+
+        if (output != null) {
+            val dest = File(output!!).let { if (it.isAbsolute) it else File(path).canonicalFile.resolve(it.path) }
+            dest.parentFile?.mkdirs()
+            dest.writeText(JsonEnvelope.json.encodeToString(result))
+        }
+
+        echo(renderArchitectureSummary(result, outputPath = defaultOutput.absolutePath, includeExplanation = true))
     }
 }
 
 internal fun renderArchitectureSummary(
-    result: com.vericore.core.intelligence.ArchitectureIntelligenceResult,
-    outputPath: String? = null
+    result: ArchitectureIntelligenceResult,
+    outputPath: String? = null,
+    includeExplanation: Boolean = false
 ): String {
     val sections = buildList {
         outputPath?.let { add(HumanCommandOutput.section("Report", "Architecture report: $it")) }
@@ -60,13 +104,18 @@ internal fun renderArchitectureSummary(
                 HumanCommandOutput.section(
                     "Top findings",
                     *findings.map { finding ->
-                        "${finding.severity} ${finding.ruleId}: ${finding.source}${finding.target?.let { " -> $it" } ?: ""}"
+                        val targetStr = finding.target?.let { " -> $it" } ?: ""
+                        val evidenceStr = if (includeExplanation && finding.evidence.isNotBlank()) " (${finding.evidence})" else ""
+                        "${finding.severity} ${finding.ruleId}: ${finding.source}$targetStr$evidenceStr"
                     }.toTypedArray()
                 )
             )
         }
     }
-    return HumanCommandOutput.render(title = "🏛️ Architecture Intelligence", sections = sections)
+    return HumanCommandOutput.render(
+        title = "🏛️ Architecture Intelligence",
+        sections = sections
+    )
 }
 
 private fun outputPath(root: File): File = root.resolve("output/architecture.json")

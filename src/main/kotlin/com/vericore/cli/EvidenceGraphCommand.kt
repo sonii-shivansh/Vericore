@@ -7,6 +7,7 @@ import com.vericore.core.intelligence.AnalysisSnapshot
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.arguments.default
+import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import java.io.File
@@ -18,7 +19,9 @@ class EvidenceGraphCommand : CliktCommand(
     help = "Build a deterministic semantic evidence graph from the current analysis snapshot"
 ) {
     private val path by argument("path", help = "Repository path").default(".")
-    private val jsonOutput by option("--json", help = "Write output/semantic-evidence-graph.json").flag()
+    private val format by option("--format", help = "Output format (human, json)")
+    private val jsonOutput by option("--json", help = "Write machine-readable graph JSON to stdout (alias for --format json)").flag()
+    private val output by option("--output", help = "Optional path to save graph JSON artifact")
 
     override fun run() {
         val root = File(path).canonicalFile
@@ -34,15 +37,39 @@ class EvidenceGraphCommand : CliktCommand(
         val graph = SemanticEvidenceGraphBuilder.build(analysis)
         val artifact = SemanticEvidenceGraphArtifact.fromGraph(graph)
 
-        val artifactPath = if (jsonOutput) {
-            val output = outputDir.resolve("semantic-evidence-graph.json")
-            output.writeText(SemanticEvidenceGraphArtifactCodec.encode(artifact))
-            output.path
-        } else {
-            null
+        val outFormat = OutputFormat.resolve(format, jsonOutput)
+        val defaultOutput = outputDir.resolve("semantic-evidence-graph.json")
+        if (outFormat == OutputFormat.JSON) {
+            defaultOutput.writeText(SemanticEvidenceGraphArtifactCodec.encode(artifact))
+            val envelope = CommandEnvelope(
+                schemaVersion = "1.0",
+                command = "evidence-graph",
+                status = CommandStatus.PASS,
+                summary = "Semantic evidence graph built: ${artifact.nodeCount} nodes, ${artifact.edgeCount} edges, digest ${artifact.digest.take(12)}",
+                repository = RepositoryInfo(name = root.name, path = root.path),
+                data = artifact,
+                artifacts = listOf(
+                    EnvelopeArtifact("semantic-evidence-graph", defaultOutput.path)
+                ),
+                execution = ExecutionInfo(exitCode = 0)
+            )
+            val jsonText = JsonEnvelope.encode(envelope)
+            if (output != null) {
+                val dest = File(output!!).let { if (it.isAbsolute) it else root.resolve(it.path) }
+                dest.parentFile?.mkdirs()
+                dest.writeText(jsonText)
+            }
+            echo(jsonText)
+            return
         }
 
-        echo(renderSemanticEvidenceGraphSummary(artifact, artifactPath))
+        if (output != null) {
+            val dest = File(output!!).let { if (it.isAbsolute) it else root.resolve(it.path) }
+            dest.parentFile?.mkdirs()
+            dest.writeText(SemanticEvidenceGraphArtifactCodec.encode(artifact))
+        }
+
+        echo(renderSemanticEvidenceGraphSummary(artifact, output))
     }
 }
 

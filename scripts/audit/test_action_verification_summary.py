@@ -114,6 +114,60 @@ class ActionVerificationSummaryTest(unittest.TestCase):
         self.assertNotIn("## injected", summary)
         self.assertRegex(summary, r"`criterion\?+injected`")
 
+    def test_command_envelope_wrapped_full_verification_report_unboxes_cleanly(self) -> None:
+        envelope = {
+            "schemaVersion": "1.0",
+            "command": "verify",
+            "status": "PASS",
+            "summary": "Working tree verification against engineering plan and change contract",
+            "data": {
+                "status": "PASS",
+                "safety": {
+                    "changedPaths": ["src/PaymentService.kt"],
+                    "unexpectedPaths": [],
+                },
+                "specificationEvaluation": {
+                    "status": "PASS",
+                    "criteria": [
+                        {"id": "acceptance-criterion-001", "status": "PASS", "statement": "All tests pass"},
+                    ],
+                },
+            },
+            "execution": {"exitCode": 0}
+        }
+        summary = render_summary(envelope)
+        self.assertIn("Outcome:** `PASS`", summary)
+        self.assertIn("Changed paths:** 1", summary)
+        self.assertIn("Unexpected paths:** 0", summary)
+        self.assertIn("Evaluation status:** `PASS`", summary)
+        self.assertIn("`acceptance-criterion-001` — `PASS`", summary)
+
+    def test_command_envelope_wrapped_contract_only_report_unboxes_cleanly(self) -> None:
+        envelope = {
+            "schemaVersion": "1.0",
+            "command": "verify",
+            "status": "REVIEW_REQUIRED",
+            "summary": "Contract-only verification",
+            "data": {
+                "status": "REVIEW_REQUIRED",
+                "changedPaths": ["src/Service.kt"],
+                "unexpectedPaths": ["tmp/unexpected.txt"],
+                "specificationEvaluation": {
+                    "status": "NOT_EVALUATED",
+                    "criteria": [
+                        {"id": "spec-001", "status": "NOT_EVALUATED"},
+                    ],
+                },
+            },
+            "execution": {"exitCode": 0}
+        }
+        summary = render_summary(envelope)
+        self.assertIn("Outcome:** `REVIEW_REQUIRED`", summary)
+        self.assertIn("Changed paths:** 1", summary)
+        self.assertIn("Unexpected paths:** 1", summary)
+        self.assertIn("Evaluation status:** `NOT_EVALUATED`", summary)
+        self.assertIn("`spec-001` — `NOT_EVALUATED`", summary)
+
 
 if __name__ == "__main__":
     unittest.main()

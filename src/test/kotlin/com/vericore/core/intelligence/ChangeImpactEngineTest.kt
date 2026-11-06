@@ -64,6 +64,25 @@ class ChangeImpactEngineTest {
     }
 
     @Test
+    fun `test candidate unreachable in dependency graph is still included in nodes and testCandidates`() {
+        val graph = DefaultDirectedGraph<String, DefaultEdge>(DefaultEdge::class.java)
+        graph.addVertex("/repo/Service.kt")
+        graph.addVertex("/repo/Controller.kt")
+        graph.addVertex("/repo/ServiceTest.kt")
+        graph.addEdge("/repo/Controller.kt", "/repo/Service.kt")
+
+        val result = ChangeImpactEngine.analyze(graph, listOf("/repo/Service.kt"))
+
+        assertEquals(1, result.summary.testCandidates)
+        assertEquals(listOf("/repo/ServiceTest.kt"), result.testCandidates)
+        val candidate = result.nodes.find { it.relationship == ImpactRelationship.TEST_CANDIDATE }
+        assertTrue(candidate != null, "Unreachable test candidate must be present in nodes")
+        assertEquals("/repo/ServiceTest.kt", candidate.path)
+        assertEquals(-1, candidate.depth)
+        assertTrue(candidate.reasons.any { it.contains("candidate test suite") })
+    }
+
+    @Test
     fun `unknown changed files are ignored without corrupting analysis`() {
         val result = ChangeImpactEngine.analyze(graph(), listOf("/repo/missing.kt", "/repo/a/Service.kt"))
         assertEquals(listOf("/repo/a/Service.kt"), result.changedPaths)

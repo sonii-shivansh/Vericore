@@ -8,8 +8,18 @@ import com.vericore.core.config.UserConfigStore
 import com.vericore.core.exceptions.ConfigurationException
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.options.default
+import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
+import kotlinx.serialization.Serializable
 import java.io.File
+
+@Serializable
+data class DoctorCheckResult(
+    val name: String,
+    val passed: Boolean,
+    val warning: Boolean,
+    val detail: String
+)
 
 class DoctorCommand : CliktCommand(
     name = "doctor",
@@ -19,27 +29,39 @@ class DoctorCommand : CliktCommand(
         "--path",
         help = "Repository path to inspect; defaults to the current directory"
     ).default(".")
+    private val format by option("--format", help = "Output format (human, json)")
+    private val jsonOutput by option("--json", help = "Write doctor results as JSON to stdout (alias for --format json)").flag()
+    private val output by option("--output", help = "Optional path to save doctor JSON artifact")
 
     override fun run() {
+        val outFormat = OutputFormat.resolve(format, jsonOutput)
+        val isJson = outFormat == OutputFormat.JSON
+
         var failures = 0
         var warnings = 0
+        val checks = mutableListOf<DoctorCheckResult>()
 
         fun check(label: String, ok: Boolean, detail: String) {
-            if (ok) echo("✓ $label — $detail")
-            else {
+            checks += DoctorCheckResult(name = label, passed = ok, warning = false, detail = detail)
+            if (ok) {
+                if (!isJson) echo("✓ $label — $detail")
+            } else {
                 failures++
-                echo("❌ $label — $detail")
+                if (!isJson) echo("❌ $label — $detail")
             }
         }
 
         fun warn(label: String, detail: String) {
             warnings++
-            echo("⚠ $label — $detail")
+            checks += DoctorCheckResult(name = label, passed = true, warning = true, detail = detail)
+            if (!isJson) echo("⚠ $label — $detail")
         }
 
-        echo("Vericore doctor")
-        echo("Version: ${Version.current}")
-        echo("")
+        if (!isJson) {
+            echo("Vericore doctor")
+            echo("Version: ${Version.current}")
+            echo("")
+        }
 
         val javaMajor = Runtime.version().feature()
         check(
@@ -107,27 +129,57 @@ class DoctorCommand : CliktCommand(
         }
 
         if (effective.ai.provider.equals("gemini", ignoreCase = true) && resolvedApiKey.isNotBlank()) {
-            echo("   Validating Gemini credentials...")
+            if (!isJson) echo("   Validating Gemini credentials...")
             when (val result = AISetup.validateGemini(resolvedApiKey, effective.ai.model)) {
-                AISetupResult.Success -> echo("✓ Gemini API — reachable and credentials accepted")
+                AISetupResult.Success -> check("Gemini API", true, "reachable and credentials accepted")
                 is AISetupResult.Failure -> {
-                    failures++
-                    echo("❌ Gemini API — ${result.message}")
+                    check("Gemini API", false, result.message)
                 }
             }
         }
 
-        echo("")
-        when {
-            failures > 0 -> {
-                echo("❌ Vericore needs attention: $failures error(s), $warnings warning(s).")
-                echo("   Fix the errors above, then run 'vericore doctor' again.")
+        val status = when {
+            failures > 0 -> CommandStatus.FAIL
+            warnings > 0 -> CommandStatus.WARNING
+            else -> CommandStatus.PASS
+        }
+
+        if (isJson) {
+            val envelope = CommandEnvelope(
+                schemaVersion = "1.0",
+                command = "doctor",
+                status = status,
+                summary = "Vericore doctor: ${checks.count { it.passed && !it.warning }} passed, $warnings warning(s), $failures error(s)",
+                repository = RepositoryInfo(name = root.name, path = root.path),
+                data = checks,
+                findings = checks.filter { !it.passed || it.warning }.map { c ->
+                    EnvelopeFinding(
+                        level = if (!c.passed) "ERROR" else "WARNING",
+                        message = "${c.name}: ${c.detail}"
+                    )
+                },
+                execution = ExecutionInfo(exitCode = if (failures > 0) 2 else 0)
+            )
+            val jsonText = JsonEnvelope.encode(envelope)
+            if (output != null) {
+                val dest = File(output!!).let { if (it.isAbsolute) it else root.resolve(it.path) }
+                dest.parentFile?.mkdirs()
+                dest.writeText(jsonText)
             }
-            warnings > 0 -> {
-                echo("⚠ Vericore is ready for deterministic analysis; $warnings optional configuration item(s) need attention.")
-                echo("   Run 'vericore setup' if you want to enable AI features.")
+            echo(jsonText)
+        } else {
+            echo("")
+            when {
+                failures > 0 -> {
+                    echo("❌ Vericore needs attention: $failures error(s), $warnings warning(s).")
+                    echo("   Fix the errors above, then run 'vericore doctor' again.")
+                }
+                warnings > 0 -> {
+                    echo("⚠ Vericore is ready for deterministic analysis; $warnings optional configuration item(s) need attention.")
+                    echo("   Run 'vericore setup' if you want to enable AI features.")
+                }
+                else -> echo("✓ Vericore is ready to use.")
             }
-            else -> echo("✓ Vericore is ready to use.")
         }
 
         if (failures > 0) {

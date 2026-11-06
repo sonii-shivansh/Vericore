@@ -17,6 +17,7 @@ import com.vericore.core.scanner.RepositoryScanner
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.default
+import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.int
 import java.io.File
@@ -33,6 +34,9 @@ class RepositoryQACommand : CliktCommand(name = "repo-qa", help = "Retrieve grou
         "--evidence-output",
         help = "Optional path for the reusable GroundedEvidence JSON artifact used by the plan command"
     )
+    private val format by option("--format", help = "Output format (human, json)")
+    private val jsonOutput by option("--json", help = "Write machine-readable JSON to stdout (alias for --format json)").flag()
+    private val output by option("--output", help = "Optional path to save JSON output")
 
     override fun run() {
         val root = File(path).canonicalFile
@@ -107,11 +111,44 @@ class RepositoryQACommand : CliktCommand(name = "repo-qa", help = "Retrieve grou
     ) {
         val result = RepositoryEvidenceRetriever().retrieve(parsedQuestion, grounded, maxResults)
         if (evidenceOutput != null) {
-            val output = File(evidenceOutput!!)
-            output.parentFile?.mkdirs()
-            output.writeText(json.encodeToString(grounded))
+            val evFile = File(evidenceOutput!!)
+            evFile.parentFile?.mkdirs()
+            evFile.writeText(json.encodeToString(grounded))
         }
-        echo(json.encodeToString(result))
+
+        val outFormat = OutputFormat.resolve(format, jsonOutput)
+        val envelope = CommandEnvelope(
+            schemaVersion = "1.0",
+            command = "repo-qa",
+            status = if (result.insufficientEvidence) CommandStatus.NO_FINDINGS else CommandStatus.SUCCESS,
+            summary = "Grounded evidence retrieval for '${parsedQuestion.question}'",
+            repository = RepositoryInfo(name = root.name, path = root.path),
+            data = result,
+            findings = result.evidence.map { item ->
+                EnvelopeFinding(
+                    level = "INFO",
+                    message = "${item.citation.detail} (relevance=${item.relevance})",
+                    ruleId = item.citation.type,
+                    path = item.citation.path?.let { repositoryRelativePath(it, root) }
+                )
+            },
+            artifacts = listOfNotNull(
+                evidenceOutput?.let { EnvelopeArtifact("grounded-evidence", it) }
+            ),
+            execution = ExecutionInfo(exitCode = 0)
+        )
+
+        if (output != null) {
+            val outFile = File(output!!)
+            outFile.parentFile?.mkdirs()
+            outFile.writeText(JsonEnvelope.encode(envelope))
+        }
+
+        if (outFormat == OutputFormat.JSON) {
+            echo(JsonEnvelope.encode(envelope))
+        } else {
+            echo(renderRepositoryQASummary(result, root, evidenceOutput))
+        }
     }
 
     private fun loadReusableGroundedEvidence(root: File, json: Json): GroundedEvidence? {
@@ -182,4 +219,46 @@ class RepositoryQACommand : CliktCommand(name = "repo-qa", help = "Retrieve grou
 
     private fun repositoryRelativePath(root: File, file: String): String =
         root.toPath().relativize(File(file).canonicalFile.toPath()).toString().replace(File.separatorChar, '/')
+}
+
+internal fun renderRepositoryQASummary(
+    result: com.vericore.core.qa.RepositoryQAResult,
+    root: File,
+    evidencePath: String? = null
+): String {
+    val sections = buildList {
+        evidencePath?.let { add(HumanCommandOutput.section("Artifact", "Grounded evidence: $it")) }
+        add(
+            HumanCommandOutput.section(
+                "Question",
+                "Query: \"${result.question.question}\"",
+                "Intent: ${result.question.intent}",
+                "Entity: ${result.question.entity ?: "none detected"}"
+            )
+        )
+        if (result.insufficientEvidence || result.evidence.isEmpty()) {
+            add(
+                HumanCommandOutput.section(
+                    "Evidence",
+                    "No relevant citations found for this question."
+                )
+            )
+        } else {
+            add(
+                HumanCommandOutput.section(
+                    "Retrieved Evidence (${result.evidence.size} citations)",
+                    *result.evidence.mapIndexed { index, item ->
+                        val pathStr = item.citation.path?.let { " [${repositoryRelativePath(it, root)}]" } ?: ""
+                        "${index + 1}. [score ${item.relevance}] ${item.citation.id}$pathStr — ${item.citation.detail}"
+                    }.toTypedArray()
+                )
+            )
+        }
+    }
+    return HumanCommandOutput.render(
+        title = "🔎 Repository QA",
+        status = if (result.insufficientEvidence) CommandStatus.NO_FINDINGS else CommandStatus.SUCCESS,
+        sections = sections,
+        nextStep = if (result.evidence.isNotEmpty()) "Run `vericore plan \"...\"` to prepare a change using this evidence." else null
+    )
 }

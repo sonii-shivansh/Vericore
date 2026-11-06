@@ -28,7 +28,9 @@ class ReviewCommand : CliktCommand(
     private val path by option("--path", help = "Repository path").default(".")
     private val base by option("--base", help = "Base Git revision; pair with --head")
     private val head by option("--head", help = "Head Git revision; pair with --base")
-    private val jsonOutput by option("--json", help = "Write machine-readable JSON to output/review.json").flag()
+    private val format by option("--format", help = "Output format (human, json)")
+    private val jsonOutput by option("--json", help = "Write machine-readable JSON to stdout (alias for --format json)").flag()
+    private val output by option("--output", help = "Optional path to save review JSON artifact")
     private val aiReview by option("--ai", help = "Add a grounded AI review using deterministic evidence and the Git diff").flag()
 
     override fun run() {
@@ -44,15 +46,58 @@ class ReviewCommand : CliktCommand(
         val result = runBlocking { PRIntelligenceAnalyzer.analyze(root.path, changeSet, config) }
         val ai = if (aiReview) runGroundedAiReview(root, config, result, base, head) else null
         val reviewOutput = ReviewOutput(result, ai)
-        val json = Json { prettyPrint = true; encodeDefaults = true }
-        val output = if (jsonOutput) root.resolve("output/review.json") else null
 
-        if (output != null) {
-            output.parentFile.mkdirs()
-            output.writeText(json.encodeToString(reviewOutput))
+        val defaultOutput = root.resolve("output/review.json")
+        defaultOutput.parentFile.mkdirs()
+        defaultOutput.writeText(JsonEnvelope.json.encodeToString(reviewOutput))
+
+        val outFormat = OutputFormat.resolve(format, jsonOutput)
+        val noChanges = result.changeSummary.filesChanged == 0
+        val status = when {
+            noChanges -> CommandStatus.NO_CHANGES
+            result.aggregateSeverity.name == "CRITICAL" || result.aggregateSeverity.name == "HIGH" -> CommandStatus.REVIEW_REQUIRED
+            else -> CommandStatus.PASS
         }
 
-        echo(renderReviewSummary(result, ai, output?.absolutePath))
+        if (outFormat == OutputFormat.JSON) {
+            val envelope = CommandEnvelope(
+                schemaVersion = "1.0",
+                command = "review",
+                status = status,
+                summary = if (noChanges) "No changes detected in working tree or revision range"
+                    else "Reviewed ${result.changeSummary.filesChanged} changed file(s): +${result.changeSummary.additions}/-${result.changeSummary.deletions}, risk ${result.aggregateSeverity}",
+                repository = RepositoryInfo(name = root.name, path = root.path),
+                data = reviewOutput,
+                findings = result.findings.map { finding ->
+                    EnvelopeFinding(
+                        level = finding.severity.name,
+                        message = finding.reason,
+                        ruleId = finding.ruleId,
+                        path = finding.paths.firstOrNull()?.let { repositoryRelativePath(it, root) }
+                    )
+                },
+                artifacts = listOf(
+                    EnvelopeArtifact("review-report", defaultOutput.path)
+                ),
+                execution = ExecutionInfo(exitCode = 0)
+            )
+            val jsonText = JsonEnvelope.encode(envelope)
+            if (output != null) {
+                val dest = File(output!!).let { if (it.isAbsolute) it else File(path).canonicalFile.resolve(it.path) }
+                dest.parentFile?.mkdirs()
+                dest.writeText(jsonText)
+            }
+            echo(jsonText)
+            return
+        }
+
+        if (output != null) {
+            val dest = File(output!!).let { if (it.isAbsolute) it else File(path).canonicalFile.resolve(it.path) }
+            dest.parentFile?.mkdirs()
+            dest.writeText(JsonEnvelope.json.encodeToString(reviewOutput))
+        }
+
+        echo(renderReviewSummary(result, ai, defaultOutput.absolutePath))
     }
 
     private fun runGroundedAiReview(
