@@ -48,6 +48,10 @@ jobs:
           bash -n scripts/install.sh
           bash scripts/test-installers.sh
 
+      - name: Verify runtime packaging script contract
+        shell: bash
+        run: bash scripts/test-runtime-packaging.sh
+
       - name: Resolve application version
         id: version
         shell: bash
