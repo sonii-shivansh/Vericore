@@ -8,7 +8,8 @@ import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import java.io.File
 
-class InitCommand : CliktCommand(name = "init", help = "Initialize Vericore for a repository") {
+class InitCommand : CliktCommand(name = "init") {
+    override fun help(context: com.github.ajalt.clikt.core.Context): String = "Initialize Vericore for a repository"
     private val path by option("--path", help = "Repository path (default: current directory)").default(".")
     private val force by option("--force", help = "Replace an existing Vericore project configuration").flag()
     private val format by option("--format", help = "Output format (human, json)")
@@ -21,10 +22,11 @@ class InitCommand : CliktCommand(name = "init", help = "Initialize Vericore for 
         require(root.isDirectory) { "Repository path is not a directory: ${root.path}" }
         require(root.resolve(".git").exists()) { "Not a Git repository: ${root.path}" }
         val configFile = root.resolve(ConfigLoader.DEFAULT_CONFIG_FILE)
-        val isJson = jsonOutput || format.equals("json", ignoreCase = true)
+        val outFormat = OutputFormat.resolve(format, jsonOutput)
+        val isJson = outFormat == OutputFormat.JSON
 
         if (configFile.exists() && !force) {
-            val result = ProductCommandResult(
+            val productResult = ProductCommandResult(
                 command = "init",
                 status = "ALREADY_INITIALIZED",
                 summary = "Vericore is already initialized for repository ${root.name}",
@@ -32,7 +34,19 @@ class InitCommand : CliktCommand(name = "init", help = "Initialize Vericore for 
                 artifacts = listOf(ProductArtifact("config", configFile.path)),
                 nextStep = "vericore doctor --path ${root.path}"
             )
-            val jsonText = productJson(result)
+            val envelope = CommandEnvelope(
+                schemaVersion = "1.0",
+                command = "init",
+                status = CommandStatus.ALREADY_INITIALIZED,
+                summary = "Vericore is already initialized for repository ${root.name}",
+                repository = RepositoryInfo(name = root.name, path = root.path),
+                data = productResult,
+                findings = emptyList(),
+                artifacts = listOf(EnvelopeArtifact("config", configFile.path)),
+                nextStep = "vericore doctor --path ${root.path}",
+                execution = ExecutionInfo(exitCode = 0)
+            )
+            val jsonText = JsonEnvelope.encode(envelope)
             if (output != null) {
                 val dest = File(output!!).let { if (it.isAbsolute) it else root.resolve(it.path) }
                 dest.parentFile?.mkdirs()
@@ -66,7 +80,7 @@ class InitCommand : CliktCommand(name = "init", help = "Initialize Vericore for 
             root.resolve(".vericore/contracts")
         ).forEach { it.mkdirs() }
 
-        val result = ProductCommandResult(
+        val productResult = ProductCommandResult(
             command = "init",
             status = "PASS",
             summary = "Vericore successfully initialized for repository ${root.name}",
@@ -77,7 +91,22 @@ class InitCommand : CliktCommand(name = "init", help = "Initialize Vericore for 
             ),
             nextStep = "vericore scan --path ${root.path}"
         )
-        val jsonText = productJson(result)
+        val envelope = CommandEnvelope(
+            schemaVersion = "1.0",
+            command = "init",
+            status = CommandStatus.PASS,
+            summary = "Vericore successfully initialized for repository ${root.name}",
+            repository = RepositoryInfo(name = root.name, path = root.path),
+            data = productResult,
+            findings = emptyList(),
+            artifacts = listOf(
+                EnvelopeArtifact("config", configFile.path),
+                EnvelopeArtifact("workspace", root.resolve(".vericore").path)
+            ),
+            nextStep = "vericore scan --path ${root.path}",
+            execution = ExecutionInfo(exitCode = 0)
+        )
+        val jsonText = JsonEnvelope.encode(envelope)
         if (output != null) {
             val dest = File(output!!).let { if (it.isAbsolute) it else root.resolve(it.path) }
             dest.parentFile?.mkdirs()
@@ -91,7 +120,7 @@ class InitCommand : CliktCommand(name = "init", help = "Initialize Vericore for 
         echo(
             HumanCommandOutput.render(
                 title = "VERICORE — PROJECT INITIALIZED",
-                status = result.status,
+                status = envelope.status,
                 sections = listOf(
                     HumanCommandOutput.section("Repository", root.name, root.path),
                     HumanCommandOutput.section(

@@ -17,9 +17,9 @@ import kotlinx.serialization.json.Json
 
 /** Builds one deterministic identity across the analysis and repository-state artifacts. */
 class RealityCommand : CliktCommand(
-    name = "reality",
-    help = "Build a deterministic engineering-reality snapshot from the current repository state"
+    name = "reality"
 ) {
+    override fun help(context: com.github.ajalt.clikt.core.Context): String = "Build a deterministic engineering-reality snapshot from the current repository state"
     private val path by argument("path", help = "Repository path").default(".")
     private val format by option("--format", help = "Output format (human, json)")
     private val jsonOutput by option("--json", help = "Write the machine-readable reality snapshot to stdout (alias for --format json)").flag()

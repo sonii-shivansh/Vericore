@@ -14,9 +14,9 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
 
 class PRIntelligenceCommand : CliktCommand(
-    name = "pr-intelligence",
-    help = "Analyze a Git change set for impact, risk, architecture, and test signals"
+    name = "pr-intelligence"
 ) {
+    override fun help(context: com.github.ajalt.clikt.core.Context): String = "Analyze a Git change set for impact, risk, architecture, and test signals"
     private val path by argument("path", help = "Local Git repository path")
     private val base by option("--base", help = "Base Git revision; pair with --head")
     private val head by option("--head", help = "Head Git revision; pair with --base")

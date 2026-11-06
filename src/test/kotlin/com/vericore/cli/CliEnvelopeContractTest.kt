@@ -50,6 +50,35 @@ class CliEnvelopeContractTest {
             assertEquals("init", parsed["command"]?.jsonPrimitive?.content)
             assertEquals("PASS", parsed["status"]?.jsonPrimitive?.content)
             assertTrue(parsed["summary"]?.jsonPrimitive?.content?.contains("initialized") == true)
+            assertNotNull(parsed["execution"])
+            assertEquals("0", parsed["execution"]?.jsonObject?.get("exitCode")?.jsonPrimitive?.content)
+            assertNotNull(parsed["data"])
+        } finally {
+            tempDir.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `scan command identifies itself as scan while analyze identifies as analyze`() {
+        val tempDir = Files.createTempDirectory("vericore-envelope-scan-analyze").toFile()
+        try {
+            val src = File(tempDir, "src/main/Example.kt")
+            src.parentFile.mkdirs()
+            src.writeText("package com.example\nclass Example\n")
+
+            val scanResult = ScanCommand().test("--path ${cliPath(tempDir)} --json --no-snapshot")
+            assertEquals(0, scanResult.statusCode)
+            val scanParsed = json.parseToJsonElement(scanResult.stdout).jsonObject
+            assertEquals("1.0", scanParsed["schemaVersion"]?.jsonPrimitive?.content)
+            assertEquals("scan", scanParsed["command"]?.jsonPrimitive?.content)
+            assertEquals("SUCCESS", scanParsed["status"]?.jsonPrimitive?.content)
+
+            val analyzeResult = ImprovedAnalyzeCommand().test("${cliPath(tempDir)} --json --no-snapshot")
+            assertEquals(0, analyzeResult.statusCode)
+            val analyzeParsed = json.parseToJsonElement(analyzeResult.stdout).jsonObject
+            assertEquals("1.0", analyzeParsed["schemaVersion"]?.jsonPrimitive?.content)
+            assertEquals("analyze", analyzeParsed["command"]?.jsonPrimitive?.content)
+            assertEquals("SUCCESS", analyzeParsed["status"]?.jsonPrimitive?.content)
         } finally {
             tempDir.deleteRecursively()
         }

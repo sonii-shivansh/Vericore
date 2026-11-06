@@ -22,9 +22,9 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 class ArchitectureContractCommand : CliktCommand(
-    name = "architecture-contract",
-    help = "Evaluate repository architecture against a deterministic contract"
+    name = "architecture-contract"
 ) {
+    override fun help(context: com.github.ajalt.clikt.core.Context): String = "Evaluate repository architecture against a deterministic contract"
     private val path by argument("path", help = "Repository path")
     private val contractPath by option("--contract", help = "Architecture contract JSON; defaults to .vericore-architecture-contract.json")
     private val format by option("--format", help = "Output format (human, json)")

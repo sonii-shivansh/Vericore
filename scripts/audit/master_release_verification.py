@@ -809,7 +809,7 @@ public class XssComponent {}
         
         # 2. Version
         r_ver = run_cmd(["--version"])
-        ver_ok = (r_ver["returncode"] == 0 and "vericore version 1.0.2" in r_ver["stdout"])
+        ver_ok = (r_ver["returncode"] == 0 and "vericore version 2.0.0" in r_ver["stdout"])
         
         # 3. Doctor Java check
         r_doc = run_cmd(["doctor"])
@@ -900,7 +900,7 @@ public class XssComponent {}
             "schemaVersion": "1.0",
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "product": "Vericore",
-            "version": "1.0.2",
+            "version": "2.0.0",
             "verdict": "CONDITIONALLY_READY",
             "metrics": {
                 "totalCommandsTested": total_cmd,
@@ -927,7 +927,7 @@ public class XssComponent {}
         readme = f"""# Vericore Independent Release Verification & Quality Audit Report
 
 **Verdict:** `{verdict_data['verdict']}`  
-**Target Version:** Vericore v1.0.2  
+**Target Version:** Vericore v2.0.0  
 **Baseline Runtime:** Java 25 LTS  
 **Audit Timestamp:** {verdict_data['timestamp']}  
 

@@ -34,7 +34,8 @@ vericore doctor
 vericore --version
 ```
 
-Need manual installation? See [Getting Started](docs/GETTING_STARTED.md).
+Need manual installation? See [Getting Started](docs/GETTING_STARTED.md).  
+Upgrading from 1.0.x? See the [2.0.0 Migration Guide](docs/MIGRATION_2.0.0.md).
 
 ## Verify an AI-assisted change
 

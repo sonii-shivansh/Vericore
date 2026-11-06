@@ -14,9 +14,9 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 class EvolutionCommand : CliktCommand(
-    name = "evolution",
-    help = "Analyze codebase evolution over time"
+    name = "evolution"
 ) {
+    override fun help(context: com.github.ajalt.clikt.core.Context): String = "Analyze codebase evolution over time"
     private val path by argument("path", help = "Repository path").default(".")
     private val months by option("--months", help = "Months back to analyze").int().default(6)
     private val interval by option("--interval", help = "Days between snapshots").int().default(30)

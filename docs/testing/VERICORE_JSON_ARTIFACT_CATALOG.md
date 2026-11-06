@@ -371,6 +371,6 @@ Every standard Vericore CLI command in JSON mode (`--format json` or `--json`) e
 ### 4.3 REST Server HTTP API (`vericore server`)
 - **Transport:** HTTP / TCP
 - **Endpoints:**
-  - `GET /health` -> `{"status":"UP","version":"1.0.2"}`
+  - `GET /health` -> `{"status":"UP","version":"2.0.0"}`
   - `GET /api/v1/context` -> Engineering context snapshot payload
 - **Protocol:** Standard HTTP with JSON payload and proper HTTP status codes (200, 400, 404, 500).

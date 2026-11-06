@@ -107,7 +107,8 @@ class VericoreConfigurationNamespaceTest {
         Files.createDirectories(legacyHome)
         Files.writeString(legacyHome.resolve("config.json"), """{"ai":{"provider":"gemini","apiKey":"legacy-key","model":"gemini-2.5-flash"}}""")
         Files.deleteIfExists(tempDir.resolve("config.json"))
-        System.clearProperty("vericore.config.home")
+        val emptyCanonical = tempDir.resolve("empty-canonical")
+        System.setProperty("vericore.config.home", emptyCanonical.toString())
         System.setProperty("codecontext.config.home", legacyHome.toString())
         assertEquals("legacy-key", requireNotNull(UserConfigStore.load()).ai.apiKey)
     }
@@ -117,7 +118,8 @@ class VericoreConfigurationNamespaceTest {
         val legacyHome = tempDir.resolve("legacy-codecontext-warning")
         Files.createDirectories(legacyHome)
         Files.writeString(legacyHome.resolve("config.json"), """{"ai":{"provider":"gemini","apiKey":"legacy-key","model":"gemini-2.5-flash"}}""")
-        System.clearProperty("vericore.config.home")
+        val emptyCanonical = tempDir.resolve("empty-canonical-warning")
+        System.setProperty("vericore.config.home", emptyCanonical.toString())
         System.setProperty("codecontext.config.home", legacyHome.toString())
         val canonicalPath = UserConfigStore.configFile().path
         val originalErr = System.err

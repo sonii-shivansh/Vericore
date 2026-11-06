@@ -7,9 +7,9 @@ import com.github.ajalt.clikt.parameters.options.option
 
 /** Product-level repository understanding command. */
 class ScanCommand : CliktCommand(
-    name = "scan",
-    help = "Understand a repository and generate engineering intelligence"
+    name = "scan"
 ) {
+    override fun help(context: com.github.ajalt.clikt.core.Context): String = "Understand a repository and generate engineering intelligence"
     private val path by option("--path", help = "Repository path (default: current directory)").default(".")
     private val noCache by option("--no-cache").flag()
     private val clearCache by option("--clear-cache").flag()
@@ -20,22 +20,17 @@ class ScanCommand : CliktCommand(
     private val output by option("--output", help = "Optional path to save JSON output")
 
     override fun run() {
-        val outFormat = OutputFormat.resolve(format, jsonOutput)
-        val args = buildList {
-            add(path)
-            if (noCache) add("--no-cache")
-            if (clearCache) add("--clear-cache")
-            if (noSnapshot) add("--no-snapshot")
-            if (verbose) add("--verbose")
-            if (outFormat == OutputFormat.JSON) {
-                add("--format")
-                add("json")
-            }
-            if (output != null) {
-                add("--output")
-                add(output!!)
-            }
-        }.toTypedArray()
-        ImprovedAnalyzeCommand().main(args)
+        runAnalysisEngine(
+            commandIdentity = "scan",
+            path = path,
+            noCache = noCache,
+            clearCache = clearCache,
+            noSnapshot = noSnapshot,
+            verbose = verbose,
+            format = format,
+            jsonOutput = jsonOutput,
+            output = output,
+            echo = { echo(it) }
+        )
     }
 }

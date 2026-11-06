@@ -11,9 +11,9 @@ import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 
 class SetupCommand : CliktCommand(
-    name = "setup",
-    help = "Set up Vericore AI credentials securely on this machine"
+    name = "setup"
 ) {
+    override fun help(context: com.github.ajalt.clikt.core.Context): String = "Set up Vericore AI credentials securely on this machine"
     private val provider by option("--provider", help = "AI provider (currently: gemini)").default("gemini")
     private val model by option("--model", help = "Gemini model to use").default(AISetup.DEFAULT_GEMINI_MODEL)
     private val force by option("--force", help = "Replace an existing saved credential").flag()

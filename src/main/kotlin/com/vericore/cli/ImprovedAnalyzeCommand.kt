@@ -22,10 +22,12 @@ import kotlinx.serialization.json.Json
 import java.io.File
 import kotlin.system.measureTimeMillis
 
-class ImprovedAnalyzeCommand : CliktCommand(
-    name = "analyze",
-    help = "Analyze a repository and generate engineering intelligence"
+class ImprovedAnalyzeCommand(
+    private val commandIdentity: String = "analyze"
+) : CliktCommand(
+    name = commandIdentity
 ) {
+    override fun help(context: com.github.ajalt.clikt.core.Context): String = "Analyze a repository and generate engineering intelligence"
     private val path by argument("path", help = "Repository path")
     private val noCache by option("--no-cache").flag()
     private val clearCache by option("--clear-cache").flag()
@@ -36,16 +38,43 @@ class ImprovedAnalyzeCommand : CliktCommand(
     private val output by option("--output", help = "Optional path to save analysis JSON output")
 
     override fun run() {
-        val outFormat = OutputFormat.resolve(format, jsonOutput)
-        val isJson = outFormat == OutputFormat.JSON
+        runAnalysisEngine(
+            commandIdentity = commandIdentity,
+            path = path,
+            noCache = noCache,
+            clearCache = clearCache,
+            noSnapshot = noSnapshot,
+            verbose = verbose,
+            format = format,
+            jsonOutput = jsonOutput,
+            output = output,
+            echo = { echo(it) }
+        )
+    }
+}
 
-        fun log(msg: String) {
-            if (isJson) {
-                if (verbose) System.err.println(msg)
-            } else {
-                echo(msg)
-            }
+internal fun runAnalysisEngine(
+    commandIdentity: String,
+    path: String,
+    noCache: Boolean,
+    clearCache: Boolean,
+    noSnapshot: Boolean,
+    verbose: Boolean,
+    format: String?,
+    jsonOutput: Boolean,
+    output: String?,
+    echo: (String) -> Unit
+) {
+    val outFormat = OutputFormat.resolve(format, jsonOutput)
+    val isJson = outFormat == OutputFormat.JSON
+
+    fun log(msg: String) {
+        if (isJson) {
+            if (verbose) System.err.println(msg)
+        } else {
+            echo(msg)
         }
+    }
 
         log("🚀 Starting Vericore analysis for: $path")
         val rootDir = File(path).canonicalFile
@@ -194,7 +223,7 @@ class ImprovedAnalyzeCommand : CliktCommand(
                 if (isJson) {
                     val envelope = CommandEnvelope(
                         schemaVersion = "1.0",
-                        command = "analyze",
+                        command = commandIdentity,
                         status = CommandStatus.SUCCESS,
                         summary = "Analyzed ${enrichedFiles.size} source files in ${elapsedMs}ms: ${highRiskCount} high/critical risk files, ${graph.graph.vertexSet().size} graph nodes, ${graph.graph.edgeSet().size} dependency edges",
                         repository = RepositoryInfo(name = rootDir.name, path = rootDir.path),
@@ -241,4 +270,3 @@ class ImprovedAnalyzeCommand : CliktCommand(
                 throw e
             }
     }
-}

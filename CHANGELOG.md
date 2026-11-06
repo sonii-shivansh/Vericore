@@ -4,16 +4,34 @@ This file records user-visible changes by release. It follows [Keep a Changelog]
 
 > Releases `0.1.0` through `0.6.0` were published under the project's former name. `0.7.0` is the first release line with Vericore as the canonical product identity.
 
-## [Unreleased]
+## [2.0.0] — 2026-11-06
+
+### Breaking Changes
+
+- **Java 25 LTS Minimum Runtime Requirement**: Upgraded official build, compilation, and runtime baseline from Java 21 to Java 25 LTS (`jvmToolchain(25)`). Enforced via pre-JVM launcher version checks and application startup checks in `Main.kt`; environments running Java 21, 22, 23, or 24 will fail closed at startup with exit code 1.
+- **Universal Command Envelope (`CommandEnvelope<T>`)**: Standardized machine-readable JSON output across CLI commands.
+- **`init --json` Repository Property Mutation**: The top-level `repository` property in `vericore init --json` changed from a string path (`"C:\\path\\to\\repo"`) to a structured object (`{"name": "repo", "path": "C:\\path\\to\\repo"}`). Domain results are now accessible under the top-level `data` field, and a standard `execution: {"exitCode": 0}` block is included.
+
+### Added
+
+- **Universal Command Envelope**: Added standardized `CommandEnvelope` model with `schemaVersion`, `command`, `status`, `summary`, `repository`, `data`, `findings`, `recommendations`, `artifacts`, `nextStep`, and `execution`.
+- **Model Context Protocol (MCP) Server**: Full JSON-RPC 2.0 stdio server (`vericore mcp`) providing 16 deterministic engineering intelligence and analysis tools to AI agent IDEs (Cursor, Claude Desktop, Antigravity).
+- **Format Validation Matrix**: Implemented unified format resolution (`OutputFormat.resolve()`) across commands, formally validating `--format human|json` and rejecting unsupported formats with exit code 2.
+- **Live Gemini AI Grounding**: Added AI codebase Q&A assistant (`vericore ask`) with dependency-graph grounding and deterministic context extraction.
 
 ### Changed
 
-- Upgrade minimum required Java runtime and official build baseline from Java 21 to Java 25 LTS.
-- Upgrade Kotlin compiler and Gradle plugin to Kotlin 2.3.0 supporting JVM target 25 bytecode generation.
+- Upgrade Kotlin compiler and serialization plugins to Kotlin 2.3.0 supporting JVM target 25 bytecode generation.
 - Upgrade Gradle wrapper to Gradle 9.7.1 supporting Java 25.
-- Align Java and Kotlin compilation targets to JVM 25 / class file major version 69.
-- Enforce runtime Java 25 requirement in CLI launcher scripts and distribution entry points with explicit, actionable failure diagnostics when launched on outdated runtimes (e.g. Java 21).
-- Update CI/CD GitHub Actions workflows, documentation, and development guides to Java 25 baseline.
+- Centralized CLI error handling in `ErrorHandler.kt` mapping exception hierarchies to deterministic exit codes (exit 2 for invalid arguments/config, exit 1 for validation failures, exit 3 for unexpected errors).
+- Updated all GitHub Actions workflows, DevContainer configurations, and documentation for Java 25.
+
+### Fixed
+
+- **DEFECT-001 (`evolution --json`)**: Enabled serialization for `CodebaseSnapshot` in `TemporalAnalyzer.kt`, resolving `SerializationException` during evolution timeline export.
+- **DEFECT-002 (`init --json`)**: Added required `execution` block to `init` envelope and integrated `OutputFormat.resolve()`.
+- **DEFECT-003 (`scan --json`)**: Corrected envelope command identifier from `"analyze"` to `"scan"`.
+- **Grounded Evidence Schema Parity**: Emitted complete, schema-compliant `GroundedEvidence` domain models satisfying all required Draft 2020-12 schema properties (`schemaVersion: 1.1`, `repositoryCommit`, `repositoryStateDigest`, `analysisSchemaVersion`, and citations).
 
 ## [1.0.2] — 2026-11-03
 

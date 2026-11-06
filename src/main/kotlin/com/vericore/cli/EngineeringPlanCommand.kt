@@ -17,9 +17,9 @@ import kotlinx.serialization.json.Json
 
 /** Generates a deterministic, repository-scoped, evidence-backed engineering plan. */
 class EngineeringPlanCommand : CliktCommand(
-    name = "plan",
-    help = "Generate an evidence-backed engineering plan for a proposed change"
+    name = "plan"
 ) {
+    override fun help(context: com.github.ajalt.clikt.core.Context): String = "Generate an evidence-backed engineering plan for a proposed change"
     private val changeSummary by argument("change-summary", help = "Short description of the proposed change")
     private val repositoryPath by option(
         "--repository",

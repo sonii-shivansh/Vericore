@@ -19,9 +19,9 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 class ArchitectureDriftCommand : CliktCommand(
-    name = "architecture-drift",
-    help = "Compare current architecture intelligence with a baseline snapshot"
+    name = "architecture-drift"
 ) {
+    override fun help(context: com.github.ajalt.clikt.core.Context): String = "Compare current architecture intelligence with a baseline snapshot"
     private val path by argument("path", help = "Repository path")
     private val baseline by option("--baseline", help = "Baseline architecture JSON file").required()
     private val format by option("--format", help = "Output format (human, json)")

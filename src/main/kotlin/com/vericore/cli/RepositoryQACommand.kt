@@ -26,7 +26,8 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import org.eclipse.jgit.api.Git
 
-class RepositoryQACommand : CliktCommand(name = "repo-qa", help = "Retrieve grounded repository evidence for a developer question") {
+class RepositoryQACommand : CliktCommand(name = "repo-qa") {
+    override fun help(context: com.github.ajalt.clikt.core.Context): String = "Retrieve grounded repository evidence for a developer question"
     private val question by argument("question", help = "Question about the repository")
     private val path by option("--path", help = "Repository path").default(".")
     private val maxResults by option("--max-results", help = "Maximum evidence items").int().default(8)

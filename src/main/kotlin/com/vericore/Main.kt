@@ -30,9 +30,12 @@ import com.vericore.cli.ServerCommand
 import com.vericore.cli.SetupCommand
 import com.vericore.cli.VerifyCommand
 import com.github.ajalt.clikt.core.subcommands
+import com.github.ajalt.clikt.core.main
 import kotlin.system.exitProcess
+import io.github.oshai.kotlinlogging.KotlinLoggingConfiguration
 
 fun main(args: Array<String>) {
+    KotlinLoggingConfiguration.logStartupMessage = false
     val javaMajor = Runtime.version().feature()
     if (javaMajor < 25) {
         System.err.println(

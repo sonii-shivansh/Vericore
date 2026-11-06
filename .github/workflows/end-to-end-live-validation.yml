@@ -89,12 +89,12 @@ jobs:
       RUN_AI: ${{ inputs.run_ai || 'false' }}
     steps:
       - name: Checkout Vericore
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
       - name: Set up Java
-        uses: actions/setup-java@v6
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78 # v6.2.0
         with:
           java-version: ${{ env.JAVA_VERSION }}
           distribution: temurin
@@ -152,7 +152,7 @@ jobs:
 
       - name: Upload complete E2E evidence
         if: always()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: vericore-production-e2e-${{ github.run_id }}
           path: |

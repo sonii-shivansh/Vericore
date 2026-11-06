@@ -36,6 +36,7 @@ class InitCommandTest {
         Json.parseToJsonElement(result.stdout)
         assertTrue(result.stdout.contains("\"status\": \"ALREADY_INITIALIZED\""))
         assertTrue(result.stdout.contains("\"nextStep\""))
+        assertTrue(result.stdout.contains("\"execution\""))
         assertTrue(!result.stdout.contains("PROJECT INITIALIZED"))
     }
 
@@ -59,6 +60,28 @@ class InitCommandTest {
         assertTrue(result.stdout.contains("\"command\": \"init\""))
         assertTrue(result.stdout.contains("\"status\": \"PASS\""))
         assertTrue(result.stdout.contains("\"nextStep\""))
+        assertTrue(result.stdout.contains("\"execution\""))
+        assertTrue(result.stdout.contains("\"exitCode\": 0"))
+    }
+
+    @Test
+    fun refusesUnsupportedOutputFormat() {
+        val root = Files.createTempDirectory("vericore-init-bad-fmt").toFile()
+        root.resolve(".git").mkdirs()
+        val error = assertFailsWith<IllegalArgumentException> {
+            InitCommand().test("--path ${cliPath(root)} --format xml")
+        }
+        assertTrue(error.message.orEmpty().contains("Unsupported output format"))
+    }
+
+    @Test
+    fun refusesConflictingOutputFormat() {
+        val root = Files.createTempDirectory("vericore-init-conflict-fmt").toFile()
+        root.resolve(".git").mkdirs()
+        val error = assertFailsWith<IllegalArgumentException> {
+            InitCommand().test("--path ${cliPath(root)} --format human --json")
+        }
+        assertTrue(error.message.orEmpty().contains("Conflicting output format options"))
     }
 
     private fun cliPath(file: java.io.File): String =

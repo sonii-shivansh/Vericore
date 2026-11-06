@@ -15,7 +15,8 @@ import java.io.File
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.encodeToString
 
-class ArchitectureCommand : CliktCommand(name = "architecture", help = "Analyze repository architecture and detect structural violations") {
+class ArchitectureCommand : CliktCommand(name = "architecture") {
+    override fun help(context: com.github.ajalt.clikt.core.Context): String = "Analyze repository architecture and detect structural violations"
     private val path by argument("path", help = "Repository path")
     private val format by option("--format", help = "Output format (human, json)")
     private val jsonOutput by option("--json", help = "Write machine-readable architecture JSON to stdout (alias for --format json)").flag()

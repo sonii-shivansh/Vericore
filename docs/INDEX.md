@@ -18,6 +18,7 @@
 | Document | Scope |
 |---|---|
 | [Getting Started](GETTING_STARTED.md) | Installation, first-run checks, analysis and prepare → change → verify |
+| [2.0.0 Migration Guide](MIGRATION_2.0.0.md) | Breaking changes and migration instructions from 1.0.x to 2.0.0 |
 | [CLI Reference](CLI.md) | Canonical user-facing command syntax, options, defaults, outputs and failure behavior |
 | [MCP](MCP.md) | Local Model Context Protocol integration and trust boundary |
 | [API](API.md) | Local REST routes, request/response shapes and path-safety rules |
