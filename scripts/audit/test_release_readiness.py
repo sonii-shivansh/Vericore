@@ -10,7 +10,10 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from jsonschema import Draft202012Validator, FormatChecker
+
 SCRIPT = Path(__file__).with_name("release-readiness.py")
+SCHEMA = SCRIPT.parents[2] / "docs" / "release-readiness.schema.json"
 REQUIRED_CHECKS = (
     "deterministic-audit",
     "windows-ci",
@@ -26,6 +29,7 @@ REQUIRED_CHECKS = (
     "github-action-audit",
     "installer-regression",
 )
+VALID_RESULTS = ("success", "failure", "cancelled", "skipped", "neutral", "abandoned")
 
 
 class ReleaseReadinessTests(unittest.TestCase):
@@ -39,7 +43,7 @@ class ReleaseReadinessTests(unittest.TestCase):
             "--output",
             str(output),
             "--version",
-            "1.0.0",
+            "2.0.0",
             "--sha",
             sha,
             "--ref",
@@ -50,6 +54,12 @@ class ReleaseReadinessTests(unittest.TestCase):
         completed = subprocess.run(command, check=False, capture_output=True, text=True)
         return completed, output
 
+    def assert_schema_valid(self, certificate: dict):
+        schema = json.loads(SCHEMA.read_text(encoding="utf-8"))
+        validator = Draft202012Validator(schema, format_checker=FormatChecker())
+        errors = sorted(validator.iter_errors(certificate), key=lambda error: list(error.path))
+        self.assertEqual(errors, [], "; ".join(error.message for error in errors))
+
     def test_all_required_checks_are_required_and_ready_when_successful(self):
         completed, output = self.run_certificate([(name, "success") for name in REQUIRED_CHECKS])
         self.assertEqual(completed.returncode, 0, completed.stderr)
@@ -57,6 +67,37 @@ class ReleaseReadinessTests(unittest.TestCase):
         self.assertTrue(certificate["overallReady"])
         self.assertEqual(set(certificate["checks"]), set(REQUIRED_CHECKS))
         self.assertEqual(certificate["candidate"]["sha"], "a" * 40)
+        self.assert_schema_valid(certificate)
+
+    def test_each_supported_result_is_recorded_and_only_success_passes(self):
+        for result in VALID_RESULTS:
+            with self.subTest(result=result):
+                checks = [
+                    (name, result if name == "platform" else "success")
+                    for name in REQUIRED_CHECKS
+                ]
+                completed, output = self.run_certificate(checks)
+                self.assertEqual(completed.returncode, 0, completed.stderr)
+                certificate = json.loads(output.read_text(encoding="utf-8"))
+                self.assertEqual(certificate["checks"]["platform"]["result"], result)
+                self.assertEqual(certificate["checks"]["platform"]["passed"], result == "success")
+                self.assertEqual(certificate["overallReady"], result == "success")
+                self.assert_schema_valid(certificate)
+
+    def test_abandoned_required_checks_generate_not_ready_certificate(self):
+        checks = [
+            (name, "abandoned" if name in {"platform", "installer-regression"} else "success")
+            for name in REQUIRED_CHECKS
+        ]
+        completed, output = self.run_certificate(checks)
+        self.assertEqual(completed.returncode, 0, completed.stderr)
+        certificate = json.loads(output.read_text(encoding="utf-8"))
+        self.assertFalse(certificate["overallReady"])
+        for name in ("platform", "installer-regression"):
+            self.assertEqual(certificate["checks"][name]["result"], "abandoned")
+            self.assertTrue(certificate["checks"][name]["required"])
+            self.assertFalse(certificate["checks"][name]["passed"])
+        self.assert_schema_valid(certificate)
 
     def test_missing_gate_fails_instead_of_certifying_partial_checks(self):
         completed, _ = self.run_certificate([("deterministic-audit", "success")])
@@ -80,6 +121,15 @@ class ReleaseReadinessTests(unittest.TestCase):
         certificate = json.loads(output.read_text(encoding="utf-8"))
         self.assertFalse(certificate["overallReady"])
         self.assertFalse(certificate["checks"]["installer-regression"]["passed"])
+        self.assert_schema_valid(certificate)
+
+    def test_unknown_result_is_rejected_without_writing_certificate(self):
+        checks = [(name, "success") for name in REQUIRED_CHECKS]
+        checks[-1] = ("installer-regression", "timed_out_custom")
+        completed, output = self.run_certificate(checks)
+        self.assertNotEqual(completed.returncode, 0)
+        self.assertIn("unsupported check result(s)", completed.stderr)
+        self.assertFalse(output.exists())
 
     def test_non_full_commit_sha_is_rejected(self):
         completed, _ = self.run_certificate([(name, "success") for name in REQUIRED_CHECKS], sha="main")
