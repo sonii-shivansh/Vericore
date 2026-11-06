@@ -83,6 +83,7 @@ vericore-contract*.json
 vericore-receipt*.json
 
 # Kotlin
+.kotlin/
 *.class
 *.jar
 !gradle-wrapper.jar

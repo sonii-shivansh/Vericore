@@ -28,7 +28,7 @@ jobs:
       version: ${{ steps.version.outputs.version }}
     steps:
       - name: Checkout
-        uses: actions/checkout@3d3c42ed6d17772635956322a3cf5fcf309b634b # v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up JDK 25
         uses: actions/setup-java@77dd5b2ce2a8fb3a5661d9a2ff1b0bb7a7f4bbef # v6.2.0
@@ -91,7 +91,7 @@ jobs:
     timeout-minutes: 25
     steps:
       - name: Checkout
-        uses: actions/checkout@3d3c42ed6d17772635956322a3cf5fcf309b634b # v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up JDK 25
         uses: actions/setup-java@77dd5b2ce2a8fb3a5661d9a2ff1b0bb7a7f4bbef # v6.2.0
@@ -158,28 +158,28 @@ jobs:
     steps:
       # Download only the four release packages; diagnostic artifacts are intentionally excluded.
       - name: Download Linux release artifact
-        uses: actions/download-artifact@9000827ccb7e6f662ffb760a0058b5eef9231464 # v8.0.2
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: vericore-linux-x64
           path: release-assets
           merge-multiple: true
 
       - name: Download Windows release artifact
-        uses: actions/download-artifact@9000827ccb7e6f662ffb760a0058b5eef9231464 # v8.0.2
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: vericore-windows-x64
           path: release-assets
           merge-multiple: true
 
       - name: Download macOS x64 release artifact
-        uses: actions/download-artifact@9000827ccb7e6f662ffb760a0058b5eef9231464 # v8.0.2
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: vericore-macos-x64
           path: release-assets
           merge-multiple: true
 
       - name: Download macOS arm64 release artifact
-        uses: actions/download-artifact@9000827ccb7e6f662ffb760a0058b5eef9231464 # v8.0.2
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: vericore-macos-arm64
           path: release-assets

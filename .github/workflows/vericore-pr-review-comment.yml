@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Download review artifact
-        uses: actions/download-artifact@9000827ccb7e6f662ffb760a0058b5eef9231464 # v8.0.2
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: vericore-pr-review
           path: ${{ runner.temp }}/vericore-pr-review
