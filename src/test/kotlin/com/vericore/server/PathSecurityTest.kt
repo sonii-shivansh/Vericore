@@ -2,7 +2,6 @@ package com.vericore.server
 
 import java.io.File
 import java.nio.file.Files
-import kotlin.io.path.createTempDirectory
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import org.junit.jupiter.api.Assertions.assertNotNull
@@ -27,8 +26,8 @@ class PathSecurityTest {
     }
 
     @Test
-    fun `accepts a real directory inside the temporary workspace`() {
-        val directory = createTempDirectory("codecontext-safe").toFile()
+    fun `accepts a real directory inside the configured working directory`() {
+        val directory = Files.createTempDirectory(File(System.getProperty("user.dir")).toPath(), "vericore-safe-").toFile()
         try {
             assertNotNull(sanitizePath(directory.absolutePath))
         } finally {
@@ -37,8 +36,28 @@ class PathSecurityTest {
     }
 
     @Test
+    fun `default roots do not expose the JVM temporary directory`() {
+        // An explicit VERICORE_ALLOWED_PATHS configuration may intentionally grant
+        // access to a temporary workspace, so only assert the default policy here.
+        assumeTrue(
+            System.getenv("VERICORE_ALLOWED_PATHS") == null &&
+                System.getenv("CODECONTEXT_ALLOWED_PATHS") == null,
+            "An explicit allowed-root configuration is active"
+        )
+        val workingRoot = File(System.getProperty("user.dir")).canonicalFile.toPath()
+        val tempRoot = File(System.getProperty("java.io.tmpdir")).canonicalFile.toPath()
+        assumeTrue(!tempRoot.startsWith(workingRoot), "The JVM temp directory is already inside the working root")
+        val externalDirectory = Files.createTempDirectory(tempRoot, "vericore-untrusted-temp-").toFile()
+        try {
+            assertNull(sanitizePath(externalDirectory.absolutePath))
+        } finally {
+            externalDirectory.deleteRecursively()
+        }
+    }
+
+    @Test
     fun `organization repository paths are passed downstream in canonical form`() {
-        val workspace = createTempDirectory("vericore-org-paths").toFile()
+        val workspace = Files.createTempDirectory(File(System.getProperty("user.dir")).toPath(), "vericore-org-paths-").toFile()
         try {
             val target = File(workspace, "target").apply { mkdirs() }
             val alias = File(workspace, "alias")
