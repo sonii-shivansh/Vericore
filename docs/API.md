@@ -166,7 +166,7 @@ VERICORE_ALLOWED_PATHS
 
 The legacy `CODECONTEXT_ALLOWED_PATHS` variable remains supported only as a migration path. Use the canonical `VERICORE_ALLOWED_PATHS` name for new deployments.
 
-Keep the allowed-root set as narrow as practical.
+When no allowed-root environment variable is supplied, Vericore permits only the server process's current working directory and its descendants. The JVM temporary directory is **not** included by default. To analyze a repository elsewhere, set `VERICORE_ALLOWED_PATHS` explicitly to the intended root. Keep the allowed-root set as narrow as practical.
 
 ## Rate limiting
 
