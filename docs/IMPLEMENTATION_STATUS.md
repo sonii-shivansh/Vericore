@@ -80,7 +80,7 @@ GitHub Actions is the authoritative automated execution environment for release 
 
 ## Current release line
 
-The latest confirmed published release is `v1.0.1`, published on 2026-10-20. Changes on an open pull request remain unreleased until the release tag and assets exist. Consult the [GitHub Releases page](https://github.com/sonii-shivansh/Vericore/releases) for subsequent publication records. Source version strings alone are not proof that an artifact has been published. A new release requires a successful machine-readable readiness certificate and official release workflow for the exact candidate SHA.
+The current published release is `v2.0.0`, published from tag `v2.0.0` (commit `da3514f90b9053d19b1a002872460a586e459a75`) on 2026-11-06 UTC (2026-11-07 IST). Historical release baselines include `v1.0.1` (published 2026-10-20) and `v1.0.2`. Changes on an open pull request or branch remain unreleased until the release tag and verified assets exist. Consult the [GitHub Releases page](https://github.com/sonii-shivansh/Vericore/releases) for subsequent publication records. Source version strings alone are not proof that an artifact has been published. A new release requires a successful machine-readable readiness certificate and official release workflow for the exact candidate SHA.
 
 ## Current limitations
 

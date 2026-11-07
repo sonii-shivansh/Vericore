@@ -1,6 +1,6 @@
 # CLI Reference
 
-> Complete reference for the Vericore command-line interface. Vericore v1.0.1 is the latest published release confirmed on 2026-10-20; this branch may contain unreleased changes; use the tagged release and its changelog when verifying behavior of a packaged binary.
+> Complete reference for the Vericore command-line interface. Vericore v2.0.0 is the current published release; this branch may contain unreleased changes; use the tagged release and its changelog when verifying behavior of a packaged binary.
 
 ## Global syntax
 
@@ -541,6 +541,12 @@ vericore verify --path . --plan output/engineering-plan.json --contract output/a
 | `--contract-only` | off | Validate contract identity, prepared `HEAD`, prepare-time baseline integrity and unplanned input drift, and mutation scope without rebuilding the full analysis graph. Legacy contracts without a baseline fail closed and must be prepared again. Metrics needing current-candidate evidence remain `NOT_EVALUATED` in this mode and keep the result at `REVIEW_REQUIRED`; use full verification to evaluate them. |
 
 Verification compares the current candidate manifest with the prepare-time baseline. Changes to explicitly planned paths are allowed; unplanned additions, edits, and deletions fail closed, including ignored/untracked inputs. Planned paths are exact file/path identities: planning a directory does not silently authorize all descendants. Verification executes the persisted build/test commands using the native shell and wrapper conventions for the current platform. On Windows, Maven/Gradle wrapper commands use `mvnw.cmd`/`gradlew.bat` and `cmd` directory syntax; on Unix-like systems they use the executable wrapper form. Verification fails when the contract is missing, tampered, stale, cross-repository, inconsistent with the plan, lacks a valid prepare-time baseline, or when changes fall outside the prepared boundary. `PASS` and `REVIEW_REQUIRED` are not substitutes for tests or human review.
+
+### Verdict semantics and process exit codes
+
+- **`PASS` (exit code `0`)**: All planned boundaries, candidate stability checks, verification commands, and evaluated criteria passed without critical safety findings. Informational notices or diagnostics may still be present. A `PASS` outcome proves only that the executed checks succeeded against the candidate state; it does not guarantee complete semantic correctness.
+- **`REVIEW_REQUIRED` (exit code `0`)**: Conditions were detected that require explicit human review and policy-authorized risk acceptance (such as deleted files, `CRITICAL` PR risk signals, or specification criteria evaluated as `INCONCLUSIVE` or `NOT_EVALUATED`). The process exits with code `0` to permit receipt generation and downstream summary reporting, but the change remains unapproved for merge until human review is completed. A green process exit on `REVIEW_REQUIRED` does **not** constitute unconditional verification approval.
+- **`FAIL` (nonzero exit code)**: A mandatory safety boundary failed (such as unexpected paths touched outside the plan, contract tampering, stale Git HEAD, baseline candidate drift, failed verification command, or failed specification criterion). A `FAIL` verdict represents an inviolable safety barrier that cannot be overridden.
 
 ---
 

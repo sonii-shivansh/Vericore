@@ -4,9 +4,8 @@
 
 | Version | Supported |
 | --- | --- |
-| `0.8.x` | Yes — current Vericore release line |
-| `0.7.x` | Limited; upgrade to Vericore `0.8.2` recommended |
-| `0.6.x` and older | No |
+| `2.0.x` | Yes — current supported release line |
+| Older release lines (`1.0.x`, `0.x`) | No — unsupported for ongoing security maintenance unless explicitly authorized; upgrade to `2.0.0` or newer |
 
 ## Reporting a vulnerability
 
