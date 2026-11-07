@@ -229,7 +229,7 @@ fun sanitizePath(inputPath: String): String? {
         if (!Files.isDirectory(candidate) || !Files.isReadable(candidate)) return null
         val configured = System.getenv("VERICORE_ALLOWED_PATHS") ?: System.getenv("CODECONTEXT_ALLOWED_PATHS")
         val rootInputs = configured?.split(File.pathSeparator)?.filter { it.isNotBlank() }
-            ?: listOf(System.getProperty("user.dir"), System.getProperty("java.io.tmpdir"))
+            ?: listOf(System.getProperty("user.dir"))
         val roots = resolveSafeAllowedRoots(rootInputs)
         if (roots.any { root -> candidate == root || candidate.startsWith(root) }) candidate.toString() else null
     } catch (_: Exception) { null }
