@@ -28,7 +28,8 @@ This matrix separates implemented interfaces from platforms and behaviors exerci
 ## Runtime environment
 
 - **Minimum supported runtime:** Java 25 LTS or newer. Older JVM runtimes (such as Java 21) fail at startup with an explicit version requirement error.
-- **Official build baseline:** Java 25 LTS, Gradle 9.7.1+, Kotlin 2.3.0+.
+- **Checked-in build toolchain:** Java 25 LTS, Gradle 9.7.0 wrapper (`gradle/wrapper/gradle-wrapper.properties`), Kotlin 2.4.21 (`build.gradle.kts`).
+- **Build toolchain compatibility:** Validated against the checked-in Gradle 9.7.0 wrapper and Kotlin 2.4.21. Other Gradle or Kotlin versions require separate validation, approved change issues, and documentation synchronization.
 - **Bytecode target:** JVM 25 (class file major version 69).
 
 ## Security and verification boundaries

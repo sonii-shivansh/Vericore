@@ -17,12 +17,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: sonii-shivansh/Vericore@v1.0.1
+      - uses: sonii-shivansh/Vericore@v2.0.0
         with:
           command: analyze
 ~~~
 
-The examples target `v1.0.1`. Use that tag only after it appears on the [GitHub Releases page](https://github.com/sonii-shivansh/Vericore/releases); until publication, use the latest available published tag. For stricter supply-chain controls, pin the action to a reviewed immutable commit SHA.
+The examples target `v2.0.0`, which is the published release available on the [GitHub Releases page](https://github.com/sonii-shivansh/Vericore/releases). For stricter supply-chain controls and reproducible workflows, pin the action to a reviewed immutable commit SHA.
 
 ## PR review automation
 
@@ -66,7 +66,7 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - uses: sonii-shivansh/Vericore@v1.0.1
+      - uses: sonii-shivansh/Vericore@v2.0.0
         with:
           command: pr-intelligence
           args: --base ${{ github.event.pull_request.base.sha }} --head ${{ github.event.pull_request.head.sha }} --json
@@ -85,7 +85,7 @@ The reusable Action produces `output/pr-intelligence.json`. A separate trusted w
 Additional command arguments can be supplied with args:
 
 ~~~yaml
-- uses: sonii-shivansh/Vericore@v1.0.1
+- uses: sonii-shivansh/Vericore@v2.0.0
   with:
     command: verify
     args: --contract-only
@@ -97,6 +97,11 @@ When `command: verify` runs, the action writes a concise GitHub Actions step sum
 
 If the JSON report or Python 3 is unavailable, the action emits a warning and preserves the original Vericore exit status. A caller-supplied `--output` path is respected.
 
+The step exit status reflects the underlying `vericore verify` command:
+- `PASS`: exits `0`.
+- `REVIEW_REQUIRED`: exits `0` (allowing downstream summary generation and pull-request reporting to proceed). A green process exit does **not** prove unconditional verification approval; project policy mandates explicit maintainer review and risk acceptance before merging.
+- `FAIL`: exits nonzero, failing the workflow step.
+
 This behavior is present in the source branch. Consumers receive it only from the published action tag they choose.
 
 For `command: prepare`, the action passes `change-summary` as the required summary and `path` as the repository. Optional `agent-provider`, `agent-id`, `agent-session-id`, and `agent-event-id` inputs are forwarded as opaque correlation metadata. When preparation runs in GitHub Actions, Vericore records the trusted source as `github-action`; the source is not an input and cannot be supplied by the caller. IDs must not contain prompts, source code, credentials, or private model reasoning. Supplying an ID without `agent-provider` fails closed. The installed Vericore version must support Agent Context v1 for these options to work.
@@ -107,7 +112,7 @@ For `command: prepare`, the action passes `change-summary` as the required summa
 |---|---|---|
 | command | analyze | Vericore command to execute: analyze, prepare, verify, pr-intelligence, architecture-contract |
 | path | . | Repository path |
-| version | latest | Published release tag, such as v1.0.1 |
+| version | latest | Published release tag, such as v2.0.0 |
 | args | empty | Additional command arguments |
 | change-summary | empty | Required for prepare; summary of the planned change |
 | agent-provider | empty | Optional provider slug for prepare |

@@ -45,7 +45,7 @@ This writes `.mcp.json`:
 
 The generated configuration uses the `vericore` executable from `PATH`, so it remains portable across machines and contains no API keys. Existing `.mcp.json` files are protected from accidental replacement; use `--force` only when intentionally regenerating the file.
 
-Claude Code supports project-scoped `.mcp.json` configurations, making this a convenient checked-in project integration. citeturn1search2 Other MCP clients may use their own configuration locations; the printed JSON can be copied into those clients.
+Claude Code supports project-scoped `.mcp.json` configurations, making this a convenient checked-in project integration. Other MCP clients may use their own configuration locations; the printed JSON can be copied into those clients.
 
 For the complete CLI command contract, see [CLI Reference](CLI.md).
 

@@ -10,11 +10,11 @@ This document is the version-controlled source of truth for the GitHub repositor
 - **Visibility:** Public
 - **Homepage:** https://sonii-shivansh.github.io/Vericore-Website/
 - **Canonical icon:** docs/images/vericore-icon.svg
-- **Current published release:** v0.9.0
+- **Current published release:** v2.0.0
 
 The canonical icon is the project icon used by the website. Do not create a second logo variant unless branding is intentionally changed.
 
-The repository completed Phase 0 foundation closeout and published `v0.9.0` from tag `v0.9.0` on 2026-10-10. `main` now contains post-release follow-up work; those commits are not part of the published artifact and require their own exact-SHA certification before a patch release.
+The repository published release `v2.0.0` from tag `v2.0.0` (commit `da3514f90b9053d19b1a002872460a586e459a75`) on 2026-11-06 UTC (2026-11-07 IST). Historical release baselines include `v0.9.0` and `v1.0.1`. `main` now contains post-release follow-up work; those commits are not part of the published artifact and require their own exact-SHA certification before a patch release.
 
 ## Repository-file controls
 
@@ -76,8 +76,8 @@ Do not require CodeQL yet. It should become merge-blocking only after its config
 ## Releases
 
 - Do not rewrite published release tags or artifacts.
-- v0.9.0 is the current published release; preserve its tag and assets as historical artifacts.
-- `main` can contain post-v0.9.0 fixes that are not included in the published binary. Run the required release audit on the exact candidate SHA before publishing a new version.
+- `v2.0.0` is the current published release; preserve prior release tags and assets as historical artifacts.
+- `main` can contain post-v2.0.0 fixes that are not included in the published binary. Run the required release audit on the exact candidate SHA before publishing a new version.
 - Future releases should originate from the release workflow after normal verification gates pass.
 - Release artifacts should remain reproducible and accompanied by checksums where the release workflow provides them.
 
