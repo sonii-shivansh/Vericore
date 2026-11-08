@@ -73,7 +73,7 @@ result = next(r["result"] for r in prepare if r.get("id")==2)
 assert result["isError"] is False, result
 prepared = json.loads(next(x["text"] for x in result["content"]))
 assert prepared["contract"]["fingerprint"]
-assert prepared["contract"]["schemaVersion"] == "3.1", prepared["contract"]
+assert prepared["contract"]["schemaVersion"] == "3.2", prepared["contract"]
 assert prepared["contract"]["agentContext"] == {
     "schemaVersion":"1.0","provider":"cursor","agentId":"agent-e2e-1",
     "sessionId":"session-e2e-1","eventId":"event-e2e-1","source":"mcp"
@@ -174,7 +174,7 @@ cli_prepare = subprocess.run(
 )
 assert cli_prepare.returncode == 0, cli_prepare.stdout + chr(10) + cli_prepare.stderr
 cli_contract = json.loads((root/"output/agent-change-contract.json").read_text())
-assert cli_contract["schemaVersion"] == "3.1", cli_contract
+assert cli_contract["schemaVersion"] == "3.2", cli_contract
 expected_cli_source = "github-action" if os.environ.get("GITHUB_ACTIONS") == "true" else "cli"
 assert cli_contract["agentContext"] == {
     "schemaVersion":"1.0","provider":"codex","agentId":"cli-agent-1",

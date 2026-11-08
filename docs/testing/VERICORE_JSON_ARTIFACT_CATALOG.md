@@ -317,14 +317,14 @@ Every standard Vericore CLI command in JSON mode (`--format json` or `--json`) e
 - **Producing Command:** `prepare`
 - **Default Location:** `<repository-root>/output/agent-change-contract.json`
 - **Explicit Option:** `--contract-output <file>`
-- **Schema Version:** `"3.0"`
+- **Schema Version:** `"3.2"` *(unreleased; `"3.0"`/`"3.1"` in released v2.0.0)*
 - **Required Fields:**
-  - `schemaVersion`: `"3.0"`
+  - `schemaVersion`: `"3.2"`
   - `repository`: Repository root path
   - `preparedHead`: Git commit SHA at preparation time
   - `plannedPaths`: Exact list of authorized modification paths
   - `baselineManifest`: Full file hash manifest of candidate repository state at prepare time
-  - `fingerprint`: HMAC/SHA-256 tamper-proof contract fingerprint
+  - `fingerprint`: SHA-256 integrity contract fingerprint (integrity check, not identity or signature)
 - **Downstream Consumers:** `verify` (enforces strict candidate baseline check and rejects out-of-scope modifications)
 
 ---

@@ -195,4 +195,4 @@ Vericore 2.0.0 enforces centralized error mapping via `ErrorHandler.kt`:
 
 - **Application Release Version**: `2.0.0` (Semantic Versioning for the Vericore binary and distribution).
 - **JSON Envelope Contract Version**: `"1.0"` (The version of the `CommandEnvelope<T>` envelope specification defined in `docs/CLI_OUTPUT_CONTRACTS.md`).
-- **Domain Schema Versions**: Individual domain artifacts retain their respective schema specification versions (e.g., `grounded-evidence` is `1.1`, `agent-change-contract` is `3.1`, `analysis-snapshot` is `1.0`).
+- **Domain Schema Versions**: Individual domain artifacts retain their respective schema specification versions (e.g., `grounded-evidence` is `1.1`, `agent-change-contract` is `3.1` in released v2.0.0 / `3.2` unreleased, `analysis-snapshot` is `1.0`).

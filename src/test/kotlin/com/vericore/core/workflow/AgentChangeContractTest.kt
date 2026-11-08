@@ -128,7 +128,7 @@ class AgentChangeContractTest {
                 baseline
             )
 
-            assertEquals("3.0", prepared.schemaVersion)
+            assertEquals("3.2", prepared.schemaVersion)
             assertEquals(prepared.fingerprint, AgentChangeContract.fingerprintFor(prepared))
             assertTrue(baseline.isValid())
 
@@ -169,12 +169,49 @@ class AgentChangeContractTest {
             assertEquals("event-123", context.eventId)
             val base = AgentChangeContract.fromPlan(plan("src/App.kt", root.toFile().canonicalPath), root.toFile().canonicalPath, "prepared-head", baseline)
             val withContext = AgentChangeContract.fromPlan(plan("src/App.kt", root.toFile().canonicalPath), root.toFile().canonicalPath, "prepared-head", baseline, context)
-            assertEquals("3.0", base.schemaVersion)
-            assertEquals("3.1", withContext.schemaVersion)
+            assertEquals("3.2", base.schemaVersion)
+            assertEquals("3.2", withContext.schemaVersion)
             assertEquals(context, withContext.agentContext)
             assertEquals(withContext.fingerprint, AgentChangeContract.fingerprintFor(withContext))
             assertNotEquals(base.fingerprint, withContext.fingerprint)
             assertNotEquals(withContext.fingerprint, AgentChangeContract.fingerprintFor(withContext.copy(agentContext = context.copy(sessionId = "different-session"))))
+        } finally {
+            root.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `legacy schema versions produce stable historical fingerprints with sorted commands`() {
+        val root = java.nio.file.Files.createTempDirectory("legacy-contract")
+        try {
+            val baseline = CandidateStateSnapshotter.captureManifest(root.toFile())
+            val planWithUnsortedCommands = plan("src/App.kt", root.toFile().canonicalPath).copy(
+                verificationCommands = listOf("mvn test", "mvn clean")
+            )
+            val legacy30 = AgentChangeContract.fromPlan(
+                planWithUnsortedCommands,
+                root.toFile().canonicalPath,
+                "prepared-head",
+                baseline,
+                schemaVersionOverride = "3.0"
+            )
+            assertEquals("3.0", legacy30.schemaVersion)
+            assertEquals(listOf("mvn clean", "mvn test"), legacy30.verificationCommands)
+            assertEquals(legacy30.fingerprint, AgentChangeContract.fingerprintFor(legacy30))
+
+            val context = AgentContext.create("cursor", "user-1", "session-1", "event-1", "cli")
+            val legacy31 = AgentChangeContract.fromPlan(
+                planWithUnsortedCommands,
+                root.toFile().canonicalPath,
+                "prepared-head",
+                baseline,
+                context,
+                schemaVersionOverride = "3.1"
+            )
+            assertEquals("3.1", legacy31.schemaVersion)
+            assertEquals(listOf("mvn clean", "mvn test"), legacy31.verificationCommands)
+            assertEquals(legacy31.fingerprint, AgentChangeContract.fingerprintFor(legacy31))
+            assertNotEquals(legacy30.fingerprint, legacy31.fingerprint)
         } finally {
             root.toFile().deleteRecursively()
         }

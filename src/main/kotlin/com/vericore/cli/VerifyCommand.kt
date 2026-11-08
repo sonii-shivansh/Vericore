@@ -124,7 +124,12 @@ class VerifyCommand : CliktCommand(name = "verify") {
             ?.let { CandidateStateSnapshotter.unplannedDrift(it, currentManifest, contract.plannedPaths) }
             .orEmpty()
         val reasons = buildList {
-            val expectedContractFingerprint = AgentChangeContract.fingerprintFor(contract)
+            if (contract.schemaVersion !in AgentChangeContract.SUPPORTED_SCHEMA_VERSIONS) {
+                add("The persisted contract schema version '${contract.schemaVersion}' is unsupported.")
+            } else if (contract.schemaVersion < AgentChangeContract.CURRENT_SCHEMA_VERSION) {
+                add("Contract schema version '${contract.schemaVersion}' uses legacy command-ordering semantics; run prepare again to create an order-preserved contract.")
+            }
+            val expectedContractFingerprint = runCatching { AgentChangeContract.fingerprintFor(contract) }.getOrNull().orEmpty()
             if (contract.fingerprint != expectedContractFingerprint) add("The persisted agent change contract fingerprint is invalid or tampered.")
             if (contract.baselineManifest == null) {
                 add("This contract has no prepare-time repository baseline; run prepare again with a baseline-capable Vericore version.")
@@ -136,7 +141,10 @@ class VerifyCommand : CliktCommand(name = "verify") {
             if (contract.repository != root.path) add("The contract belongs to a different repository: ${contract.repository}")
             if (plan.contractFingerprint != contract.fingerprint) add("The engineering plan is not bound to the persisted contract fingerprint.")
             val expectedPlanFingerprint = try {
-                AgentChangeContract.fromPlan(plan, root.path, contract.preparedHead, contract.baselineManifest, contract.agentContext).fingerprint
+                AgentChangeContract.fromPlan(
+                    plan, root.path, contract.preparedHead, contract.baselineManifest, contract.agentContext,
+                    schemaVersionOverride = contract.schemaVersion
+                ).fingerprint
             } catch (error: IllegalArgumentException) {
                 add("The supplied plan contains an invalid structured specification: ${error.message ?: "validation failed"}")
                 ""

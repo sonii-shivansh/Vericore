@@ -42,10 +42,14 @@ class VerificationCommandOrderRegressionTest {
             assertTrue(plan.verificationCommands[0].contains("clean test"))
             assertTrue(plan.verificationCommands[1].contains("build"))
 
-            val contract = AgentChangeContract.fromPlan(plan, repo.path, "test-head")
+            val contract = AgentChangeContract.fromPlan(
+                plan = plan,
+                repositoryPath = repo.path,
+                preparedHead = "test-head",
+                baselineManifest = CandidateStateSnapshotter.captureManifest(repo)
+            )
 
-            // REGRESSION ASSERTION: Contract must preserve the planner's intended execution order.
-            // Under the sorting defect, commands are sorted alphabetically, putting 'build' before 'clean test'.
+            assertEquals("3.2", contract.schemaVersion, "New prepared contracts must use schema version 3.2")
             assertEquals(
                 plan.verificationCommands,
                 contract.verificationCommands,
@@ -76,10 +80,14 @@ class VerificationCommandOrderRegressionTest {
             assertTrue(plan.verificationCommands[0].contains("-B test"))
             assertTrue(plan.verificationCommands[1].contains("-B package"))
 
-            val contract = AgentChangeContract.fromPlan(plan, repo.path, "test-head")
+            val contract = AgentChangeContract.fromPlan(
+                plan = plan,
+                repositoryPath = repo.path,
+                preparedHead = "test-head",
+                baselineManifest = CandidateStateSnapshotter.captureManifest(repo)
+            )
 
-            // REGRESSION ASSERTION: Contract must preserve the planner's intended execution order.
-            // Under the sorting defect, '-B package -DskipTests' sorts before '-B test'.
+            assertEquals("3.2", contract.schemaVersion, "New prepared contracts must use schema version 3.2")
             assertEquals(
                 plan.verificationCommands,
                 contract.verificationCommands,
@@ -92,7 +100,7 @@ class VerificationCommandOrderRegressionTest {
 
     @Test
     fun `failing test command bound to verification-command-001 correctly attributes failure`() = runBlocking {
-        val repo = createGitFixture(failOnTest = true)
+        val repo = createGitFixture(failOnExactArg = "-B test")
         try {
             val plannedPath = "src/main/java/example/Target.java"
             val target = File(repo, plannedPath)
@@ -114,6 +122,8 @@ class VerificationCommandOrderRegressionTest {
                 specification = specification
             )
 
+            assertEquals("3.2", prep.contract.schemaVersion)
+
             // Make the planned mutation.
             target.writeText("package example;\nclass Target { String value() { return \"updated\"; } }\n")
 
@@ -122,16 +132,21 @@ class VerificationCommandOrderRegressionTest {
             // Verify mock wrapper execution log in the generated output path.
             val executionLog = File(repo, "output/verification-executed.log")
             assertTrue(executionLog.isFile, "Verification commands should have written an execution log")
-            val executedLines = executionLog.readLines()
+            val executedLines = executionLog.readLines().map(String::trim)
             assertEquals(2, executedLines.size, "Both verification commands must be executed")
+            assertEquals("-B test", executedLines[0], "First executed command must be the test command")
+            assertEquals("-B package -DskipTests", executedLines[1], "Second executed command must be the package command")
+
+            // Assert exact command outcomes: package succeeded, test failed.
+            val packageResult = result.verification.commands.single { it.command.contains("-B package") }
+            val testResult = result.verification.commands.single { it.command.contains("-B test") }
+            assertEquals(0, packageResult.exitCode, "Package command must exit 0")
+            assertNotEquals(0, testResult.exitCode, "Test command must exit non-zero")
 
             // The overall status must FAIL because the test command exited non-zero.
             assertEquals(SafetyStatus.FAIL, result.status, "Overall verification status must be FAIL when a command fails")
 
-            // REGRESSION ASSERTION: The criterion bound to verification-command-001 (planned test command)
-            // must report FAIL because the test command failed.
-            // Under the sorting defect, verification-command-001 is transposed to evaluate the succeeding
-            // package command, causing this criterion to falsely report PASS!
+            // Criterion bound to verification-command-001 must FAIL because the planned test command failed.
             val criterion = result.specificationEvaluation?.criteria?.single { it.id == "required-evidence-001" }
             assertEquals(
                 CriterionEvaluationStatus.FAIL,
@@ -145,7 +160,7 @@ class VerificationCommandOrderRegressionTest {
 
     @Test
     fun `passing control - verification passes when all commands and criteria succeed`() = runBlocking {
-        val repo = createGitFixture(failOnTest = false)
+        val repo = createGitFixture(failOnExactArg = null)
         try {
             val plannedPath = "src/main/java/example/Target.java"
             val target = File(repo, plannedPath)
@@ -167,6 +182,8 @@ class VerificationCommandOrderRegressionTest {
                 specification = specification
             )
 
+            assertEquals("3.2", prep.contract.schemaVersion)
+
             // Make the planned mutation.
             target.writeText("package example;\nclass Target { String value() { return \"updated\"; } }\n")
 
@@ -178,6 +195,14 @@ class VerificationCommandOrderRegressionTest {
             assertEquals(CriterionEvaluationStatus.PASS, result.specificationEvaluation?.status)
             val criterion = result.specificationEvaluation?.criteria?.single { it.id == "required-evidence-001" }
             assertEquals(CriterionEvaluationStatus.PASS, criterion?.status)
+
+            // Verify actual execution-log order.
+            val executionLog = File(repo, "output/verification-executed.log")
+            assertTrue(executionLog.isFile, "Execution log must be generated")
+            val executedLines = executionLog.readLines().map(String::trim)
+            assertEquals(2, executedLines.size, "Both commands must be logged in execution log")
+            assertEquals("-B test", executedLines[0], "First executed command in log must be the planned test command")
+            assertEquals("-B package -DskipTests", executedLines[1], "Second executed command in log must be the planned package command")
         } finally {
             repo.deleteRecursively()
         }
@@ -204,11 +229,16 @@ class VerificationCommandOrderRegressionTest {
                 uncertainties = emptyList()
             )
 
-            val contract = AgentChangeContract.fromPlan(plan, repo.canonicalPath, "head")
-            val reorderedContract = contract.copy(verificationCommands = listOf(cmdB, cmdA))
+            val contract = AgentChangeContract.fromPlan(
+                plan = plan,
+                repositoryPath = repo.canonicalPath,
+                preparedHead = "head",
+                baselineManifest = CandidateStateSnapshotter.captureManifest(repo)
+            )
+            val reorderedCommands = contract.verificationCommands.reversed()
+            assertNotEquals(contract.verificationCommands, reorderedCommands, "Reversed command list must differ from stored order")
 
-            // REGRESSION ASSERTION: Reordering verification commands must produce a different fingerprint.
-            // Under sorting canonicalization, both lists sort to the same order, masking the tampering.
+            val reorderedContract = contract.copy(verificationCommands = reorderedCommands)
             assertNotEquals(
                 contract.fingerprint,
                 AgentChangeContract.fingerprintFor(reorderedContract),
@@ -220,7 +250,7 @@ class VerificationCommandOrderRegressionTest {
     }
 
     @Test
-    fun `repeated verification commands preserve first-occurrence insertion order`() {
+    fun `repeated verification commands preserve exact ordered sequence and repetition alters fingerprint`() {
         val repo = Files.createTempDirectory("vericore-repeated-commands-").toFile()
         try {
             val cmd1 = "cd /d \"${repo.canonicalPath}\" && gradlew.bat clean test"
@@ -239,21 +269,88 @@ class VerificationCommandOrderRegressionTest {
                 uncertainties = emptyList()
             )
 
-            val contract = AgentChangeContract.fromPlan(plan, repo.canonicalPath, "head")
+            val contract = AgentChangeContract.fromPlan(
+                plan = plan,
+                repositoryPath = repo.canonicalPath,
+                preparedHead = "head",
+                baselineManifest = CandidateStateSnapshotter.captureManifest(repo)
+            )
 
-            // REGRESSION ASSERTION: Deduplication must preserve first-occurrence order (cmd1, cmd2)
-            // rather than sorting alphabetically (cmd2, cmd1).
             assertEquals(
-                listOf(cmd1, cmd2),
+                listOf(cmd1, cmd2, cmd1),
                 contract.verificationCommands,
-                "Repeated commands must preserve relative insertion order of their first occurrence"
+                "AgentChangeContract must preserve the exact ordered sequence including repeated commands"
+            )
+
+            val withoutRepetition = contract.copy(verificationCommands = listOf(cmd1, cmd2))
+            assertNotEquals(
+                contract.fingerprint,
+                AgentChangeContract.fingerprintFor(withoutRepetition),
+                "Inserting or removing a repeated command must change the contract fingerprint"
             )
         } finally {
             repo.deleteRecursively()
         }
     }
 
-    private fun createGitFixture(failOnTest: Boolean): File {
+    @Test
+    fun `legacy contract schema versions require re-preparation`() = runBlocking {
+        val repo = createGitFixture(failOnExactArg = null)
+        try {
+            val plannedPath = "src/main/java/example/Target.java"
+            val target = File(repo, plannedPath)
+            val prep = EngineeringPreparation.prepare(
+                repoPath = repo.path,
+                changeSummary = "Legacy contract test",
+                plannedPaths = listOf(plannedPath)
+            )
+            target.writeText("package example;\nclass Target { String value() { return \"updated\"; } }\n")
+
+            // Simulate legacy 3.1 contract.
+            val legacyContract = prep.contract.copy(schemaVersion = "3.1")
+            val legacyFingerprint = AgentChangeContract.fingerprintFor(legacyContract)
+            val preparedLegacyContract = legacyContract.copy(fingerprint = legacyFingerprint)
+            val legacyPlan = prep.plan.copy(contractFingerprint = legacyFingerprint)
+
+            val result = EngineeringVerification.verify(repo.path, legacyPlan, preparedLegacyContract)
+
+            assertEquals(SafetyStatus.FAIL, result.status)
+            assertTrue(
+                result.reasons.any { it.contains("legacy command-ordering semantics") },
+                "Legacy contract schema versions must produce an actionable re-preparation requirement, but was: ${result.reasons}"
+            )
+        } finally {
+            repo.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `unsupported contract schema versions are rejected explicitly`() = runBlocking {
+        val repo = createGitFixture(failOnExactArg = null)
+        try {
+            val plannedPath = "src/main/java/example/Target.java"
+            val target = File(repo, plannedPath)
+            val prep = EngineeringPreparation.prepare(
+                repoPath = repo.path,
+                changeSummary = "Unsupported version test",
+                plannedPaths = listOf(plannedPath)
+            )
+            target.writeText("package example;\nclass Target { String value() { return \"updated\"; } }\n")
+
+            val unsupportedContract = prep.contract.copy(schemaVersion = "9.9")
+            val result = EngineeringVerification.verify(repo.path, prep.plan, unsupportedContract)
+
+            assertEquals(SafetyStatus.FAIL, result.status)
+            assertTrue(
+                result.reasons.any { it.contains("unsupported") },
+                "Unsupported schema versions must be explicitly rejected, but was: ${result.reasons}"
+            )
+        } finally {
+            repo.deleteRecursively()
+        }
+    }
+
+    private fun createGitFixture(failOnExactArg: String?): File {
         val repo = Files.createTempDirectory("vericore-fixture-").toFile()
         File(repo, "pom.xml").writeText(
             """<project xmlns="http://maven.apache.org/POM/4.0.0">
@@ -266,7 +363,7 @@ class VerificationCommandOrderRegressionTest {
         val source = File(repo, "src/main/java/example/Target.java")
         source.parentFile.mkdirs()
         source.writeText("package example;\nclass Target { String value() { return \"initial\"; } }\n")
-        createMockMvnw(repo, failOnTest)
+        createMockMvnw(repo, failOnExactArg)
 
         Git.init().setDirectory(repo).call().use { git ->
             git.add().addFilepattern(".").call()
@@ -279,16 +376,15 @@ class VerificationCommandOrderRegressionTest {
         return repo
     }
 
-    private fun createMockMvnw(repo: File, failOnTest: Boolean = false) {
+    private fun createMockMvnw(repo: File, failOnExactArg: String? = null) {
         val bat = File(repo, "mvnw.cmd")
         bat.writeText(
             buildString {
                 appendLine("@echo off")
                 appendLine("if not exist \"output\" mkdir output")
                 appendLine("echo %*>> output\\verification-executed.log")
-                if (failOnTest) {
-                    appendLine("echo %* | findstr /i \"test\" >nul")
-                    appendLine("if not errorlevel 1 exit /b 1")
+                if (failOnExactArg != null) {
+                    appendLine("if \"%*\"==\"$failOnExactArg\" exit /b 1")
                 }
                 appendLine("exit /b 0")
             }
@@ -300,10 +396,10 @@ class VerificationCommandOrderRegressionTest {
                 appendLine("#!/bin/sh")
                 appendLine("mkdir -p output")
                 appendLine("printf '%s\\n' \"$*\" >> output/verification-executed.log")
-                if (failOnTest) {
-                    appendLine("case \"$*\" in")
-                    appendLine("    *test*) exit 1 ;;")
-                    appendLine("esac")
+                if (failOnExactArg != null) {
+                    appendLine("if [ \"$*\" = \"$failOnExactArg\" ]; then")
+                    appendLine("    exit 1")
+                    appendLine("fi")
                 }
                 appendLine("exit 0")
             }

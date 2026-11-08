@@ -107,9 +107,12 @@ object EngineeringVerification {
         val candidateAtVerification = CandidateStateSnapshotter.capture(root, excludedPaths)
         val analysisStateStable = analysisInput.digest == candidateAtVerification.digest
         val currentHead = RepositoryState.head(root.path).orEmpty()
-        val expectedContractFingerprint = AgentChangeContract.fingerprintFor(contract)
+        val expectedContractFingerprint = runCatching { AgentChangeContract.fingerprintFor(contract) }.getOrNull().orEmpty()
         val expectedPlanFingerprintResult = runCatching {
-            AgentChangeContract.fromPlan(plan, root.path, contract.preparedHead, contract.baselineManifest, contract.agentContext).fingerprint
+            AgentChangeContract.fromPlan(
+                plan, root.path, contract.preparedHead, contract.baselineManifest, contract.agentContext,
+                schemaVersionOverride = contract.schemaVersion
+            ).fingerprint
         }
         val expectedPlanFingerprint = expectedPlanFingerprintResult.getOrNull().orEmpty()
         val planSpecificationError = expectedPlanFingerprintResult.exceptionOrNull()?.message
@@ -117,6 +120,11 @@ object EngineeringVerification {
             ?.let { CandidateStateSnapshotter.unplannedDrift(it, analysisManifest, contract.plannedPaths) }
             .orEmpty()
         val contractReasons = buildList {
+            if (contract.schemaVersion !in AgentChangeContract.SUPPORTED_SCHEMA_VERSIONS) {
+                add("The persisted contract schema version '${contract.schemaVersion}' is unsupported.")
+            } else if (contract.schemaVersion < AgentChangeContract.CURRENT_SCHEMA_VERSION) {
+                add("Contract schema version '${contract.schemaVersion}' uses legacy command-ordering semantics; run prepare again to create an order-preserved contract.")
+            }
             if (contract.fingerprint != expectedContractFingerprint) add("The persisted agent change contract fingerprint is invalid or tampered.")
             if (contract.baselineManifest == null) {
                 add("This contract has no prepare-time repository baseline; run prepare again with a baseline-capable Vericore version.")

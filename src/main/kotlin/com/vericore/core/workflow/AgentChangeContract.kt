@@ -8,7 +8,7 @@ import java.security.MessageDigest
 
 @Serializable
 data class AgentChangeContract(
-    val schemaVersion: String = "2.0",
+    val schemaVersion: String = CURRENT_SCHEMA_VERSION,
     val changeSummary: String,
     val repository: String,
     val preparedHead: String,
@@ -26,29 +26,39 @@ data class AgentChangeContract(
     val agentContext: AgentContext? = null
 ) {
     companion object {
+        const val CURRENT_SCHEMA_VERSION = "3.2"
+        val SUPPORTED_SCHEMA_VERSIONS = setOf("2.0", "2.1", "3.0", "3.1", "3.2")
+
         fun fromPlan(plan: EngineeringPlan): AgentChangeContract = fromPlan(plan, plan.repository, "")
 
         fun fromPlan(
             plan: EngineeringPlan,
-            repositoryPath: String,
-            preparedHead: String,
+            repositoryPath: String = plan.repository,
+            preparedHead: String = "",
             baselineManifest: CandidateStateManifest? = null,
-            agentContext: AgentContext? = null
+            agentContext: AgentContext? = null,
+            schemaVersionOverride: String? = null
         ): AgentChangeContract {
             val requestedRepository = repositoryPath.ifBlank { plan.repository }
             val repository = requestedRepository.takeIf { it.isNotBlank() }?.let { File(it).canonicalPath } ?: ""
             val paths = plan.plannedPaths.map(::normalize).distinct().sorted()
             val components = plan.affectedComponents.map(::normalize).distinct().sorted()
-            val commands = plan.verificationCommands.distinct().sorted()
             val evidence = plan.evidenceIds.distinct().sorted()
             val expectations = plan.concerns.distinct().sorted()
             val specification = plan.specification.normalized()
             val changeTypes = emptyMap<String, List<String>>()
-            val schemaVersion = when {
-                baselineManifest != null && agentContext != null -> "3.1"
-                baselineManifest != null -> "3.0"
+            val schemaVersion = schemaVersionOverride ?: when {
+                baselineManifest != null -> CURRENT_SCHEMA_VERSION
                 agentContext != null -> "2.1"
                 else -> "2.0"
+            }
+            require(schemaVersion in SUPPORTED_SCHEMA_VERSIONS) {
+                "Unsupported contract schema version '$schemaVersion'"
+            }
+            val commands = if (schemaVersion == CURRENT_SCHEMA_VERSION) {
+                plan.verificationCommands
+            } else {
+                plan.verificationCommands.distinct().sorted()
             }
             val canonical = canonicalize(
                 schemaVersion, plan.changeSummary, repository, preparedHead, paths,
@@ -75,23 +85,33 @@ data class AgentChangeContract(
 
         fun fingerprintFor(plan: EngineeringPlan): String = fromPlan(plan).fingerprint
 
-        fun fingerprintFor(contract: AgentChangeContract): String = sha256(
-            canonicalize(
-                contract.schemaVersion,
-                contract.changeSummary,
-                contract.repository,
-                contract.preparedHead,
-                contract.plannedPaths.map(::normalize).distinct().sorted(),
-                contract.expectedChangeTypes.mapValues { (_, values) -> values.distinct().sorted() }.toSortedMap(),
-                contract.expectedComponents.map(::normalize).distinct().sorted(),
-                contract.verificationCommands.distinct().sorted(),
-                contract.evidenceIds.distinct().sorted(),
-                contract.architectureExpectations.distinct().sorted(),
-                contract.specification,
-                contract.baselineManifest?.digest,
-                contract.agentContext
+        fun fingerprintFor(contract: AgentChangeContract): String {
+            require(contract.schemaVersion in SUPPORTED_SCHEMA_VERSIONS) {
+                "Unsupported contract schema version '${contract.schemaVersion}'"
+            }
+            val commands = if (contract.schemaVersion == CURRENT_SCHEMA_VERSION) {
+                contract.verificationCommands
+            } else {
+                contract.verificationCommands.distinct().sorted()
+            }
+            return sha256(
+                canonicalize(
+                    contract.schemaVersion,
+                    contract.changeSummary,
+                    contract.repository,
+                    contract.preparedHead,
+                    contract.plannedPaths.map(::normalize).distinct().sorted(),
+                    contract.expectedChangeTypes.mapValues { (_, values) -> values.distinct().sorted() }.toSortedMap(),
+                    contract.expectedComponents.map(::normalize).distinct().sorted(),
+                    commands,
+                    contract.evidenceIds.distinct().sorted(),
+                    contract.architectureExpectations.distinct().sorted(),
+                    contract.specification,
+                    contract.baselineManifest?.digest,
+                    contract.agentContext
+                )
             )
-        )
+        }
 
         private fun canonicalize(
             schemaVersion: String,

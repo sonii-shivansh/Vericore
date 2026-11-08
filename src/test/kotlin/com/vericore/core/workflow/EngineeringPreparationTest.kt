@@ -46,7 +46,7 @@ class EngineeringPreparationTest {
             )
 
             assertFalse(result.evidence.citations.any { it.id == "stale.evidence" })
-            assertEquals("3.0", result.contract.schemaVersion)
+            assertEquals("3.2", result.contract.schemaVersion)
             assertTrue(result.contract.baselineManifest?.isValid() == true)
             assertEquals(after.snapshotDigest, result.evidence.repositoryStateDigest)
             assertEquals(after.repositoryCommit, result.evidence.repositoryCommit)
