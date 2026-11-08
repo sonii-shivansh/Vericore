@@ -101,3 +101,8 @@ secrets.properties
 *.pem
 *.p12
 *.pfx
+
+# Private planning documents preserved in separate private repository
+docs/strategy/VERICORE_MASTER_PLAN.md
+docs/process/VERICORE_OPERATING_MODEL_AND_SPRINT0.md
+docs/reference/VERICORE_PROJECT_KNOWLEDGE_SNAPSHOT.md

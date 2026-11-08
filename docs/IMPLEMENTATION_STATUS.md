@@ -99,7 +99,7 @@ The current published release is `v2.0.0`, published from tag `v2.0.0` (commit `
 
 ## Roadmap and current priorities
 
-The master strategic roadmap is documented in [Product Direction](PRODUCT_DIRECTION.md) and follows Phase 0 through Phase 9. It is a plan, not a statement that every listed capability is already shipped.
+The public product direction and core principles are documented in [Product Direction](PRODUCT_DIRECTION.md). Detailed roadmaps and strategic proposals are maintained in private planning repositories; living documentation describes shipped behavior, verified baselines, and current boundaries.
 
 **Foundation Freeze & Truth is complete for its documented scope.** Each published artifact requires its own exact-candidate readiness evidence.
 
@@ -118,4 +118,4 @@ Phase 0 closure does not mean these controls should be removed. Keep them covere
 - retain mutation, tampering, stale-state, and repository-binding regression coverage;
 - document supported boundaries and keep benchmark results tied to their exact inputs and candidate SHA.
 
-The operational sequence is therefore: validate post-release fixes, certify any intended next release on its exact candidate SHA, publish without rewriting prior tags, then continue product-journey work. Later phases follow the ordering and acceptance discipline in [Product Direction](PRODUCT_DIRECTION.md).
+The operational sequence is therefore: validate post-release fixes, certify any intended next release on its exact candidate SHA, publish without rewriting prior tags, then continue product-journey work. Future changes follow the boundary and acceptance discipline described in [Product Direction](PRODUCT_DIRECTION.md) and the engineering constitution.

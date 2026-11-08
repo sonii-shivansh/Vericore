@@ -47,7 +47,7 @@ Machine-readable schemas live in [`docs/schemas/`](schemas/). They are interface
 |---|---|
 | [Development Guide](DEVELOPMENT.md) | Build/test workflow, extension points, review and release discipline |
 | [Implementation Status](IMPLEMENTATION_STATUS.md) | Implemented capabilities, limitations and current release/phase state |
-| [Product Direction](PRODUCT_DIRECTION.md) | Long-term product roadmap; roadmap items are not proof of implementation |
+| [Product Direction](PRODUCT_DIRECTION.md) | Product purpose, implementation boundaries, and core engineering principles |
 | [Repository Governance](REPOSITORY_GOVERNANCE.md) | Intended repository settings, CI/release model and governance caveats |
 | [Verification Benchmark](VERIFICATION_BENCHMARK.md) | Public benchmark design, methodology and interpretation boundaries |
 | [Changelog](../CHANGELOG.md) | User-visible changes grouped by version |

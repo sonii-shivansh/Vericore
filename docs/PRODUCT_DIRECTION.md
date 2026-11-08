@@ -2,172 +2,55 @@
 
 > **AI writes the code. Vericore verifies the change.**
 
-Vericore is being evolved into an engineering intelligence and verification layer for AI-assisted software development.
+Vericore is an open-source, local-first change assurance engine for JVM (Java/Kotlin) repositories. It establishes verifiable boundaries and deterministic evidence for AI-assisted code mutations before changes are accepted.
 
-## Product model
+---
 
-repository facts → evidence → deterministic analysis → plan/contract → AI agent change → verification → explainable result
+## 1. Product Purpose & Core Lifecycle
 
-The repository remains the source of truth. AI is an optional interpretation layer, not the authority for repository facts or verification decisions.
+AI-assisted changes need inspectable evidence against an agreed scope. Vericore records that scope before editing and evaluates the candidate against the original persisted contract.
 
-## Public journey
+Vericore introduces a contract-bound **prepare → mutate → verify** lifecycle:
 
-The public experience should stay small and understandable:
+1. **Before the edit (`vericore prepare`)**: Captures developer intent, planned path boundaries, and declared verification commands into an immutable, persisted **Agent Change Contract** with candidate state fingerprints.
+2. **During the edit**: The AI coding agent or developer mutates the codebase. Vericore does not author source code.
+3. **After the edit (`vericore verify`)**: Evaluates the candidate repository strictly against the **original persisted contract**, validating path compliance, candidate stability, deterministic analysis signals, build command results, and named test evidence.
 
-1. init — initialize the project
-2. scan — understand the repository
-3. inspect — summarize what matters
-4. repo-qa — ask grounded repository questions; ask — optional AI interpretation
-5. review — review a change
-6. plan — produce a deterministic engineering plan
-7. prepare — establish the change boundary
-8. AI agent changes the repository
-9. verify — verify the original boundary
-10. report — produce the engineering record
-11. doctor — diagnose installation/configuration
+The verification engine emits an explicit verdict:
+- **`PASS`**: PASS means the implemented automated checks succeeded for the observed candidate under the recorded scope and assumptions. It does not establish complete behavioral correctness, comprehensive test coverage, or absence of defects.
+- **`REVIEW_REQUIRED`**: Verification detected conditions requiring human inspection (such as deleted source files, `CRITICAL` risk signals, or criteria evaluated as `INCONCLUSIVE` or `NOT_EVALUATED`). A `REVIEW_REQUIRED` verdict cannot silently become `PASS`. Merging requires documented maintainer risk acceptance.
+- **`FAIL`**: Triggered by an inviolable safety boundary failure (unexpected path touches outside plan, baseline candidate drift, contract tampering, missing plan, or failing verification commands/specification criteria). A genuine `FAIL` represents an inviolable safety barrier and cannot be overridden.
 
-Specialized commands remain available underneath this product journey.
+---
 
-## Output direction
+## 2. Implementation & Trust Boundaries
 
-Human-readable output is the default. Machine-readable JSON remains available for automation.
+Vericore's verification guarantees are bounded by the checks actually performed:
 
-Product-level commands should make the same core information easy to find:
-- repository/state
-- status
-- key findings
-- evidence/artifacts
-- optional AI interpretation
-- next step
+- **Command Grammar vs. Sandboxing**: The verification command runner restricts commands to an allowlisted build grammar (Gradle/Maven). It is a command grammar filter, not an operating system sandbox; permitted build tools execute with the invoking user's permissions.
+- **Local Interfaces**: REST binds to loopback by default; non-loopback binding requires explicit opt-in. MCP communicates over local standard input/output. These interfaces assume trusted callers and do not provide a multi-tenant security boundary.
+- **Integrity vs. Identity**: SHA-256 fingerprints establish content-integrity digests over canonical representations; they are not cryptographic signatures, user identity credentials, or execution barriers.
+- **Network Boundaries & Offline Execution**: Deterministic repository analysis requires no AI service or outbound network connection. Verification may invoke build tools that resolve dependencies over the network. Optional AI integrations make configured provider requests.
 
-## Master roadmap
+---
 
-The strategic roadmap follows **Phase 0 through Phase 9**. Phase names and sequencing below are the project roadmap; present-day implementation status and known limitations remain documented in [Implementation Status](IMPLEMENTATION_STATUS.md).
+## 3. Core Engineering Principles
 
-### Phase 0 — Foundation Freeze & Truth
+- **Deterministic Evidence First**: Repository ground truth and executable test evidence take precedence over model reasoning or human assumptions.
+- **Contract-Bound Verification**: Mutations are evaluated strictly against the original persisted pre-edit contract, never against dynamically reconstructed or mutable plans.
+- **Fail-Closed Operation**: Missing contracts, altered fingerprints, candidate drift, or unexpected file touches fail closed.
+- **Public Contract Stability**: CLI flags, JSON schemas, MCP tools, and exit codes are versioned contracts governed by strict backward-compatibility rules.
 
-Make the existing foundation trustworthy before major feature work.
+---
 
-- Stabilize current CI and release certification.
-- Align documentation with actual behavior.
-- Establish stable JSON and artifact schema contracts.
-- Make generated output deterministic.
-- Maintain golden test repositories and benchmark fixtures.
-- Define supported and unsupported boundaries.
-- Establish the baseline for a public verification benchmark.
+## 4. Authoritative Documentation
 
-No large new feature should displace these foundation tasks before their acceptance criteria are met.
+For active capabilities, configuration, and interfaces, refer to living documentation:
 
-### Phase 1 — The 60-Second Vericore
-
-Make Vericore understandable and usable through one coherent public workflow:
-
-~~~text
-init → scan → inspect → ask/repo-qa → review → plan
-     → prepare → agent works → verify → report
-~~~
-
-The journey's explanation step is delivered through grounded `repo-qa` answers and the evidence-backed explanations available in `review`; Phase 1 does not define a separate `explain` CLI command. Do not document or test a standalone `explain` command unless a separate product decision introduces one. Keep specialized commands. The unified journey is the product surface, not a reason to delete useful lower-level commands.
-
-### Phase 2 — Universal Agent Layer
-
-Create one common **Vericore Agent Adapter** for Claude Code, Cursor, Codex, Gemini/Antigravity, GitHub Copilot, and future agents. Standardize agent/session identity, repository, contract, event metadata, changed files, verification requests, and results. Keep MCP as a key integration boundary rather than building independent implementations for every agent.
-
-### Phase 3 — Change Contract 2.0
-
-Evolve the current Agent Change Contract to express the complete change boundary: intent, repository and base commit, agent identity, allowed and protected paths, expected components and operations, dependency/architecture/security constraints, required tests and evidence, verification commands, risk budget, approvals, and contract fingerprint.
-
-### Phase 4 — Independent Verification Engine
-
-Verify requested work, unexpected or omitted changes, dependency and architecture drift, protected paths, tests and their relevance, configuration/dependency changes, and the exact commit under verification. Preserve explicit outcomes such as PASS, PASS_WITH_WARNINGS, REVIEW_REQUIRED, FAIL, INCONCLUSIVE, STALE, and NOT_EVALUATED. Missing or stale evidence must never be turned into a pass.
-
-### Phase 5 — Verification Receipt & Provenance
-
-Produce a stable machine-readable receipt for every verified change. Include repository/base/candidate identities, contract fingerprint, agent/session, changed and unexpected paths, impact, architecture/security/dependency results, test and command results, evidence IDs, risk, verdict, timestamp, environment, and freshness. Prefer compatibility with established provenance/attestation formats where appropriate. Capture observable evidence, not private model reasoning.
-
-### Phase 6 — Multi-Agent & Cross-Repository Verification
-
-Model relationships among agents, contracts, changes, commits, and affected components. Detect overlapping changes, conflicts, dependency collisions, contract invalidation, stale plans, and missing coordinated changes across repositories.
-
-### Phase 7 — Explain + Verified Project Memory
-
-Provide evidence-first explanations for findings and their impact, architecture context, relevant historical decisions, and recommendations. Build structured engineering memory for rules, decisions, exceptions, risks, architecture, verification history, dependencies, ownership, and accepted trade-offs, with evidence and freshness information.
-
-### Phase 8 — Distribution, Ecosystem & Benchmark
-
-Expand distribution and integration through GitHub/GitLab, IDEs, agent marketplaces, MCP, and CI/CD. Publish the **Vericore Agent Change Benchmark** with a transparent methodology and measurable results for scope drift, omitted requirements, unexpected files, architecture/dependency/security regressions, false completion, stale verification, agent conflicts, and cross-repository omissions.
-
-### Phase 9 — Enterprise Change Assurance
-
-Only after the core verification engine is strong and customer demand is validated, consider organization policies, RBAC, SSO, approvals, exception management, audit history, organization-wide risk, cross-repository governance, policy-as-code, retention, compliance exports, private deployment, and a central verification registry.
-
-Commercialization is a hypothesis to validate—not a reason to build a hosted control plane ahead of the core product.
-
-## Execution and phase gates
-
-The phase order above is the strategic roadmap. The following are execution rules recommended for delivery; they are not claims that the phases have already passed:
-
-- Break work into small, reviewable changes with regression tests for the behavior being changed.
-- Define measurable acceptance checks before declaring a phase complete.
-- Use CI and reproducible fixtures as evidence; distinguish passed checks from pending or unrun checks.
-- Keep unsupported behavior, schema compatibility, and known limitations explicit.
-- Do not publish a release based only on feature completion. Certify the exact candidate commit and artifact set.
-- Do not begin large work in a later phase while a release-blocking foundation defect remains unresolved.
-
-## Product principles
-
-- Evidence before AI.
-- Deterministic analysis is authoritative.
-- AI interprets; it does not invent repository facts.
-- Verification is repository-bound.
-- Fail closed when the verification boundary cannot be trusted.
-- Preserve CLI compatibility while the public journey improves.
-- Keep MCP machine-readable and safe for local agent use.
-- Do not expand into hosted control-plane features before the developer/agent workflow is genuinely useful.
-
-
-## Strategic product decision — 2026-10-11
-
-This section records the product thesis and execution constraints agreed for Vericore. Keep it as durable project context when future work, reviews, or contributors revisit priorities.
-
-### Product thesis
-
-Vericore should become an **agent-neutral, local-first trust layer for AI-made software changes**, not another general-purpose coding agent and not merely another AI code reviewer.
-
-The proposed long-term product concept is the **Vericore Change Passport**: a portable, machine-verifiable record connecting the requested intent, the original change contract, the exact repository candidate evaluated, the checks that actually ran, the evidence for each claim, and a verdict that states what remains unverified.
-
-The product promise is evidence integrity and inspectable verification—not a guarantee that arbitrary software is correct.
-
-### Non-negotiable engineering principles
-
-- Deterministic repository facts remain authoritative; optional AI may interpret evidence but must not invent facts or turn missing evidence into a pass.
-- The persisted pre-change contract remains the verification boundary. Verification must not silently replace it with a contract derived from the mutated tree.
-- Verification claims must be bound to the exact repository-input state they evaluated. Relevant mutations during analysis or test execution must invalidate a PASS.
-- Distinguish PASS, review-required, failure, stale evidence, inconclusive results, and checks that were not evaluated as the result model evolves.
-- Keep verification receipts machine-readable, content-addressable where appropriate, and compatible with established provenance/attestation formats instead of inventing a disconnected ecosystem.
-- Treat hashes and signatures as integrity/provenance mechanisms, not proof of semantic correctness.
-- Publish benchmark methodology and measured results, including false acceptance, false rejection, stale-evidence detection, cost and limitations. Do not claim superiority before controlled comparisons.
-- Prioritize developer adoption and recurring use over command count, feature count, vanity metrics or a premature hosted enterprise control plane.
-
-### Execution order
-
-1. Strengthen exact-state binding and fail-closed behavior in the existing prepare → change → verify workflow.
-2. Evolve the Agent Change Contract into a structured, testable change specification with explicit evidence obligations.
-3. Improve receipt provenance and provide simple human-readable explanations alongside stable machine-readable artifacts.
-4. Expand the public benchmark to realistic repositories, deliberate failure cases and more than one agent workflow.
-5. Pursue broader languages, agent adapters, multi-agent/cross-repository coordination, signed attestations and enterprise controls only as correctness and real user demand justify them.
-
-### 2030 design horizon
-
-Design the core so it can later support multi-agent change conflicts, cross-repository change coordination, evidence freshness over time, and portable engineering assurance. These are strategic hypotheses, not assertions that every future problem is known or that any feature is already implemented.
-
-### Scope of the first implementation step
-
-The first implementation step introduces a deterministic candidate repository-input digest and checks it before analysis, immediately before verification commands, and after those commands. The digest excludes version-control metadata and conventional generated/build-output directories so Vericore's own outputs and build caches do not invalidate the result. Root-level `output/` is excluded; `build/` and `target/` are excluded outside source/test/input trees, while similarly named source package directories remain included. Other tracked and untracked repository files are included regardless of file extension. Test harnesses should place diagnostic artifacts under the generated `output/` directory. The digest does not attest to the complete execution environment, external services, or external symlink targets; those require separate provenance or isolation controls.
-
-
-## Current implementation slice — structured change specification
-
-The current implementation adds an optional, caller-authored `specification` to engineering plans and Agent Change Contracts. It captures five categories: required behaviors, forbidden behaviors, protected invariants, acceptance criteria, and required evidence. CLI `plan`/`prepare` and MCP `vericore_prepare_change` accept the same shape. Inputs are bounded and normalized, and non-empty specifications are included in the contract fingerprint. Empty specifications preserve historical fingerprints for compatibility.
-
-The verification result and receipt emit stable per-criterion evaluation records. Criteria without a binding remain `NOT_EVALUATED`; valid evidence bindings are `INCONCLUSIVE` until the evidence content is evaluated; dangling evidence references fail closed. A non-empty specification with unevaluated or inconclusive criteria forces `REVIEW_REQUIRED`; it cannot silently pass. The current candidate adds two narrow deterministic evaluation paths: numeric/Boolean metric comparisons and the `ALL_BOUND_COMMANDS_SUCCEEDED` rule for required-evidence criteria explicitly bound to declared verification commands. The command rule establishes successful command execution only; it does not prove test coverage or arbitrary behavior semantics. Continue adding evidence evaluators only where the evidence type supports a precise, testable claim.
+- [CLI Reference](CLI.md) — Comprehensive command guide and usage
+- [Implementation Status](IMPLEMENTATION_STATUS.md) — Shipped capabilities and current status
+- [Support Matrix](SUPPORT_MATRIX.md) — Verified JDK, Kotlin, and OS toolchain baselines
+- [MCP Reference](MCP.md) — Local stdio Model Context Protocol integration
+- [GitHub Action Reference](GITHUB_ACTION.md) — CI/CD integration guide
+- [Repository Governance](REPOSITORY_GOVERNANCE.md) — Release and contribution policies
+- [Engineering Constitution](../.specify/memory/constitution.md) — Ratified engineering standards and principles
