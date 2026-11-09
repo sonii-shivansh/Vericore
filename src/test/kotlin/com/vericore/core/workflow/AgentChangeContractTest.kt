@@ -218,6 +218,43 @@ class AgentChangeContractTest {
     }
 
     @Test
+    fun `schema 3_2 fingerprint distinguishes newline-joined commands from multi-command lists`() {
+        val root = java.nio.file.Files.createTempDirectory("newline-collision")
+        try {
+            val baseline = CandidateStateSnapshotter.captureManifest(root.toFile())
+            val planTwoCommands = plan("src/App.kt", root.toFile().canonicalPath).copy(
+                verificationCommands = listOf("mvn test", "mvn package")
+            )
+            val contractTwoCommands = AgentChangeContract.fromPlan(
+                planTwoCommands,
+                root.toFile().canonicalPath,
+                "prepared-head",
+                baseline
+            )
+            assertEquals("3.2", contractTwoCommands.schemaVersion)
+
+            val planSingleMergedCommand = plan("src/App.kt", root.toFile().canonicalPath).copy(
+                verificationCommands = listOf("mvn test\nmvn package")
+            )
+            val contractSingleMergedCommand = AgentChangeContract.fromPlan(
+                planSingleMergedCommand,
+                root.toFile().canonicalPath,
+                "prepared-head",
+                baseline
+            )
+            assertEquals("3.2", contractSingleMergedCommand.schemaVersion)
+
+            assertNotEquals(
+                contractTwoCommands.fingerprint,
+                contractSingleMergedCommand.fingerprint,
+                "Schema 3.2 must not encode [A, B] and [A + '\\n' + B] identically"
+            )
+        } finally {
+            root.toFile().deleteRecursively()
+        }
+    }
+
+    @Test
     fun `agent context rejects control characters and unknown source values`() {
         kotlin.test.assertFailsWith<IllegalArgumentException> {
             AgentContext.create("cursor", sessionId = "session\nforged", source = "cli")

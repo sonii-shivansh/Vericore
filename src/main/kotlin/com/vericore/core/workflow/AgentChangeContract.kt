@@ -3,6 +3,8 @@ package com.vericore.core.workflow
 import com.vericore.core.planner.ChangeSpecification
 import com.vericore.core.planner.EngineeringPlan
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import java.io.File
 import java.security.MessageDigest
 
@@ -128,6 +130,11 @@ data class AgentChangeContract(
             baselineDigest: String? = null,
             agentContext: AgentContext? = null
         ): String {
+            val encodedCommands = if (schemaVersion == CURRENT_SCHEMA_VERSION) {
+                Json.encodeToString(commands)
+            } else {
+                commands.joinToString("\n")
+            }
             val legacyCanonical = listOf(
                 schemaVersion,
                 summary.trim(),
@@ -136,7 +143,7 @@ data class AgentChangeContract(
                 paths.joinToString("\n"),
                 changeTypes.entries.sortedBy { it.key }.joinToString("\n") { (path, types) -> "$path=${types.joinToString(",")}" },
                 components.joinToString("\n"),
-                commands.joinToString("\n"),
+                encodedCommands,
                 evidence.joinToString("\n"),
                 expectations.joinToString("\n")
             ).joinToString("\n---\n")

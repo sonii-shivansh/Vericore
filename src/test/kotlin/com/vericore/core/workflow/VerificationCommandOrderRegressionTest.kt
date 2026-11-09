@@ -1,6 +1,11 @@
 package com.vericore.core.workflow
 
+import com.github.ajalt.clikt.testing.test
+import com.vericore.cli.ContractOnlyVerificationResult
+import com.vericore.cli.PrepareCommand
+import com.vericore.cli.VerifyCommand
 import com.vericore.core.ai.GroundedEvidence
+import com.vericore.core.exceptions.ValidationException
 import com.vericore.core.planner.BuildSystem
 import com.vericore.core.planner.ChangeSpecification
 import com.vericore.core.planner.CriterionEvidenceBinding
@@ -12,15 +17,21 @@ import com.vericore.core.planner.VerificationEvidenceIds
 import java.io.File
 import java.nio.file.Files
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import org.eclipse.jgit.api.Git
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertNotEquals
 import kotlin.test.assertTrue
 
 class VerificationCommandOrderRegressionTest {
 
     private val planner = EngineeringPlanner()
+    private val json = Json { prettyPrint = true; encodeDefaults = true; ignoreUnknownKeys = true }
 
     @Test
     fun `gradle planned command sequence survives contract creation`() {
@@ -344,6 +355,95 @@ class VerificationCommandOrderRegressionTest {
             assertTrue(
                 result.reasons.any { it.contains("unsupported") },
                 "Unsupported schema versions must be explicitly rejected, but was: ${result.reasons}"
+            )
+        } finally {
+            repo.deleteRecursively()
+        }
+    }
+
+    @Test
+    fun `newline collision mutation in verification commands invalidates fingerprint and fails contract-only and full verification before build`() = runBlocking {
+        val repo = createGitFixture(failOnExactArg = null)
+        try {
+            val plannedPath = "src/main/java/example/Target.java"
+            val target = File(repo, plannedPath)
+
+            val prepareResult = PrepareCommand().test(
+                listOf("Two-command newline collision test", "--path", repo.path, "--planned-path", plannedPath)
+            )
+            assertEquals(0, prepareResult.statusCode, "prepare CLI command must succeed")
+
+            val contractFile = File(repo, "output/agent-change-contract.json")
+            val planFile = File(repo, "output/engineering-plan.json")
+            assertTrue(contractFile.isFile, "contract artifact must exist")
+            assertTrue(planFile.isFile, "plan artifact must exist")
+
+            val originalContract = json.decodeFromString<AgentChangeContract>(contractFile.readText())
+            assertEquals("3.2", originalContract.schemaVersion)
+            assertEquals(2, originalContract.verificationCommands.size, "Prepared contract must contain exactly two verification commands")
+
+            // Combine the two entries into one newline-containing entry, preserving original fingerprint
+            val combinedCommands = listOf("${originalContract.verificationCommands[0]}\n${originalContract.verificationCommands[1]}")
+            val mutatedContract = originalContract.copy(verificationCommands = combinedCommands)
+
+            // Confirm that the recomputed fingerprint differs
+            val recomputedFingerprint = AgentChangeContract.fingerprintFor(mutatedContract)
+            assertNotEquals(
+                originalContract.fingerprint,
+                recomputedFingerprint,
+                "Combining [A, B] into [A + '\\n' + B] must produce a different fingerprint under schema 3.2"
+            )
+
+            // Leave the saved plan and fingerprint unchanged, but write the mutated contract commands to disk
+            contractFile.writeText(json.encodeToString(mutatedContract))
+
+            // Confirm CLI verify --contract-only fails for contract integrity
+            val contractOnlyOutput = File(repo, "output/contract-only-verification.json")
+            val contractOnlyEx = assertFailsWith<ValidationException> {
+                VerifyCommand().test(listOf("--path", repo.path, "--contract-only", "--output", contractOnlyOutput.path))
+            }
+            assertTrue(
+                contractOnlyEx.message?.contains("Change verification failed") == true,
+                "CLI verify --contract-only must fail when contract integrity fails"
+            )
+            assertTrue(contractOnlyOutput.isFile, "CLI verify --contract-only output artifact must be written")
+            val contractOnlyResult = json.decodeFromString<ContractOnlyVerificationResult>(contractOnlyOutput.readText())
+            assertEquals("FAIL", contractOnlyResult.status)
+            assertTrue(
+                contractOnlyResult.reasons.any { it.contains("persisted agent change contract fingerprint is invalid or tampered") },
+                "CLI verify --contract-only must report contract fingerprint tampering reason, was: ${contractOnlyResult.reasons}"
+            )
+
+            // Mutate target to introduce a candidate change
+            target.writeText("package example;\nclass Target { String value() { return \"updated\"; } }\n")
+
+            // Confirm full verification rejects the mutation before running build commands
+            val savedPlan = json.decodeFromString<EngineeringPlan>(planFile.readText())
+            val fullResult = EngineeringVerification.verify(repo.path, savedPlan, mutatedContract)
+            assertEquals(SafetyStatus.FAIL, fullResult.status)
+            assertTrue(
+                fullResult.reasons.any { it.contains("persisted agent change contract fingerprint is invalid or tampered") },
+                "Full verification must reject mutated contract for fingerprint integrity, was: ${fullResult.reasons}"
+            )
+            assertTrue(
+                fullResult.verification.commands.isEmpty(),
+                "Full verification must not execute commands when contract integrity fails"
+            )
+
+            val executedLog = File(repo, "output/verification-executed.log")
+            assertFalse(
+                executedLog.exists(),
+                "Build commands must not run when full verification rejects a mutated contract"
+            )
+
+            // Confirm CLI full verify also rejects the mutation before running build commands
+            val fullCliEx = assertFailsWith<ValidationException> {
+                VerifyCommand().test(listOf("--path", repo.path))
+            }
+            assertTrue(fullCliEx.message?.contains("Change verification failed") == true)
+            assertFalse(
+                executedLog.exists(),
+                "Build commands must not run when CLI full verify rejects a mutated contract"
             )
         } finally {
             repo.deleteRecursively()
